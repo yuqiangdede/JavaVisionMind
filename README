@@ -26,7 +26,7 @@ JavaVisionMind 是一组围绕计算机视觉与多模态能力构建的 Spring 
    ```
 
 3. 根据操作系统确认 `opencv_java490` 动态库可被 Java 加载（已在核心服务中根据系统类型自动选择 `.dll` 或 `.so` 文件）。
-
+4. 从release中下载resource.7z，解压到vision-mind-common同级目录，例如这种路径 F:\TestSth\JavaVisionMind\resource\yolo\model\yolo.onnx F:\TestSth\JavaVisionMind\vision-mind-common\src\main\java\...
 ## 模块简介
 
 | 模块 | 说明 |
