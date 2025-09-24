@@ -13,6 +13,13 @@ import java.nio.charset.StandardCharsets;
 public class OllamaClient {
 
 
+    /**
+     * 通过 Ollama 本地服务进行对话推理。
+     *
+     * @param ollamaBaseUrl Ollama 服务地址，例如 http://127.0.0.1:11434
+     * @param ollamaModel   待调用的模型名称
+     * @param prompt        用户输入的提示词
+     */
     public static String chat(String ollamaBaseUrl, String ollamaModel, String prompt) throws IOException {
         String s = sendPrompt(ollamaBaseUrl, ollamaModel, prompt);
         ObjectMapper mapper = new ObjectMapper();
@@ -29,18 +36,19 @@ public class OllamaClient {
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setDoOutput(true);
 
-        // 构建请求体
+        // 构建请求体：关闭 stream 以便一次性获得完整回答
         String body = String.format(
                 "{\"model\":\"%s\",\"prompt\":\"%s\",\"stream\":false}",
                 ollamaModel, prompt.replace("\"", "\\\"")
         );
 
+        // 发送请求体
         try (OutputStream os = conn.getOutputStream()) {
             byte[] input = body.getBytes(StandardCharsets.UTF_8);
             os.write(input, 0, input.length);
         }
 
-        // 读取返回
+        // 读取返回：Ollama 返回 JSON 字符串，逐行拼接
         try (BufferedReader br = new BufferedReader(
                 new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
 
