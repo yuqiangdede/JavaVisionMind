@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>行人封面展示（每行一个人）</title>
+    <style>
+        body { margin: 0; font-family: sans-serif; }
+        .container {
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 20px;
+            gap: 10px;
+        }
+        .row {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 5px;
+            background: #f5f5f5;
+            padding: 6px;
+            border-radius: 8px;
+        }
+        .thumbnail-container {
+            position: relative;
+        }
+        .thumbnail {
+            width: 50px;
+            height: 200px;
+            object-fit: cover;
+            border: 2px solid #2196F3;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .similarity {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(76, 175, 80, 0.85);
+            color: white;
+            padding: 2px 4px;
+            font-size: 11px;
+            border-radius: 3px;
+        }
+        .img-name {
+            position: absolute;
+            bottom: 2px;
+            left: 2px;
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            font-size: 11px;
+            padding: 1px 4px;
+            border-radius: 3px;
+        }
+        .loading {
+            position: fixed;
+            top: 10px;
+            right: 20px;
+            background: #fff;
+            padding: 10px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+<div class="loading">加载中：<span id="progress">0</span>/100</div>
+<div class="container" id="container"></div>
+
+<script>
+    const container = document.getElementById("container");
+    const progress = document.getElementById("progress");
+    const baseUrl = "http://10.19.169.39:10006/";
+
+    const humanMap = new Map();     // humanId => row DOM
+    const pendingImages = new Map(); // humanId => [html]
+
+    async function processImages() {
+        for (let i = 1; i <= 100; i++) {
+            progress.textContent = i;
+            const currentImgUrl = `${baseUrl}${i}.jpg`;
+
+            try {
+                const res = await fetch("http://127.0.0.1:17004/dsmsds-reid/api/v1/reid/associateStore", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        imgUrl: currentImgUrl,
+                        threshold: 0.8
+                    })
+                });
+
+                const json = await res.json();
+                const { humanId, imgUrl, imageId, type, score } = json.data;
+                const html = createImageHTML(i, score);
+
+                if (type === "new") {
+                    const row = document.createElement("div");
+                    row.className = "row";
+                    row.dataset.humanId = humanId;
+                    humanMap.set(humanId, row);
+
+                    row.insertAdjacentHTML('beforeend', html);
+
+                    if (pendingImages.has(humanId)) {
+                        pendingImages.get(humanId).forEach(p => row.insertAdjacentHTML('beforeend', p));
+                        pendingImages.delete(humanId);
+                    }
+
+                    container.appendChild(row);
+
+                } else if (type === "exist") {
+                    const row = humanMap.get(humanId);
+                    if (row) {
+                        row.insertAdjacentHTML('beforeend', html);
+                    } else {
+                        if (!pendingImages.has(humanId)) pendingImages.set(humanId, []);
+                        pendingImages.get(humanId).push(html);
+                    }
+                }
+            } catch (err) {
+                console.error(`图片 ${i}.jpg 请求失败`, err);
+            }
+        }
+
+        document.querySelector(".loading").style.display = "none";
+        sortRowsByImageCount();
+    }
+
+    function sortRowsByImageCount() {
+        const rows = Array.from(container.children);
+        rows.sort((a, b) => b.children.length - a.children.length);
+        rows.forEach(row => container.appendChild(row));
+    }
+
+    function createImageHTML(index, score) {
+        const imgUrl = `${baseUrl}${index}.jpg`;
+        const scoreTag = `<div class="similarity">${(score * 100).toFixed(1)}%</div>`;
+        const nameTag = `<div class="img-name">${index}.jpg</div>`;
+        return `
+        <div class="thumbnail-container">
+          ${scoreTag}
+          ${nameTag}
+          <img src="${imgUrl}" class="thumbnail" onclick="window.open('${imgUrl}')">
+        </div>
+      `;
+    }
+
+    processImages();
+
+</script>
+</body>
+</html>

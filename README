@@ -1,0 +1,19 @@
+需要先设置环境变量VISION_MIND_PATH 用以指定程序需要的模型的路径
+比如设置为：F:\TestSth\JavaVisionMind\resource
+具体的路径为：F:\TestSth\JavaVisionMind\resource\lib\opencv\opencv_java490.dll
+
+
+几个项目的介绍
+ffe 人脸识别
+llm 大模型调用
+reid 人员重识别
+tbir 文搜图
+yolo 目标识别和关键点检测等
+
+
+JavaVisionMind.postman_collection.json 是postman的测试用例导出
+
+1、使用vision-mind-llm的时候需要先配置好大模型的地址，支持ollma或者openai的接口模式
+2、vision-mind-llm 后续也会支持llama的服务调用，流模式等 TODO
+3、目前XXXX 都是用lunce实现的持久化向量存储，后续会增加内存的向量存储，重启清空 TODO
+4、yolo支持视频解析 TODO

@@ -1,0 +1,2161 @@
+{
+	"info": {
+		"_postman_id": "e8723a1e-6ded-4064-a719-8c937fc454e8",
+		"name": "JavaVisionMind",
+		"description": "图片格式使用jpg",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "3061570"
+	},
+	"item": [
+		{
+			"name": "vision-mind-yolo",
+			"item": [
+				{
+					"name": "目标检测 全量参数",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"imgUrl\": \"https://tse3-mm.cn.bing.net/th/id/OIP-C.jj0S2SMgCvagXdJV_eP3XwHaJK?rs=1&pid=ImgDetMain\",\r\n  \"threshold\": 0.2,\r\n  \"types\": \"0,1,2,3,4,5,6,7,8\",\r\n  \"detectionFrames\": [\r\n    [\r\n      {\"x\": 114, \"y\": 21},\r\n      {\"x\": 29, \"y\": 249},\r\n      {\"x\": 115, \"y\": 558},\r\n      {\"x\": 206, \"y\": 551},\r\n      {\"x\": 250, \"y\": 240},\r\n      {\"x\": 191, \"y\": 26}\r\n    ],\r\n    [\r\n      {\"x\": 274, \"y\": 22},\r\n      {\"x\": 242, \"y\": 558},\r\n      {\"x\": 415, \"y\": 570},\r\n      {\"x\": 419, \"y\": 35}\r\n    ]\r\n  ],\r\n  \"blockingFrames\": [\r\n    [\r\n      {\"x\": 114, \"y\": 21},\r\n      {\"x\": 29, \"y\": 249},\r\n      {\"x\": 115, \"y\": 558},\r\n      {\"x\": 206, \"y\": 551},\r\n      {\"x\": 250, \"y\": 240},\r\n      {\"x\": 191, \"y\": 26}\r\n    ]\r\n  ]\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/dsmsds-yolo/api/v1/img/detect",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"dsmsds-yolo",
+								"api",
+								"v1",
+								"img",
+								"detect"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "人脸检测 全量参数",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"imgUrl\": \"https://tse3-mm.cn.bing.net/th/id/OIP-C.jj0S2SMgCvagXdJV_eP3XwHaJK?rs=1&pid=ImgDetMain\",\r\n  \"threshold\": 0.2,\r\n  \"types\": \"0,1,2,3,4,5,6,7,8\",\r\n  \"detectionFrames\": [\r\n    [\r\n      {\"x\": 114, \"y\": 21},\r\n      {\"x\": 29, \"y\": 249},\r\n      {\"x\": 115, \"y\": 558},\r\n      {\"x\": 206, \"y\": 551},\r\n      {\"x\": 250, \"y\": 240},\r\n      {\"x\": 191, \"y\": 26}\r\n    ],\r\n    [\r\n      {\"x\": 274, \"y\": 22},\r\n      {\"x\": 242, \"y\": 558},\r\n      {\"x\": 415, \"y\": 570},\r\n      {\"x\": 419, \"y\": 35}\r\n    ]\r\n  ],\r\n  \"blockingFrames\": [\r\n    [\r\n      {\"x\": 114, \"y\": 21},\r\n      {\"x\": 29, \"y\": 249},\r\n      {\"x\": 115, \"y\": 558},\r\n      {\"x\": 206, \"y\": 551},\r\n      {\"x\": 250, \"y\": 240},\r\n      {\"x\": 191, \"y\": 26}\r\n    ]\r\n  ]\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/detectFace",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"detectFace"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "姿态检测 全量参数",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"imgUrl\": \"https://tse3-mm.cn.bing.net/th/id/OIP-C.jj0S2SMgCvagXdJV_eP3XwHaJK?rs=1&pid=ImgDetMain\",\r\n  \"threshold\": 0.2,\r\n  \"types\": \"0,1,2,3,4,5,6,7,8\",\r\n  \"detectionFrames\": [\r\n    [\r\n      {\"x\": 114, \"y\": 21},\r\n      {\"x\": 29, \"y\": 249},\r\n      {\"x\": 115, \"y\": 558},\r\n      {\"x\": 206, \"y\": 551},\r\n      {\"x\": 250, \"y\": 240},\r\n      {\"x\": 191, \"y\": 26}\r\n    ],\r\n    [\r\n      {\"x\": 274, \"y\": 22},\r\n      {\"x\": 242, \"y\": 558},\r\n      {\"x\": 415, \"y\": 570},\r\n      {\"x\": 419, \"y\": 35}\r\n    ]\r\n  ],\r\n  \"blockingFrames\": [\r\n    [\r\n      {\"x\": 114, \"y\": 21},\r\n      {\"x\": 29, \"y\": 249},\r\n      {\"x\": 115, \"y\": 558},\r\n      {\"x\": 206, \"y\": 551},\r\n      {\"x\": 250, \"y\": 240},\r\n      {\"x\": 191, \"y\": 26}\r\n    ]\r\n  ]\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/pose",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"pose"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "目标检测  屏蔽框 检测框都没有",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://tse3-mm.cn.bing.net/th/id/OIP-C.jj0S2SMgCvagXdJV_eP3XwHaJK?rs=1&pid=ImgDetMain\",\r\n    \"threshold\": 0.5,\r\n    \"types\": \"0,1,2,3,4,5,6,7,8\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/detect",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"detect"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "实例分割 屏蔽框 检测框都没有",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://res.wmnetwork.cc/info/data/attachment/portal/202211/30/170800yk7cly75j30b5hk3.jpg\",\r\n    \"threshold\": 0.5,\r\n    \"types\": \"0,1,2,3,4,5,6,7,8\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/seg",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"seg"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "人脸检测 屏蔽框 检测框都没有",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://tse3-mm.cn.bing.net/th/id/OIP-C.jj0S2SMgCvagXdJV_eP3XwHaJK?rs=1&pid=ImgDetMain\",\r\n    \"threshold\": 0.8\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/detectFace",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"detectFace"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "姿态检测 屏蔽框 检测框都没有",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://tse3-mm.cn.bing.net/th/id/OIP-C.jj0S2SMgCvagXdJV_eP3XwHaJK?rs=1&pid=ImgDetMain\",\r\n    \"threshold\": 0.9,\r\n    \"types\": \"0,1,2,3,4,5,6,7,8\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/pose",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"pose"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "目标检测 没有检测框",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://tse3-mm.cn.bing.net/th/id/OIP-C.jj0S2SMgCvagXdJV_eP3XwHaJK?rs=1&pid=ImgDetMain\",\r\n    \"threshold\": 0.2,\r\n    \"types\": \"0,1,2,3,4,5,6,7,8\",\r\n    \"blockingFrames\": [\r\n        [\r\n        {\"x\": 114, \"y\": 21},\r\n        {\"x\": 29, \"y\": 249},\r\n        {\"x\": 115, \"y\": 558},\r\n        {\"x\": 206, \"y\": 551},\r\n        {\"x\": 250, \"y\": 240},\r\n        {\"x\": 191, \"y\": 26}\r\n        ]\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/detect",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"detect"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "人脸检测 没有检测框",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://tse3-mm.cn.bing.net/th/id/OIP-C.jj0S2SMgCvagXdJV_eP3XwHaJK?rs=1&pid=ImgDetMain\",\r\n    \"threshold\": 0.2,\r\n    \"types\": \"0,1,2,3,4,5,6,7,8\",\r\n    \"blockingFrames\": [\r\n        [\r\n        {\"x\": 114, \"y\": 21},\r\n        {\"x\": 29, \"y\": 249},\r\n        {\"x\": 115, \"y\": 558},\r\n        {\"x\": 206, \"y\": 551},\r\n        {\"x\": 250, \"y\": 240},\r\n        {\"x\": 191, \"y\": 26}\r\n        ]\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/detectFace",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"detectFace"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "姿态检测 没有检测框",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://tse3-mm.cn.bing.net/th/id/OIP-C.jj0S2SMgCvagXdJV_eP3XwHaJK?rs=1&pid=ImgDetMain\",\r\n    \"threshold\": 0.2,\r\n    \"types\": \"0,1,2,3,4,5,6,7,8\",\r\n    \"blockingFrames\": [\r\n        [\r\n        {\"x\": 114, \"y\": 21},\r\n        {\"x\": 29, \"y\": 249},\r\n        {\"x\": 115, \"y\": 558},\r\n        {\"x\": 206, \"y\": 551},\r\n        {\"x\": 250, \"y\": 240},\r\n        {\"x\": 191, \"y\": 26}\r\n        ]\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/pose",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"pose"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "目标检测 没有屏蔽框",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://tse3-mm.cn.bing.net/th/id/OIP-C.jj0S2SMgCvagXdJV_eP3XwHaJK?rs=1&pid=ImgDetMain\",\r\n    \"threshold\": 0.2,\r\n    \"types\": \"0,1,2,3,4,5,6,7,8\",\r\n    \"detectionFrames\": [\r\n    [\r\n      {\"x\": 114, \"y\": 21},\r\n      {\"x\": 29, \"y\": 249},\r\n      {\"x\": 115, \"y\": 558},\r\n      {\"x\": 206, \"y\": 551},\r\n      {\"x\": 250, \"y\": 240},\r\n      {\"x\": 191, \"y\": 26}\r\n    ],\r\n    [\r\n      {\"x\": 274, \"y\": 22},\r\n      {\"x\": 242, \"y\": 558},\r\n      {\"x\": 415, \"y\": 570},\r\n      {\"x\": 419, \"y\": 35}\r\n    ]\r\n  ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/detect",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"detect"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "人脸检测 没有屏蔽框",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://tse3-mm.cn.bing.net/th/id/OIP-C.jj0S2SMgCvagXdJV_eP3XwHaJK?rs=1&pid=ImgDetMain\",\r\n    \"threshold\": 0.2,\r\n    \"detectionFrames\": [\r\n    [\r\n      {\"x\": 114, \"y\": 21},\r\n      {\"x\": 29, \"y\": 249},\r\n      {\"x\": 115, \"y\": 558},\r\n      {\"x\": 206, \"y\": 551},\r\n      {\"x\": 250, \"y\": 240},\r\n      {\"x\": 191, \"y\": 26}\r\n    ],\r\n    [\r\n      {\"x\": 274, \"y\": 22},\r\n      {\"x\": 242, \"y\": 558},\r\n      {\"x\": 415, \"y\": 570},\r\n      {\"x\": 419, \"y\": 35}\r\n    ]\r\n  ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/detectFace",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"detectFace"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "姿态检测 没有屏蔽框",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://tse3-mm.cn.bing.net/th/id/OIP-C.jj0S2SMgCvagXdJV_eP3XwHaJK?rs=1&pid=ImgDetMain\",\r\n    \"threshold\": 0.2,\r\n    \"types\": \"0,1,2,3,4,5,6,7,8\",\r\n    \"detectionFrames\": [\r\n    [\r\n      {\"x\": 114, \"y\": 21},\r\n      {\"x\": 29, \"y\": 249},\r\n      {\"x\": 115, \"y\": 558},\r\n      {\"x\": 206, \"y\": 551},\r\n      {\"x\": 250, \"y\": 240},\r\n      {\"x\": 191, \"y\": 26}\r\n    ],\r\n    [\r\n      {\"x\": 274, \"y\": 22},\r\n      {\"x\": 242, \"y\": 558},\r\n      {\"x\": 415, \"y\": 570},\r\n      {\"x\": 419, \"y\": 35}\r\n    ]\r\n  ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/pose",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"pose"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "人体检测 返回图片",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"http://x0.ifengimg.com/ucms/2023_18/DF00DC2C71568AE991FBD20CF7E08EA0B082A8F6_size178_w975_h549.jpg\",\r\n    \"threshold\": 0.001\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/detectI",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"detectI"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "人脸检测 返回图片",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://ts1.tc.mm.bing.net/th/id/R-C.7b5674a67e2959ac66023b8df4755abc?rik=5PD5c3L0e6PKdQ&riu=http%3a%2f%2fn.sinaimg.cn%2fsinacn%2fw1600h1090%2f20180124%2fd0df-fyqwiqk1093979.jpg&ehk=WApP6Oc2kbyYiSzGlA2TKTiBC56q93Ixss%2bWwqfq8MU%3d&risl=&pid=ImgRaw&r=0\"\r\n   \r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/detectFaceI",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"detectFaceI"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "姿态检测 返回图片",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://ts1.tc.mm.bing.net/th/id/R-C.7b5674a67e2959ac66023b8df4755abc?rik=5PD5c3L0e6PKdQ&riu=http%3a%2f%2fn.sinaimg.cn%2fsinacn%2fw1600h1090%2f20180124%2fd0df-fyqwiqk1093979.jpg&ehk=WApP6Oc2kbyYiSzGlA2TKTiBC56q93Ixss%2bWwqfq8MU%3d&risl=&pid=ImgRaw&r=0\",\r\n    \"threshold\": 0.1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/poseI",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"poseI"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "实例分割 返回图片",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"http://x0.ifengimg.com/ucms/2023_18/DF00DC2C71568AE991FBD20CF7E08EA0B082A8F6_size178_w975_h549.jpg\",\r\n    \"threshold\": 0.001\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/segI",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"segI"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "开放性检测",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://gemjia-file.oss-cn-shenzhen.aliyuncs.com/website/upfile/newadmin/65/20201228/1d93b96c20ffe5592129545bf61b288e.jpg\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/sam",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"sam"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "开放性检测 返回图片",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://ts1.tc.mm.bing.net/th/id/R-C.7b5674a67e2959ac66023b8df4755abc?rik=5PD5c3L0e6PKdQ&riu=http%3a%2f%2fn.sinaimg.cn%2fsinacn%2fw1600h1090%2f20180124%2fd0df-fyqwiqk1093979.jpg&ehk=WApP6Oc2kbyYiSzGlA2TKTiBC56q93Ixss%2bWwqfq8MU%3d&risl=&pid=ImgRaw&r=0\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17001/vision-mind-yolo/api/v1/img/samI",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17001",
+							"path": [
+								"vision-mind-yolo",
+								"api",
+								"v1",
+								"img",
+								"samI"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "vision-mind-ffe",
+			"item": [
+				{
+					"name": "计算人脸向量",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://i-blog.csdnimg.cn/blog_migrate/fffbc7ed83f3d041b3fed756e25a92d0.jpeg\",\r\n    \"groupId\":\"1\",\r\n    \"faceScoreThreshold\":0.4\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17002/vision-mind-ffe/api/v1/face/computeFaceVector",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17002",
+							"path": [
+								"vision-mind-ffe",
+								"api",
+								"v1",
+								"face",
+								"computeFaceVector"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "保存人脸向量",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://i-blog.csdnimg.cn/blog_migrate/fffbc7ed83f3d041b3fed756e25a92d0.jpeg\",\r\n    \"groupId\": \"1\",\r\n    \"id\": \"227ae5f4-1111-4309-b2db-27881387211e\",\r\n    \"embeds\": [\r\n        0.686235,\r\n        -0.304412,\r\n        0.42398298,\r\n        -0.043658182,\r\n        -0.02418043,\r\n        0.88906795,\r\n        -0.051385045,\r\n        0.082086615,\r\n        0.7774865,\r\n        -0.9375905,\r\n        -5.701538E-4,\r\n        0.39526147,\r\n        0.36251348,\r\n        0.4646668,\r\n        0.68621784,\r\n        -0.49811956,\r\n        0.44035745,\r\n        -0.32036838,\r\n        0.33837637,\r\n        0.5647446,\r\n        -1.0773828,\r\n        -0.12641189,\r\n        0.7630007,\r\n        0.16997322,\r\n        0.13475014,\r\n        0.4015035,\r\n        0.29405072,\r\n        -0.16257058,\r\n        -0.9820249,\r\n        -0.20681131,\r\n        -0.64534557,\r\n        0.06224249,\r\n        -0.8097732,\r\n        -0.015500188,\r\n        -0.41324118,\r\n        -0.5178356,\r\n        -0.024660073,\r\n        -0.20436455,\r\n        0.3135229,\r\n        0.048092898,\r\n        -0.35803974,\r\n        -0.12157443,\r\n        -0.6861899,\r\n        -0.72240365,\r\n        -0.32505715,\r\n        -0.10182579,\r\n        -0.06530896,\r\n        0.10306563,\r\n        0.20557517,\r\n        -0.20345336,\r\n        0.7529345,\r\n        0.40289387,\r\n        0.3636083,\r\n        0.81799614,\r\n        -0.73128915,\r\n        -0.1834709,\r\n        0.09432556,\r\n        -0.8211487,\r\n        0.8966082,\r\n        0.90020543,\r\n        1.3446727,\r\n        0.28060603,\r\n        0.2769177,\r\n        0.51455873,\r\n        -0.15053624,\r\n        0.0814952,\r\n        -0.5302119,\r\n        0.18274891,\r\n        0.067528695,\r\n        -0.022764212,\r\n        -0.28589988,\r\n        -0.26366204,\r\n        0.31183058,\r\n        -0.93122935,\r\n        -0.86106765,\r\n        -1.4162025,\r\n        0.18213482,\r\n        -0.27019614,\r\n        0.30768245,\r\n        -0.8358575,\r\n        -0.6395507,\r\n        0.48297447,\r\n        0.119990766,\r\n        -0.77429736,\r\n        0.53674173,\r\n        0.31567028,\r\n        0.65715325,\r\n        -0.9112186,\r\n        -0.33017984,\r\n        -0.50775355,\r\n        0.03173232,\r\n        0.19460538,\r\n        0.18429935,\r\n        -0.38281983,\r\n        0.124425635,\r\n        0.3838658,\r\n        -0.53567874,\r\n        0.5934406,\r\n        -1.1410491,\r\n        -0.6018323,\r\n        -0.2108181,\r\n        0.70673597,\r\n        0.70236814,\r\n        0.6475957,\r\n        0.3404484,\r\n        -0.5272831,\r\n        -1.4390048,\r\n        -0.21624643,\r\n        -0.5466852,\r\n        0.6336969,\r\n        0.4897882,\r\n        -0.11975125,\r\n        -0.4684624,\r\n        0.20936184,\r\n        -0.65056115,\r\n        0.2565372,\r\n        0.34498644,\r\n        0.07126437,\r\n        1.5163137,\r\n        -0.0075237155,\r\n        0.28720817,\r\n        -0.12051375,\r\n        0.36716294,\r\n        0.37722474,\r\n        -0.13361019,\r\n        -0.030089598,\r\n        -0.61665094,\r\n        -0.9707209,\r\n        -0.018810406,\r\n        -0.25871843,\r\n        0.45206693,\r\n        -0.9085616,\r\n        0.91897595,\r\n        -0.82902896,\r\n        -0.5419429,\r\n        -0.06403789,\r\n        0.47154084,\r\n        -0.122905664,\r\n        0.7338933,\r\n        -0.08616093,\r\n        -0.21089956,\r\n        0.779563,\r\n        -0.5453144,\r\n        -0.67243207,\r\n        0.42397642,\r\n        0.11980307,\r\n        -0.59644103,\r\n        -0.5388745,\r\n        -0.22850895,\r\n        -0.605048,\r\n        0.6270555,\r\n        -0.7423203,\r\n        0.29772192,\r\n        0.5782955,\r\n        -0.21254957,\r\n        -0.15649007,\r\n        -0.17624532,\r\n        -0.8863636,\r\n        -0.21438593,\r\n        -0.65819126,\r\n        -0.3477405,\r\n        0.14404646,\r\n        0.18008476,\r\n        -0.816923,\r\n        -0.61183655,\r\n        0.8736547,\r\n        0.51179826,\r\n        -0.44345325,\r\n        0.46962062,\r\n        0.42235473,\r\n        -0.93105024,\r\n        -0.48665315,\r\n        -0.18305245,\r\n        0.6373037,\r\n        0.32322723,\r\n        1.6816369,\r\n        0.769061,\r\n        -0.65803033,\r\n        0.41304028,\r\n        -0.528345,\r\n        0.33286658,\r\n        -0.113893285,\r\n        -0.25997338,\r\n        -0.25654733,\r\n        -0.07325958,\r\n        1.2063015,\r\n        0.086218864,\r\n        0.34778038,\r\n        -0.3765772,\r\n        0.38760832,\r\n        -0.20435151,\r\n        -0.15664937,\r\n        0.7880592,\r\n        -0.702035,\r\n        0.41937914,\r\n        0.5777073,\r\n        -0.41208506,\r\n        0.5336785,\r\n        0.5916884,\r\n        0.21090192,\r\n        0.62434757,\r\n        0.13256276,\r\n        -0.5916554,\r\n        -0.66436446,\r\n        0.86459225,\r\n        0.8637716,\r\n        0.30029908,\r\n        -1.0810767,\r\n        0.41919154,\r\n        -0.70029,\r\n        -1.0124309,\r\n        -0.4195991,\r\n        -0.5109002,\r\n        0.5652391,\r\n        -0.28794956,\r\n        -0.74065053,\r\n        -0.10751017,\r\n        -0.37272426,\r\n        0.35815537,\r\n        0.05694749,\r\n        0.37997878,\r\n        -0.16062428,\r\n        -0.4301295,\r\n        -0.45203963,\r\n        -0.6260638,\r\n        0.15509401,\r\n        0.1515874,\r\n        0.012513906,\r\n        0.8258355,\r\n        -0.37136355,\r\n        -0.2364493,\r\n        -0.5091356,\r\n        0.880169,\r\n        0.2611378,\r\n        -0.4068701,\r\n        -0.8687063,\r\n        -0.7250759,\r\n        -0.75473094,\r\n        -0.54485947,\r\n        -0.119801685,\r\n        -0.19553518,\r\n        0.08516132,\r\n        0.06422942,\r\n        0.7810456,\r\n        -0.82606107,\r\n        0.50479466,\r\n        0.13368824,\r\n        0.25800443,\r\n        -0.13538629,\r\n        -0.8778205,\r\n        -0.7251572,\r\n        -0.18166213,\r\n        0.88578063,\r\n        -0.2540202,\r\n        0.4809011,\r\n        0.36398816,\r\n        0.81055003,\r\n        -0.16521394,\r\n        0.20725971,\r\n        -0.20618063,\r\n        -0.19894898,\r\n        0.20979165,\r\n        -0.42530984,\r\n        -1.5034163,\r\n        0.6453366,\r\n        -0.35325742,\r\n        -0.2525412,\r\n        0.2198264,\r\n        -0.015000538,\r\n        -0.17119506,\r\n        0.61188406,\r\n        0.34020162,\r\n        0.9890809,\r\n        0.6087911,\r\n        0.67643654,\r\n        0.76525354,\r\n        0.15815386,\r\n        -0.7624495,\r\n        -0.5641483,\r\n        0.66754633,\r\n        -0.2700863,\r\n        1.0954527,\r\n        0.18673247,\r\n        0.29414672,\r\n        0.40996546,\r\n        -0.071852595,\r\n        -0.59981054,\r\n        -0.22280458,\r\n        0.8753617,\r\n        -0.9551256,\r\n        0.26336902,\r\n        0.8093059,\r\n        0.14260815,\r\n        0.17877725,\r\n        -0.0047487468,\r\n        -0.2543093,\r\n        -0.084167756,\r\n        0.1651961,\r\n        0.2549578,\r\n        -0.937554,\r\n        -0.29393923,\r\n        -0.2854636,\r\n        -0.0758594,\r\n        0.562786,\r\n        -1.0202503,\r\n        -1.2664175,\r\n        0.1453883,\r\n        0.8886097,\r\n        0.85149795,\r\n        0.17570549,\r\n        0.52109414,\r\n        -0.5475027,\r\n        0.31631577,\r\n        0.7270777,\r\n        0.5899498,\r\n        0.3897943,\r\n        -0.9244306,\r\n        0.6789956,\r\n        0.52358747,\r\n        1.4115598,\r\n        0.7699948,\r\n        -0.28139576,\r\n        0.59057724,\r\n        0.47637773,\r\n        0.018140167,\r\n        0.061827913,\r\n        -1.0538813,\r\n        -0.34208623,\r\n        0.49836722,\r\n        0.4204812,\r\n        -0.12459245,\r\n        0.0061043836,\r\n        -1.1268717,\r\n        0.089673154,\r\n        0.52406114,\r\n        -0.119359575,\r\n        -3.6565214E-4,\r\n        -0.13850948,\r\n        0.5189394,\r\n        8.4276404E-4,\r\n        -0.67727166,\r\n        -0.07701352,\r\n        1.0411116,\r\n        -0.089463905,\r\n        0.8595678,\r\n        -0.09385696,\r\n        0.25809008,\r\n        0.14822096,\r\n        0.6829119,\r\n        0.88879776,\r\n        -0.36270526,\r\n        0.09316192,\r\n        -0.01585798,\r\n        -1.4869652,\r\n        -0.36799216,\r\n        0.16484395,\r\n        -1.4922628,\r\n        -0.275213,\r\n        -0.058378424,\r\n        0.3139777,\r\n        0.2816008,\r\n        -0.36501896,\r\n        0.37611577,\r\n        -0.34857783,\r\n        0.057554923,\r\n        -1.1453334,\r\n        0.8809236,\r\n        -0.44952857,\r\n        0.45128852,\r\n        -0.031647716,\r\n        -0.5335872,\r\n        -0.17027716,\r\n        0.2519079,\r\n        -0.6174555,\r\n        1.0518832,\r\n        0.5666901,\r\n        -0.14094079,\r\n        -0.13559088,\r\n        -0.6964712,\r\n        -0.54092175,\r\n        0.08540177,\r\n        -0.8870751,\r\n        0.15769729,\r\n        -0.0039927587,\r\n        -0.4969424,\r\n        0.38669282,\r\n        0.27986488,\r\n        0.23720507,\r\n        0.4596423,\r\n        -1.0420344,\r\n        -1.008813,\r\n        0.33132523,\r\n        -0.14935958,\r\n        0.01228182,\r\n        -0.53098094,\r\n        0.4475382,\r\n        -0.6079256,\r\n        0.353484,\r\n        -0.0026733577,\r\n        0.5223092,\r\n        0.3903329,\r\n        0.4239014,\r\n        0.43832788,\r\n        0.29349783,\r\n        -0.39758486,\r\n        0.9307264,\r\n        -0.3224317,\r\n        1.1578994,\r\n        -0.273634,\r\n        -0.006047465,\r\n        0.13265516,\r\n        -0.4595093,\r\n        0.18839881,\r\n        -0.76324075,\r\n        -0.63537955,\r\n        -0.34039024,\r\n        -0.71504366,\r\n        0.90437555,\r\n        -0.41441914,\r\n        -0.15438977,\r\n        0.48617017,\r\n        -0.96817803,\r\n        -0.018467605,\r\n        -0.77935547,\r\n        -0.35054386,\r\n        -0.5132786,\r\n        -0.26229486,\r\n        0.24067381,\r\n        -0.055011448,\r\n        0.2267603,\r\n        -0.46609256,\r\n        -0.08829583,\r\n        0.117754325,\r\n        -0.68940294,\r\n        0.024731725,\r\n        -0.024173051,\r\n        0.61544055,\r\n        0.8490001,\r\n        0.2521693,\r\n        0.062148288,\r\n        -0.28543735,\r\n        0.18977045,\r\n        0.49753743,\r\n        0.020742714,\r\n        0.09440979,\r\n        -0.15009338,\r\n        0.5113105,\r\n        0.012041155,\r\n        0.677581,\r\n        -0.7560131,\r\n        0.37405658,\r\n        1.1225407,\r\n        -0.49860454,\r\n        -0.15910996,\r\n        0.18604057,\r\n        0.33763307,\r\n        -0.3836063,\r\n        1.3985813,\r\n        -0.40285364,\r\n        0.13123931,\r\n        -0.23174663,\r\n        0.33784735,\r\n        0.11922755,\r\n        0.28480527,\r\n        0.08700472,\r\n        0.26664016,\r\n        -0.10474133,\r\n        -1.1495547,\r\n        0.116361134,\r\n        0.24625245,\r\n        0.28015122,\r\n        -0.26469952,\r\n        0.102164954,\r\n        1.061424,\r\n        0.16708723,\r\n        1.7671292,\r\n        -0.70501876,\r\n        1.1236115,\r\n        0.06757967,\r\n        -0.5039556,\r\n        0.30353993,\r\n        -1.0627108,\r\n        0.18310425,\r\n        -0.7688736,\r\n        -0.2313605,\r\n        -0.5926684,\r\n        -0.53762805,\r\n        1.0498421,\r\n        -0.83643377,\r\n        -0.68289775,\r\n        -0.41777983,\r\n        -1.3726977,\r\n        -0.24900849,\r\n        0.11529257,\r\n        0.28638327,\r\n        0.16810296,\r\n        0.65292954,\r\n        -0.2894225,\r\n        0.46658087,\r\n        0.5687353,\r\n        0.23822966,\r\n        0.6076771,\r\n        -0.7265805,\r\n        -0.46574584,\r\n        0.03145896,\r\n        -0.22956884,\r\n        -0.47401607,\r\n        -0.50652415,\r\n        -0.39542627,\r\n        0.27935237,\r\n        -0.6902134,\r\n        0.25993276\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17002/vision-mind-ffe/api/v1/face/saveFaceVector",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17002",
+							"path": [
+								"vision-mind-ffe",
+								"api",
+								"v1",
+								"face",
+								"saveFaceVector"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "计算并添加人脸",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://i-blog.csdnimg.cn/blog_migrate/fffbc7ed83f3d041b3fed756e25a92d0.jpeg\",\r\n    \"groupId\":\"1\",\r\n    \"faceScoreThreshold\":0.4\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17002/vision-mind-ffe/api/v1/face/computeAndSaveFaceVector",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17002",
+							"path": [
+								"vision-mind-ffe",
+								"api",
+								"v1",
+								"face",
+								"computeAndSaveFaceVector"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "删除人脸",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"id\": \"59e8012a-ab3e-4de8-8306-c819dcfa36e6\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17002/vision-mind-ffe/api/v1/face/deleteFace",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17002",
+							"path": [
+								"vision-mind-ffe",
+								"api",
+								"v1",
+								"face",
+								"deleteFace"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "搜索人脸",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://tse1-mm.cn.bing.net/th/id/OIP-C.E_rm9Omb3gnmxxpVc5g1ZAHaHT?rs=1&pid=ImgDetMain\",\r\n    \"groupId\":\"1\",\r\n    \"confidenceThreshold\":0.1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17002/vision-mind-ffe/api/v1/face/findMostSimilarFace",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17002",
+							"path": [
+								"vision-mind-ffe",
+								"api",
+								"v1",
+								"face",
+								"findMostSimilarFace"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "搜索人脸 返回人脸",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://tse1-mm.cn.bing.net/th/id/OIP-C.E_rm9Omb3gnmxxpVc5g1ZAHaHT?rs=1&pid=ImgDetMain\",\r\n    \"groupId\":\"1\",\r\n    \"confidenceThreshold\":0.1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17002/vision-mind-ffe/api/v1/face/findMostSimilarFaceI",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17002",
+							"path": [
+								"vision-mind-ffe",
+								"api",
+								"v1",
+								"face",
+								"findMostSimilarFaceI"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "比较人脸",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://tse3-mm.cn.bing.net/th/id/OIP-C.ZN60NY-uA-jOQfTVOufqtQAAAA?rs=1&pid=ImgDetMain\",\r\n    \"imgUrl2\": \"https://tse3-mm.cn.bing.net/th/id/OIP-C.ZN60NY-uA-jOQfTVOufqtQAAAA?rs=1&pid=ImgDetMain\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17002/vision-mind-ffe/api/v1/face/calculateSimilarity",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17002",
+							"path": [
+								"vision-mind-ffe",
+								"api",
+								"v1",
+								"face",
+								"calculateSimilarity"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "搜索增加人脸",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://tse3-mm.cn.bing.net/th/id/OIP-C.ZN60NY-uA-jOQfTVOufqtQAAAA?rs=1&pid=ImgDetMain\",\r\n    \"groupId\":\"1\",\r\n    \"confidenceThreshold\":0.55\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17002/vision-mind-ffe/api/v1/face/findSave",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17002",
+							"path": [
+								"vision-mind-ffe",
+								"api",
+								"v1",
+								"face",
+								"findSave"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "vision-mind-trir",
+			"item": [
+				{
+					"name": "存图",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://i-blog.csdnimg.cn/blog_migrate/fffbc7ed83f3d041b3fed756e25a92d0.jpeg\",\r\n    \"groupId\": \"1\",\r\n    \"threshold\": 0.5,\r\n    \"cameraId\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17003/vision-mind-tbir/api/v1/tbir/saveImg",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17003",
+							"path": [
+								"vision-mind-tbir",
+								"api",
+								"v1",
+								"tbir",
+								"saveImg"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "搜图",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"query\": \"人\",\r\n    \"groupId\":\"1\",\r\n    \"threshold\":0.1,\r\n    \"topN\":10\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17003/vision-mind-tbir/api/v1/tbir/search",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17003",
+							"path": [
+								"vision-mind-tbir",
+								"api",
+								"v1",
+								"tbir",
+								"search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ID 搜图",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imageId\": \"e96292b8-27b1-456e-a4d0-cd53b306d38e\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17003/vision-mind-tbir/api/v1/tbir/searchImg",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17003",
+							"path": [
+								"vision-mind-tbir",
+								"api",
+								"v1",
+								"tbir",
+								"searchImg"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "搜图 返回图片",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"query\": \"人\",\r\n    \"groupId\":\"1\",\r\n    \"threshold\":0.1,\r\n    \"topN\":10\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17003/vision-mind-tbir/api/v1/tbir/search",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17003",
+							"path": [
+								"vision-mind-tbir",
+								"api",
+								"v1",
+								"tbir",
+								"search"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "图搜图",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "image",
+									"type": "file",
+									"src": "/C:/Users/yuqiang2/Pictures/test.jpeg"
+								},
+								{
+									"key": "topN",
+									"value": "2",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17003/vision-mind-tbir/api/v1/tbir/imgSearch",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17003",
+							"path": [
+								"vision-mind-tbir",
+								"api",
+								"v1",
+								"tbir",
+								"imgSearch"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "删图",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imageId\": \"d53d5842-8dd4-4771-bfdb-e4afbe438743\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17003/vision-mind-tbir/api/v1/tbir/deleteImg",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17003",
+							"path": [
+								"vision-mind-tbir",
+								"api",
+								"v1",
+								"tbir",
+								"deleteImg"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "vision-mind-reid",
+			"item": [
+				{
+					"name": "计算单图单人向量",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"http://10.19.169.39:10006/1.jpg\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17004/tbirIndex-reid/api/v1/reid/feature/single",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17004",
+							"path": [
+								"tbirIndex-reid",
+								"api",
+								"v1",
+								"reid",
+								"feature",
+								"single"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "存储单图单人向量",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"http://10.19.169.39:10006/1.jpg\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17004/tbirIndex-reid/api/v1/reid/store/single",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17004",
+							"path": [
+								"tbirIndex-reid",
+								"api",
+								"v1",
+								"reid",
+								"store",
+								"single"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "单封面聚类",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"http://10.19.169.39:10006/18.jpg\",\r\n    \"threshold\" : 0.5\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17004/tbirIndex-reid/api/v1/reid/searchOrStore",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17004",
+							"path": [
+								"tbirIndex-reid",
+								"api",
+								"v1",
+								"reid",
+								"searchOrStore"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "多封面聚类",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"http://10.19.169.39:10006/222.jpg\",\r\n    \"threshold\" : 0.75\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17004/tbirIndex-reid/api/v1/reid/associateStore",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17004",
+							"path": [
+								"tbirIndex-reid",
+								"api",
+								"v1",
+								"reid",
+								"associateStore"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "比较图片",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl1\": \"http://10.19.169.39:10006/15.jpg\",\r\n    \"imgUrl2\": \"http://10.19.169.39:10006/26.jpg\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17004/tbirIndex-reid/api/v1/reid/feature/calculateSimilarity",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17004",
+							"path": [
+								"tbirIndex-reid",
+								"api",
+								"v1",
+								"reid",
+								"feature",
+								"calculateSimilarity"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "计算单图多人向量",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.test(\"Code is 0\", function () {\r",
+									"    var jsonData = pm.response.json(); // 将响应体解析为JSON格式\r",
+									"    pm.expect(jsonData.code).to.eql(\"0\"); // 检查code字段是否为\"0\"\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"imgUrl\": \"https://tse1-mm.cn.bing.net/th/id/OIP-C.LFeKPVmzCn8aHznFByPwVgHaE7?rs=1&pid=ImgDetMain\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:17004/vision-mind-reid/api/v1/reid/feature/multi",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "17004",
+							"path": [
+								"vision-mind-reid",
+								"api",
+								"v1",
+								"reid",
+								"feature",
+								"multi"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "vision-mind-llm",
+			"item": []
+		}
+	]
+}

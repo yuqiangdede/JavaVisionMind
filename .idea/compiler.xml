@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="vision-mind-common" />
+        <module name="vision-mind-yolo-app" />
+        <module name="vision-mind-ffe-app" />
+        <module name="vision-mind-llm-core" />
+        <module name="vision-mind-tbir-app" />
+        <module name="vision-mind-test-sth" />
+        <module name="vision-mind-yolo-core" />
+        <module name="vision-mind-reid-app" />
+      </profile>
+    </annotationProcessing>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="java-vision-mind" options="-parameters" />
+      <module name="vision-mind-common" options="-parameters" />
+      <module name="vision-mind-ffe-app" options="-parameters" />
+      <module name="vision-mind-llm-core" options="-parameters" />
+      <module name="vision-mind-reid-app" options="-parameters" />
+      <module name="vision-mind-tbir-app" options="-parameters" />
+      <module name="vision-mind-test-sth" options="-parameters" />
+      <module name="vision-mind-yolo-app" options="-parameters" />
+      <module name="vision-mind-yolo-core" options="-parameters" />
+    </option>
+  </component>
+</project>

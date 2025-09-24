@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>人脸封面展示</title>
+    <style>
+        .container {
+            display: flex;
+            overflow-x: auto;
+            padding: 20px;
+            gap: 20px;
+            min-height: 100vh;
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+            min-width: 200px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .cover-img {
+            border: 2px solid #2196F3;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .cover-id {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            background: rgba(33, 150, 243, 0.8);
+            color: white;
+            padding: 2px 5px;
+            font-size: 12px;
+        }
+        .thumbnail-container {
+            position: relative;
+            margin: 5px 0;
+        }
+        .thumbnail {
+            width: 180px;
+            height: 240px;
+            object-fit: cover;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .similarity {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(76, 175, 80, 0.8);
+            color: white;
+            padding: 2px 5px;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+        .loading {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            background: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .cover-img .thumbnail {
+            border-color: #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="container"></div>
+    <div class="loading">正在加载：<span id="currentNum">0</span>/750</div>
+
+    <script>
+        async function processImages() {
+            const container = document.getElementById('container');
+            
+            for(let i = 1; i <= 750; i++) {
+                document.getElementById('currentNum').textContent = i;
+                
+                try {
+                    const response = await fetch('http://127.0.0.1:8286/cscs-face/api/v1/face/searchAdd', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            imgUrl: `http://10.19.169.35:8082/GeoData_mbs/photo/${i}.jpg`,
+                            groupId: "1",
+                            confidenceThreshold: 0.5
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if(result.data.searchList.length > 0) {
+                        // 找到现有封面列
+                        const coverId = result.data.searchList[0].id;
+                        const confidence = result.data.searchList[0].confidence;
+                        const targetColumn = [...document.querySelectorAll('.column')]
+                            .find(col => col.dataset.coverId === coverId);
+                        
+                        if(targetColumn) {
+                            const imgList = targetColumn.querySelector('.image-list');
+                            appendImage(imgList, i, confidence);
+                        }
+                    } else {
+                        // 创建新列
+                        const newColumn = document.createElement('div');
+                        newColumn.className = 'column';
+                        newColumn.dataset.coverId = result.data.addList[0].id;
+                        
+                        // 创建封面区域
+                        const coverDiv = document.createElement('div');
+                        coverDiv.className = 'cover-img';
+                        coverDiv.innerHTML = `
+                            <div class="cover-id">封面 ${result.data.addList[0].id.slice(0,6)}</div>
+                            ${createImageHTML(i)}
+                        `;
+                        
+                        // 创建图片列表容器
+                        const imgList = document.createElement('div');
+                        imgList.className = 'image-list';
+                        
+                        newColumn.appendChild(coverDiv);
+                        newColumn.appendChild(imgList);
+                        container.appendChild(newColumn);
+                    }
+                } catch (error) {
+                    console.error(`处理图片 ${i}.jpg 时出错:`, error);
+                }
+            }
+        }
+
+        function appendImage(container, num, confidence) {
+            container.insertAdjacentHTML('beforeend', createImageHTML(num, confidence));
+        }
+
+        function createImageHTML(num, confidence) {
+            const similarityTag = confidence !== undefined ? 
+                `<div class="similarity">${(confidence * 100).toFixed(1)}%</div>` : '';
+            
+            return `
+                <div class="thumbnail-container">
+                    ${similarityTag}
+                    <img src="http://10.19.169.35:8082/GeoData_mbs/photo/${num}.jpg" 
+                         class="thumbnail" 
+                         onclick="showLargeImage('http://10.19.169.35:8082/GeoData_mbs/photo/${num}.jpg')">
+                </div>
+            `;
+        }
+
+        function showLargeImage(url) {
+            window.open(url, '_blank');
+        }
+
+        // 开始处理图片
+        processImages();
+    </script>
+</body>
+</html>
