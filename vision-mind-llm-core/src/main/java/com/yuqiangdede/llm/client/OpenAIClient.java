@@ -2,15 +2,27 @@ package com.yuqiangdede.llm.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.yuqiangdede.llm.client.support.HttpJsonClient;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.*;
-import java.net.HttpURLConnection;
+import java.io.IOException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
-public class OpenAIClient {
+public final class OpenAIClient {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final String HEADER_AUTHORIZATION = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
+
+    private OpenAIClient() {
+        throw new UnsupportedOperationException("Utility class");
+    }
 
 
     /**
@@ -22,54 +34,45 @@ public class OpenAIClient {
      * @param prompt        用户输入的提示词
      */
     public static String chat(String openaiBaseUrl, String openaiKey, String openaiModel, String prompt) throws IOException {
+        Objects.requireNonNull(openaiBaseUrl, "openaiBaseUrl");
+        Objects.requireNonNull(openaiKey, "openaiKey");
+        Objects.requireNonNull(openaiModel, "openaiModel");
+        Objects.requireNonNull(prompt, "prompt");
+
         String responseJson = sendPrompt(openaiBaseUrl, openaiKey, openaiModel, prompt);
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode root = mapper.readTree(responseJson);
-        String content = root.get("choices").get(0).get("message").get("content").asText();
-        return content.trim();
+        JsonNode root = MAPPER.readTree(responseJson);
+
+        JsonNode contentNode = root.path("choices").path(0).path("message").path("content");
+        if (contentNode.isMissingNode() || contentNode.isNull()) {
+            throw new IOException("OpenAI 响应中缺少 message.content 字段");
+        }
+        return contentNode.asText().trim();
     }
 
-    public static String sendPrompt(String openaiBaseUrl, String openaiKey, String openaiModel, String prompt) throws IOException {
-        URL url = new URL(openaiBaseUrl);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    private static String sendPrompt(String openaiBaseUrl, String openaiKey, String openaiModel, String prompt) throws IOException {
+        ObjectNode body = MAPPER.createObjectNode();
+        body.put("model", openaiModel);
 
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("Content-Type", "application/json");
-        conn.setRequestProperty("Authorization", "Bearer " + openaiKey);
-        conn.setDoOutput(true);
+        ArrayNode messages = body.putArray("messages");
+        ObjectNode messageNode = messages.addObject();
+        messageNode.put("role", "user");
+        messageNode.put("content", prompt);
 
-        // 构建请求体：仅传入单轮对话的 user 内容，避免提示词中的引号影响 JSON
-        String body = String.format(
-                "{\n" +
-                        "  \"model\": \"%s\",\n" +
-                        "  \"messages\": [\n" +
-                        "    {\"role\": \"user\", \"content\": \"%s\"}\n" +
-                        "  ]\n" +
-                        "}", openaiModel, prompt.replace("\"", "\\\"")
-        );
 
-        log.debug("OpenAIClient POST to: {}", openaiBaseUrl);
+        Map<String, String> headers = Collections.singletonMap(HEADER_AUTHORIZATION, BEARER_PREFIX + openaiKey);
+
+
+        String normalizedUrl = openaiBaseUrl.trim();
+
+
+        log.debug("OpenAIClient POST to: {}", normalizedUrl);
         log.debug("OpenAIClient Body: {}", body);
 
-        // 发送请求体
-        try (OutputStream os = conn.getOutputStream()) {
-            byte[] input = body.getBytes(StandardCharsets.UTF_8);
-            os.write(input, 0, input.length);
-        }
+        URL url = new URL(normalizedUrl);
+        String response = HttpJsonClient.post(url, headers, body);
 
-        // 读取返回：接口以 JSON 字符串返回，逐行拼接避免遗漏换行符号
-        try (BufferedReader br = new BufferedReader(
-                new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
 
-            StringBuilder response = new StringBuilder();
-            String line;
-            while ((line = br.readLine()) != null) {
-                log.debug("OpenAIClient Response: {}", line);
-                response.append(line.trim());
-            }
-            return response.toString();
-        }
+        log.debug("OpenAIClient Response: {}", response);
+        return response;
     }
-
-
 }

@@ -5,6 +5,7 @@ import com.yuqiangdede.llm.client.OpenAIClient;
 import com.yuqiangdede.llm.config.Config;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 
@@ -18,22 +19,26 @@ public class LLMService {
         this.config = config;
     }
 
-    private boolean isNotBlank(String value) {
-        return value != null && !value.trim().isEmpty();
-    }
-
     public String chat(String message) throws IOException {
+
+        if (!StringUtils.hasText(message)) {
+            throw new IllegalArgumentException("对话内容不能为空");
+        }
+
         // 聊天流程遵循“优先外部云端、其次本地”原则：
         // 1. 只要配置了 OpenAI 的地址、密钥和模型，就调用云端服务。
-        if (isNotBlank(config.getOpenaiBaseUrl()) &&
-                isNotBlank(config.getOpenaiKey()) &&
-                isNotBlank(config.getOpenaiModel())) {
+        if (isConfigured(config.getOpenaiBaseUrl()) &&
+                isConfigured(config.getOpenaiKey()) &&
+                isConfigured(config.getOpenaiModel())) {
+
             return OpenAIClient.chat(config.getOpenaiBaseUrl(), config.getOpenaiKey(), config.getOpenaiModel(), message);
         }
 
         // 2. 未配置 OpenAI 时回退到 Ollama，本地推理无需 API Key。
-        if (isNotBlank(config.getOllamaBaseUrl()) &&
-                isNotBlank(config.getOllamaModel())) {
+
+        if (isConfigured(config.getOllamaBaseUrl()) &&
+                isConfigured(config.getOllamaModel())) {
+
             return OllamaClient.chat(config.getOllamaBaseUrl(), config.getOllamaModel(), message);
         }
 
@@ -44,5 +49,9 @@ public class LLMService {
     public String chatWithImg(String message, String img) {
         // TODO: 预留图文多模态调用能力，后续接入具备图像理解能力的模型再补充实现。
         return null;
+    }
+
+    private boolean isConfigured(String value) {
+        return StringUtils.hasText(value);
     }
 }
