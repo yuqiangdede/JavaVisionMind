@@ -19,6 +19,7 @@ public final class OllamaClient {
     private static final String RESPONSE_FIELD = "response";
     private static final String GENERATE_PATH = "/api/generate";
 
+
     private OllamaClient() {
         throw new UnsupportedOperationException("Utility class");
     }
@@ -40,16 +41,17 @@ public final class OllamaClient {
         JsonNode responseNode = root.get(RESPONSE_FIELD);
         if (responseNode == null || responseNode.isNull()) {
             throw new IOException("Ollama 响应中缺少 response 字段");
+
         }
         return responseNode.asText().trim();
     }
+
 
     private static String sendPrompt(String ollamaBaseUrl, String ollamaModel, String prompt) throws IOException {
         ObjectNode body = MAPPER.createObjectNode();
         body.put("model", ollamaModel);
         body.put("prompt", prompt);
         body.put("stream", false);
-
         URL url = new URL(normalizeBaseUrl(ollamaBaseUrl) + GENERATE_PATH);
         return HttpJsonClient.post(url, Collections.emptyMap(), body);
     }

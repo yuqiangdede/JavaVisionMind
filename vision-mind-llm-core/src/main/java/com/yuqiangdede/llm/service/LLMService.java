@@ -20,6 +20,7 @@ public class LLMService {
     }
 
     public String chat(String message) throws IOException {
+
         if (!StringUtils.hasText(message)) {
             throw new IllegalArgumentException("对话内容不能为空");
         }
@@ -29,12 +30,15 @@ public class LLMService {
         if (isConfigured(config.getOpenaiBaseUrl()) &&
                 isConfigured(config.getOpenaiKey()) &&
                 isConfigured(config.getOpenaiModel())) {
+
             return OpenAIClient.chat(config.getOpenaiBaseUrl(), config.getOpenaiKey(), config.getOpenaiModel(), message);
         }
 
         // 2. 未配置 OpenAI 时回退到 Ollama，本地推理无需 API Key。
+
         if (isConfigured(config.getOllamaBaseUrl()) &&
                 isConfigured(config.getOllamaModel())) {
+
             return OllamaClient.chat(config.getOllamaBaseUrl(), config.getOllamaModel(), message);
         }
 

@@ -24,6 +24,7 @@ public final class OpenAIClient {
         throw new UnsupportedOperationException("Utility class");
     }
 
+
     /**
      * 调用 OpenAI Chat Completions 接口并返回纯文本回答。
      *
@@ -57,15 +58,19 @@ public final class OpenAIClient {
         messageNode.put("role", "user");
         messageNode.put("content", prompt);
 
+
         Map<String, String> headers = Collections.singletonMap(HEADER_AUTHORIZATION, BEARER_PREFIX + openaiKey);
 
+
         String normalizedUrl = openaiBaseUrl.trim();
+
 
         log.debug("OpenAIClient POST to: {}", normalizedUrl);
         log.debug("OpenAIClient Body: {}", body);
 
         URL url = new URL(normalizedUrl);
         String response = HttpJsonClient.post(url, headers, body);
+
 
         log.debug("OpenAIClient Response: {}", response);
         return response;
