@@ -2,56 +2,63 @@ package com.yuqiangdede.llm.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.yuqiangdede.llm.client.support.HttpJsonClient;
 
-import java.io.*;
-import java.net.HttpURLConnection;
+import java.io.IOException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Objects;
 
-@Service
-public class OllamaClient {
+/**
+ * 面向 Ollama 本地服务的对话客户端。
+ */
+public final class OllamaClient {
 
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final String RESPONSE_FIELD = "response";
+    private static final String GENERATE_PATH = "/api/generate";
 
+    private OllamaClient() {
+        throw new UnsupportedOperationException("Utility class");
+    }
+
+    /**
+     * 通过 Ollama 本地服务进行对话推理。
+     *
+     * @param ollamaBaseUrl Ollama 服务地址，例如 http://127.0.0.1:11434
+     * @param ollamaModel   待调用的模型名称
+     * @param prompt        用户输入的提示词
+     */
     public static String chat(String ollamaBaseUrl, String ollamaModel, String prompt) throws IOException {
-        String s = sendPrompt(ollamaBaseUrl, ollamaModel, prompt);
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode root = mapper.readTree(s);
-        String response = root.get("response").asText();
-        return response.trim();
+        Objects.requireNonNull(ollamaBaseUrl, "ollamaBaseUrl");
+        Objects.requireNonNull(ollamaModel, "ollamaModel");
+        Objects.requireNonNull(prompt, "prompt");
+
+        String responseJson = sendPrompt(ollamaBaseUrl, ollamaModel, prompt);
+        JsonNode root = MAPPER.readTree(responseJson);
+        JsonNode responseNode = root.get(RESPONSE_FIELD);
+        if (responseNode == null || responseNode.isNull()) {
+            throw new IOException("Ollama 响应中缺少 response 字段");
+        }
+        return responseNode.asText().trim();
     }
 
-    public static String sendPrompt(String ollamaBaseUrl, String ollamaModel, String prompt) throws IOException {
-        URL url = new URL(ollamaBaseUrl + "/api/generate");
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+    private static String sendPrompt(String ollamaBaseUrl, String ollamaModel, String prompt) throws IOException {
+        ObjectNode body = MAPPER.createObjectNode();
+        body.put("model", ollamaModel);
+        body.put("prompt", prompt);
+        body.put("stream", false);
 
-        conn.setRequestMethod("POST");
-        conn.setRequestProperty("Content-Type", "application/json");
-        conn.setDoOutput(true);
-
-        // 构建请求体
-        String body = String.format(
-                "{\"model\":\"%s\",\"prompt\":\"%s\",\"stream\":false}",
-                ollamaModel, prompt.replace("\"", "\\\"")
-        );
-
-        try (OutputStream os = conn.getOutputStream()) {
-            byte[] input = body.getBytes(StandardCharsets.UTF_8);
-            os.write(input, 0, input.length);
-        }
-
-        // 读取返回
-        try (BufferedReader br = new BufferedReader(
-                new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-
-            StringBuilder response = new StringBuilder();
-            String line;
-            while ((line = br.readLine()) != null) {
-                response.append(line.trim());
-            }
-            return response.toString();
-        }
+        URL url = new URL(normalizeBaseUrl(ollamaBaseUrl) + GENERATE_PATH);
+        return HttpJsonClient.post(url, Collections.emptyMap(), body);
     }
 
-
+    private static String normalizeBaseUrl(String baseUrl) {
+        String trimmed = baseUrl.trim();
+        if (trimmed.endsWith("/")) {
+            return trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed;
+    }
 }
