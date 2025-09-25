@@ -1,29 +1,40 @@
 package com.yuqiangdede.common.util;
 
 
-import com.yuqiangdede.common.dto.Point;
-import com.yuqiangdede.common.dto.output.Box;
-import com.yuqiangdede.common.dto.output.BoxWithKeypoints;
-import lombok.extern.slf4j.Slf4j;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfByte;
-import org.opencv.imgcodecs.Imgcodecs;
-
-import javax.imageio.ImageIO;
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import static java.awt.Color.BLUE;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Rectangle2D;
-import java.awt.image.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.ComponentSampleModel;
+import java.awt.image.Raster;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
-import static java.awt.Color.BLUE;
+import javax.imageio.ImageIO;
+
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
+import org.opencv.imgcodecs.Imgcodecs;
+
+import com.yuqiangdede.common.dto.Point;
+import com.yuqiangdede.common.dto.output.Box;
+import com.yuqiangdede.common.dto.output.BoxWithKeypoints;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ImageUtil {
@@ -36,7 +47,7 @@ public class ImageUtil {
      * @throws IOException 如果无法从URL读取图片，则抛出IOException异常
      */
     public static BufferedImage urlToImage(String urlStr) throws IOException {
-        URL url = new URL(urlStr);
+        URL url = URI.create(urlStr).toURL();
 
         // 使用默认的 HttpsURLConnection
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -312,21 +323,6 @@ public class ImageUtil {
         graphics.dispose();
     }
 
-    /**
-     * 检查 candidate 是否与 list 中的任一区域相交。
-     *
-     * @param candidate 待检测的矩形区域
-     * @param areas     已存在的矩形区域集合
-     * @return 若存在交集则返回 true，否则返回 false
-     */
-    private static boolean intersectsAny(Rectangle candidate, java.util.List<Rectangle> areas) {
-        for (Rectangle area : areas) {
-            if (candidate.intersects(area)) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     /**
      * 扩展并裁剪图像
