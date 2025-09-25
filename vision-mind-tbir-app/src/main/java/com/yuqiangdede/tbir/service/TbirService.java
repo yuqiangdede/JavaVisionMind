@@ -1,5 +1,6 @@
 package com.yuqiangdede.tbir.service;
 
+import ai.onnxruntime.OrtException;
 import com.yuqiangdede.common.dto.output.Box;
 import com.yuqiangdede.common.util.ImageUtil;
 import com.yuqiangdede.tbir.config.Constant;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import static com.yuqiangdede.tbir.config.Constant.*;
@@ -36,7 +38,7 @@ public class TbirService {
     static {
         try {
             TbirLuceneUtil.init(Constant.LUCENE_PATH);
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -56,7 +58,7 @@ public class TbirService {
      *              核心参数：imgUrl 图片url；imgId 图片id，没输入就自动生成uuid
      *              其他参数：cameraId 监控点 支持检索；groupId 图片分组 支持检索；meta 其他信息 不支持检索，只能查询的时候返回
      */
-    public ImageSaveResult saveImg(SaveImageRequest input) throws Exception {
+    public ImageSaveResult saveImg(SaveImageRequest input) throws IOException, OrtException {
         // 0、获取图片，生成imgId
         BufferedImage image = ImageUtil.urlToImage(input.getImgUrl());
         String imgId = input.getImgId() == null ? UUID.randomUUID().toString() : input.getImgId();
@@ -67,10 +69,10 @@ public class TbirService {
         if (OPEN_DETECT) {
             List<Box> boxs = new ArrayList<>();
             if (DETECT_TYPES.contains("yolo")) {
-                boxs.addAll(imgAnalysisService.detectArea(input));
+                collectDetections(boxs, () -> imgAnalysisService.detectArea(input));
             }
             if (DETECT_TYPES.contains("sam")) {
-                boxs.addAll(imgAnalysisService.sam(input));
+                collectDetections(boxs, () -> imgAnalysisService.sam(input));
             }
             for (Box box : boxs) {
                 // 如果目标在指定范围内才做后续的向量化
@@ -113,6 +115,19 @@ public class TbirService {
         }
     }
 
+    private void collectDetections(List<Box> accumulator, Callable<List<Box>> supplier) throws IOException, OrtException {
+        try {
+            List<Box> detected = supplier.call();
+            if (detected != null) {
+                accumulator.addAll(detected);
+            }
+        } catch (IOException | OrtException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Detection execution failed", e);
+        }
+    }
+
     /**
      * 对图片进行向量化, subImgs 要和boxes一一对应
      *
@@ -120,7 +135,7 @@ public class TbirService {
      * @param subImgs 子图列表
      * @return 向量列表
      */
-    private List<ImageEmbedding> vectorize(BufferedImage image, List<AugmentedImage> subImgs) throws Exception {
+    private List<ImageEmbedding> vectorize(BufferedImage image, List<AugmentedImage> subImgs) throws OrtException {
         List<ImageEmbedding> result = new ArrayList<>();
 
         // 1. 向量化主图（整图级搜索）
@@ -261,7 +276,7 @@ public class TbirService {
     }
 
 
-    public List<BufferedImage> searchByTextI(String query, String cameraId, String groupId, Integer topN) throws Exception {
+    public List<BufferedImage> searchByTextI(String query, String cameraId, String groupId, Integer topN) throws IOException {
         List<BufferedImage> images = new ArrayList<>();
         SearchResult result = searchByText(query, cameraId, groupId, topN);
         List<HitImage> hitImages = result.getResults();
@@ -279,7 +294,7 @@ public class TbirService {
      * 1 首先将图片转为向量
      * 2 向量搜图
      */
-    public SearchResult imgSearch(BufferedImage bufferedImage, Integer topN) throws Exception {
+    public SearchResult imgSearch(BufferedImage bufferedImage, Integer topN) throws OrtException {
         // 1 图片转向量
         long startTime = System.currentTimeMillis();
         float[] embedded = clipEmbedder.embedImage(bufferedImage);

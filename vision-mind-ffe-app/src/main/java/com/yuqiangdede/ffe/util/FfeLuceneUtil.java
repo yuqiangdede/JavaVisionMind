@@ -1,18 +1,35 @@
 package com.yuqiangdede.ffe.util;
 
-import com.yuqiangdede.common.util.VectorUtil;
-import com.yuqiangdede.ffe.dto.output.FaceInfo4Search;
-import org.apache.lucene.document.*;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
-import org.apache.lucene.store.FSDirectory;
-
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.KnnFloatVectorField;
+import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.StoredFields;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.KnnFloatVectorQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.SearcherFactory;
+import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.FSDirectory;
+
+import com.yuqiangdede.common.util.VectorUtil;
+import com.yuqiangdede.ffe.dto.output.FaceInfo4Search;
 
 public class FfeLuceneUtil {
     private static SearcherManager searcherManager;
@@ -124,12 +141,13 @@ public class FfeLuceneUtil {
             TopDocs topDocs = searcher.search(finalQuery, n);
 
             // 解析结果
+            StoredFields storedFields = searcher.storedFields();
             for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
                 if (scoreDoc.score < confThreshold) {
                     // 如果得分低于阈值，则跳过该结果
                     continue;
                 }
-                Document doc = searcher.doc(scoreDoc.doc);
+                Document doc = storedFields.document(scoreDoc.doc, Set.of("id", "imgUrl"));
                 String id = doc.get("id");
                 String imgUrl = doc.get("imgUrl");
                 float confidence = scoreDoc.score;

@@ -76,7 +76,6 @@ public class YoloFastSAMUtil {
         int numAnchors = pred37x8400[0].length; // 获取锚点的数量
         List<float[]> boxesXYWH = new ArrayList<>(); // 存储转换后的边界框（xywh格式）
         List<Float> scores = new ArrayList<>(); // 存储每个锚点的得分
-        List<float[]> coeff = new ArrayList<>(); // 存储每个锚点的系数
 
         for (int i = 0; i < numAnchors; i++) {
             float score = pred37x8400[4][i]; // 获取当前锚点的得分
@@ -86,9 +85,6 @@ public class YoloFastSAMUtil {
                         pred37x8400[2][i], pred37x8400[3][i]}); // 将xywh格式的边界框添加到列表中
                 scores.add(score); // 将得分添加到列表中
 
-                float[] c = new float[32]; // 初始化系数数组
-                for (int k = 0; k < 32; k++) c[k] = pred37x8400[5 + k][i]; // 填充系数数组
-                coeff.add(c); // 将系数数组添加到列表中
             }
         }
 
@@ -96,10 +92,10 @@ public class YoloFastSAMUtil {
         List<float[]> boxesXYXY = new ArrayList<>(); // 存储转换后的边界框（xyxy格式）
         for (float[] b : boxesXYWH) {
             float cx = b[0], cy = b[1], w = b[2], h = b[3]; // 提取中心点坐标和宽高
-            float x1 = (cx - w / 2 - prep.dw) / prep.r; // 计算左上角x坐标
-            float y1 = (cy - h / 2 - prep.dh) / prep.r; // 计算左上角y坐标
-            float x2 = (cx + w / 2 - prep.dw) / prep.r; // 计算右下角x坐标
-            float y2 = (cy + h / 2 - prep.dh) / prep.r; // 计算右下角y坐标
+            float x1 = clamp((cx - w / 2 - prep.dw) / prep.r, 0f, prep.origW); // 计算左上角x坐标并裁剪
+            float y1 = clamp((cy - h / 2 - prep.dh) / prep.r, 0f, prep.origH); // 计算左上角y坐标并裁剪
+            float x2 = clamp((cx + w / 2 - prep.dw) / prep.r, 0f, prep.origW); // 计算右下角x坐标并裁剪
+            float y2 = clamp((cy + h / 2 - prep.dh) / prep.r, 0f, prep.origH); // 计算右下角y坐标并裁剪
             boxesXYXY.add(new float[]{x1, y1, x2, y2}); // 将xyxy格式的边界框添加到列表中
         }
 
@@ -109,13 +105,11 @@ public class YoloFastSAMUtil {
         // gather kept results
         List<float[]> finalBoxes = new ArrayList<>(); // 存储最终的边界框
         List<Float> finalScores = new ArrayList<>(); // 存储最终的得分
-        List<float[]> finalCoeff = new ArrayList<>(); // 存储最终的系数
         for (int idx : keep) {
             finalBoxes.add(boxesXYXY.get(idx)); // 添加保留的边界框
             finalScores.add(scores.get(idx)); // 添加保留的得分
-            finalCoeff.add(coeff.get(idx)); // 添加保留的系数
         }
-        return new DetectionResult(finalBoxes, finalScores, finalCoeff); // 返回检测结果对象
+        return new DetectionResult(finalBoxes, finalScores); // 返回检测结果对象
     }
 
     /**
@@ -233,6 +227,10 @@ public class YoloFastSAMUtil {
         return new PreprocessResult(nchw, w0, h0, r, dw, dh);
     }
 
+    private static float clamp(float value, float min, float max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
 
     private static class PreprocessResult {
         final float[] nchw;
@@ -253,12 +251,10 @@ public class YoloFastSAMUtil {
     private static class DetectionResult {
         final List<float[]> boxes;
         final List<Float> scores;
-        final List<float[]> coeff;
 
-        DetectionResult(List<float[]> boxes, List<Float> scores, List<float[]> coeff) {
+        DetectionResult(List<float[]> boxes, List<Float> scores) {
             this.boxes = boxes;
             this.scores = scores;
-            this.coeff = coeff;
         }
     }
 }

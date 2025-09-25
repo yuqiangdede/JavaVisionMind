@@ -34,9 +34,9 @@ public class ClipEmbedder {
      *
      * @param image 输入的图像，类型为BufferedImage
      * @return 嵌入后的浮点数数组
-     * @throws Exception 如果处理图像或执行ONNX推理时发生异常
+     * @throws OrtException 如果处理图像或执行ONNX推理时发生异常
      */
-    public float[] embedImage(BufferedImage image) throws Exception {
+    public float[] embedImage(BufferedImage image) throws OrtException {
         BufferedImage resized = ImageCropAndAugmentUtil.resizeWithAspectAndPad(image, 224);
         float[] chw = normalizeAndConvert(resized);
 

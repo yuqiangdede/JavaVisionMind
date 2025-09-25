@@ -1,18 +1,19 @@
 package com.yuqiangdede.yolo.dto.output;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.yuqiangdede.common.dto.Point;
-import com.yuqiangdede.common.util.ImageUtil;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Rect;
 import org.opencv.imgproc.Imgproc;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.yuqiangdede.common.dto.Point;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
@@ -37,10 +38,10 @@ public class SegDetection {
         Imgproc.findContours(mask, contours, new Mat(), Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE);
 
         for (MatOfPoint contour : contours) {
-            List<org.opencv.core.Point> points = contour.toList();
+            List<org.opencv.core.Point> contourPoints = contour.toList();
 
             List<Point> pointList = new ArrayList<>();
-            for (org.opencv.core.Point point : points) {
+            for (org.opencv.core.Point point : contourPoints) {
                 pointList.add(new Point((float) point.x, (float) point.y));
             }
             this.points.add(pointList);

@@ -1,24 +1,40 @@
 package com.yuqiangdede.tbir.util;
 
-import com.yuqiangdede.common.dto.output.Box;
-import com.yuqiangdede.common.util.JsonUtils;
-import com.yuqiangdede.tbir.dto.ImageEmbedding;
-import com.yuqiangdede.tbir.dto.LuceHit;
-import com.yuqiangdede.tbir.dto.input.SaveImageRequest;
-import org.apache.lucene.document.*;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
-import org.apache.lucene.store.FSDirectory;
-
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.KnnFloatVectorField;
+import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.StoredFields;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.KnnFloatVectorQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.SearcherFactory;
+import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.FSDirectory;
+
+import com.yuqiangdede.common.dto.output.Box;
+import com.yuqiangdede.common.util.JsonUtils;
 import static com.yuqiangdede.tbir.config.Constant.OPEN_DETECT;
+import com.yuqiangdede.tbir.dto.ImageEmbedding;
+import com.yuqiangdede.tbir.dto.LuceHit;
+import com.yuqiangdede.tbir.dto.input.SaveImageRequest;
 
 public class TbirLuceneUtil {
     private static SearcherManager searcherManager;
@@ -29,11 +45,11 @@ public class TbirLuceneUtil {
 
 
     /**
-     * 初始化索引功能
+     * 初始化索引功能。
      *
-     * @throws Exception 如果初始化过程中出现错误，则抛出异常
+     * @throws IOException 如果初始化过程中出现 I/O 错误
      */
-    public static void init(String indexPath) throws Exception {
+    public static void init(String indexPath) throws IOException {
         directory = FSDirectory.open(Paths.get(indexPath));
 
         // 创建 IndexWriter
@@ -51,7 +67,7 @@ public class TbirLuceneUtil {
         searcher = searcherManager.acquire();
     }
 
-    public static void close() throws Exception {
+    public static void close() throws IOException {
         // 关闭资源
         searcherManager.close();
         writer.close();
@@ -160,8 +176,13 @@ public class TbirLuceneUtil {
             // 3. 执行查询
             TopDocs topDocs = searcher.search(finalQuery, topN);
             // 4. 遍历结果，构建 LuceHit
+            StoredFields storedFields = searcher.storedFields();
+            Set<String> requiredFields = Set.of(
+                    "main", "box_x1", "box_y1", "box_x2", "box_y2",
+                    "image_id", "img_url", "camera_id", "group_id", "meta_json"
+            );
             for (ScoreDoc sd : topDocs.scoreDocs) {
-                Document doc = searcher.doc(sd.doc);
+                Document doc = storedFields.document(sd.doc, requiredFields);
                 // 坐标框
                 int isMain = Integer.parseInt(doc.get("main"));
                 Box box = null;
@@ -204,8 +225,13 @@ public class TbirLuceneUtil {
             Query finalQuery = builder.build();
             TopDocs topDocs = searcher.search(finalQuery, 999999);
 
+            StoredFields storedFields = searcher.storedFields();
+            Set<String> requiredFields = Set.of(
+                    "main", "box_x1", "box_y1", "box_x2", "box_y2",
+                    "image_id", "img_url", "camera_id", "group_id", "meta_json"
+            );
             for (ScoreDoc sd : topDocs.scoreDocs) {
-                Document doc = searcher.doc(sd.doc);
+                Document doc = storedFields.document(sd.doc, requiredFields);
                 // 坐标框
                 int isMain = Integer.parseInt(doc.get("main"));
                 Box box = null;
