@@ -1,4 +1,3 @@
-"models_cache/" 
-"*.onnx" 
-resource/ 
 resource/
+target/
+.vscode/settings.json
