@@ -10,7 +10,7 @@ import java.util.*;
 
 /**
  * 结构化分析的具体逻辑，目前的逻辑都是针对yoloV8系列的处理
- * Map<Object, Object> map = YoloV8Util.detect(path, model);
+ * YoloDetectionResult detection = YoloV8Util.detect(path, model);
  */
 @Slf4j
 public class YoloV11Util extends YoloUtil {
@@ -42,16 +42,15 @@ public class YoloV11Util extends YoloUtil {
      * 补充置信度 和 类型数据
      * 根据经模型中的 confThreshold 来过滤置信度太小的数据
      * 把xywh转xyxy（两个对角点来表示矩形），同时把检测的坐标框进行反resize的操作，得到实际的坐标位置
-     * 非极大值抑制 NMS 用以去除多余的边缘响应或重复的检测框，保留最佳的那些框
-     * 最终组成一个 List<ArrayList<Float>> 和 类型的字典项 model.names 放到map中返回
-     *
-     * @param src   带预测图片Mat
-     * @param model 模型
-     * @param conf  置信度
-     * @return 最终组成一个 List<ArrayList<Float>> 和 类型的字典项 model.names 放到map中返回
+     * 非极大值抑制（NMS）用以去除多余的边缘响应或重复的检测框，保留最佳的那些框
+     * 最终返回一个 YoloDetectionResult，包含预测框列表和类型名称映射
+     *
+     * @param src   带预测图片Mat
+     * @param model 模型
+     * @param conf  置信度
+     * @return 封装后的检测结果
      */
-    private static Map<Object, Object> predictor(Mat src, Model model, Float conf) {
-        Map<Object, Object> map = new HashMap<>();
+    private static YoloDetectionResult predictor(Mat src, Model model, Float conf) {
         try (OnnxTensor tensor = transferTensor(src, model)) {
             // 预处理 转换成Tensor数据格式
             try (OrtSession.Result result = model.session.run(Collections.singletonMap("images", tensor))) {
@@ -123,11 +122,10 @@ public class YoloV11Util extends YoloUtil {
                         }
                     }
                     // 非极大值抑制 NMS 用以去除多余的边缘响应或重复的检测框，保留最佳的那些框，内层长度为6
-                    List<ArrayList<Float>> boxesAfterNMS = NMS(model, boxes);
-                    // 结果结构化
-                    map.put("boxes", boxesAfterNMS);
-                    map.put("classNames", model.names);
-                    return map;
+                    List<List<Float>> boxesAfterNMS = NMS(model, boxes).stream()
+                            .map(List::copyOf)
+                            .toList();
+                    return new YoloDetectionResult(boxesAfterNMS, Map.copyOf(model.names));
                 }
             }
         } catch (OrtException e) {
@@ -140,13 +138,14 @@ public class YoloV11Util extends YoloUtil {
      * 用来指定使用的模型，也可以直接调用predictor(Mat src, Model model) 但是需要自己加载模型
      *
      * @param mat mat
-     * @return map.put(" boxes ", boxesAfterNMS); map.put("classNames", model.names);
+     * @return 封装后的检测结果
+
      */
-    public static Map<Object, Object> predictor(Mat mat, Float conf) {
+    public static YoloDetectionResult predictor(Mat mat, Float conf) {
         return predictor(mat, yolomodel, conf);
     }
 
-    public static Map<Object, Object> predictorFace(Mat mat, Float conf) {
+    public static YoloDetectionResult predictorFace(Mat mat, Float conf) {
         return predictor(mat, yoloFaceModel, conf);
     }
 
@@ -156,7 +155,8 @@ public class YoloV11Util extends YoloUtil {
      *
      * @param model 模型对象
      * @param boxes 检测框列表，每个检测框由一组浮点数表示
-     * @return 保留的检测框列表，每个检测框由一组浮点数表示
+     * @return 封装后的检测结果
+
      */
     private static List<ArrayList<Float>> NMS(Model model, List<ArrayList<Float>> boxes) {
         int[] indexs = new int[boxes.size()];
@@ -233,7 +233,8 @@ public class YoloV11Util extends YoloUtil {
     /**
      * 获取模型的class字典数据
      *
-     * @return Map<Integer, String>
+     * @return 封装后的检测结果
+
      */
     public static Map<Integer, String> getTypeName() {
         return yolomodel.names;

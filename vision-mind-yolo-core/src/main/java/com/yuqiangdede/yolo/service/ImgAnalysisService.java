@@ -12,6 +12,8 @@ import com.yuqiangdede.common.util.ImageUtil;
 
 import com.yuqiangdede.yolo.dto.output.SegDetection;
 import com.yuqiangdede.yolo.util.yolo.YoloFastSAMUtil;
+import com.yuqiangdede.yolo.util.yolo.YoloDetectionResult;
+import com.yuqiangdede.yolo.util.yolo.YoloPoseDetectionResult;
 import com.yuqiangdede.yolo.util.yolo.YoloV11PoseUtil;
 import com.yuqiangdede.yolo.util.yolo.YoloV11SegUtil;
 import com.yuqiangdede.yolo.util.yolo.YoloV11Util;
@@ -126,16 +128,12 @@ public class ImgAnalysisService {
      */
     private List<Box> analysis(Mat mat, Float conf, String types) {
         // 使用ONNX模型进行预测
-        Map<Object, Object> map = YoloV11Util.predictor(mat, conf);
-        // 获取预测结果中的边界框信息
-        List<ArrayList<Float>> bs = (List<ArrayList<Float>>) map.get("boxes");
-        // 获取预测结果中的类别名称映射
-        Map<Integer, String> classNames = (Map<Integer, String>) map.get("classNames");
-
+        YoloDetectionResult detection = YoloV11Util.predictor(mat, conf);
+        List<List<Float>> bs = detection.boxes();
+        Map<Integer, String> classNames = detection.classNames();
 
         List<Box> boxes = new ArrayList<>();
-        // 遍历边界框信息
-        for (ArrayList<Float> bx : bs) {
+        for (List<Float> bx : bs) {
             // 根据边界框信息和类别名称映射创建Box对象
             Box box = new Box(bx.get(0), bx.get(1), bx.get(2), bx.get(3), bx.get(4), bx.get(5), classNames);
             if (types == null || types.isEmpty()) {
@@ -230,15 +228,11 @@ public class ImgAnalysisService {
 
     private List<BoxWithKeypoints> analysisPose(Mat mat, Float conf) {
         // 使用ONNX模型进行预测
-        Map<Object, Object> map = YoloV11PoseUtil.predictor(mat, conf);
-
-
-        // 获取预测结果中的边界框信息
-        List<ArrayList<Float>> bs = (List<ArrayList<Float>>) map.get("boxes");
+        YoloPoseDetectionResult detection = YoloV11PoseUtil.predictor(mat, conf);
+        List<List<Float>> bs = detection.boxes();
 
         List<BoxWithKeypoints> boxes = new ArrayList<>();
-        // 遍历边界框信息
-        for (ArrayList<Float> bx : bs) {
+        for (List<Float> bx : bs) {
             // 根据边界框信息和类别名称映射创建Box对象
             BoxWithKeypoints box = new BoxWithKeypoints(bx.get(0), bx.get(1), bx.get(2), bx.get(3), bx.get(4));
             // 补充关键点数据
@@ -314,17 +308,13 @@ public class ImgAnalysisService {
 
     private List<Box> analysisFace(Mat mat, Float conf) {
         // 使用ONNX模型进行预测
-        Map<Object, Object> map = YoloV11Util.predictorFace(mat, conf);
+        YoloDetectionResult detection = YoloV11Util.predictorFace(mat, conf);
 
-        // 获取预测结果中的边界框信息
-        List<ArrayList<Float>> bs = (List<ArrayList<Float>>) map.get("boxes");
-        // 获取预测结果中的类别名称映射
-        Map<Integer, String> classNames = (Map<Integer, String>) map.get("classNames");
-
+        List<List<Float>> bs = detection.boxes();
+        Map<Integer, String> classNames = detection.classNames();
 
         List<Box> boxes = new ArrayList<>();
-        // 遍历边界框信息
-        for (ArrayList<Float> bx : bs) {
+        for (List<Float> bx : bs) {
             // 根据边界框信息和类别名称映射创建Box对象
             Box box = new Box(bx.get(0), bx.get(1), bx.get(2), bx.get(3), bx.get(4), bx.get(5), classNames);
             boxes.add(box);

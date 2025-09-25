@@ -27,7 +27,7 @@ public class YoloV11PoseUtil extends YoloUtil {
      * @param conf 置信度
      * @return 检测结果
      */
-    public static Map<Object, Object> predictor(Mat mat, Float conf) {
+    public static YoloPoseDetectionResult predictor(Mat mat, Float conf) {
         return predictor(mat, yoloposemodel, conf);
     }
 
@@ -37,7 +37,7 @@ public class YoloV11PoseUtil extends YoloUtil {
      * @param conf  置信度
      * @return 检测结果
      */
-    private static Map<Object, Object> predictor(Mat src, Model model, Float conf) {
+    private static YoloPoseDetectionResult predictor(Mat src, Model model, Float conf) {
         // pretreatment to OnnxTensor
         try (OnnxTensor tensor = transferTensor(src, model)) {
             try (OrtSession.Result result = yoloposemodel.session.run(Collections.singletonMap("images", tensor))) {
@@ -137,13 +137,10 @@ public class YoloV11PoseUtil extends YoloUtil {
                         }
                     }
 
-                    List<ArrayList<Float>> boxesAfterNMS = NMS(yoloposemodel, boxes);
-
-                    Map<Object, Object> map = new HashMap<>();
-
-                    // 结果结构化
-                    map.put("boxes", boxesAfterNMS);
-                    return map;
+                    List<List<Float>> boxesAfterNMS = NMS(yoloposemodel, boxes).stream()
+                            .map(List::copyOf)
+                            .toList();
+                    return new YoloPoseDetectionResult(boxesAfterNMS);
                 }
             }
         } catch (OrtException e) {

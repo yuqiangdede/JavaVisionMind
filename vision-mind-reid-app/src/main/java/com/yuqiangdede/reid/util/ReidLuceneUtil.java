@@ -128,7 +128,7 @@ public class ReidLuceneUtil {
             TopDocs topDocs = searcher.search(finalQuery, topN);
             // 4. 遍历结果，构建 LuceHit
             for (ScoreDoc sd : topDocs.scoreDocs) {
-                Document doc = searcher.doc(sd.doc);
+                Document doc = searcher.storedFields().document(sd.doc);
                 if (sd.score < confThreshold) {
                     // 如果得分低于阈值，则跳过该结果
                     continue;
@@ -160,7 +160,7 @@ public class ReidLuceneUtil {
 //            TopDocs topDocs = searcher.search(finalQuery, 999999);
 //
 //            for (ScoreDoc sd : topDocs.scoreDocs) {
-//                Document doc = searcher.doc(sd.doc);
+//                Document doc = searcher.storedFields().document(sd.doc);
 //                // 坐标框
 //                int isMain = Integer.parseInt(doc.get("main"));
 //                Box box = null;
