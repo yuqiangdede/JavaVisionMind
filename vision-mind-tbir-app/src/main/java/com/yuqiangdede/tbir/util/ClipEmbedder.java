@@ -4,6 +4,7 @@ import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
 import ai.onnxruntime.*;
 
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -136,7 +137,7 @@ public class ClipEmbedder {
             }
 
             return embedText(inputIds, attentionMask);
-        } catch (Exception e) {
+        } catch (IOException | OrtException e) {
             throw new RuntimeException("Text embedding failed", e);
         }
     }
