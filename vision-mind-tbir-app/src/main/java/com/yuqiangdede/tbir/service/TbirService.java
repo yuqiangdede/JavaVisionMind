@@ -103,11 +103,9 @@ public class TbirService {
     }
 
     /**
-     * 将图像向量持久化到Lucene索引中。
-     *
-     * @param imgId   图像的唯一标识符
-     * @param vectors 图像嵌入向量列表
-     * @param input   保存图像请求对象
+     * Persist every embedding that belongs to the given image into the Lucene vector index.
+     * Each embedding is stored together with the logical image identifier and request metadata
+     * so that subsequent vector searches can recover the original context.
      */
     private void persistToLucene(String imgId, List<ImageEmbedding> vectors, SaveImageRequest input) {
         for (ImageEmbedding emb : vectors) {
@@ -115,6 +113,10 @@ public class TbirService {
         }
     }
 
+    /**
+     * Execute a detection supplier and merge the resulting boxes into the accumulator, while
+     * surfacing checked exceptions that the caller needs to handle (IO or inference errors).
+     */
     private void collectDetections(List<Box> accumulator, Callable<List<Box>> supplier) throws IOException, OrtException {
         try {
             List<Box> detected = supplier.call();
@@ -276,6 +278,10 @@ public class TbirService {
     }
 
 
+    /**
+     * Execute a text-based search and render the matched bounding boxes onto their source images.
+     * The in-memory `BufferedImage` list can be streamed directly to the client.
+     */
     public List<BufferedImage> searchByTextI(String query, String cameraId, String groupId, Integer topN) throws IOException {
         List<BufferedImage> images = new ArrayList<>();
         SearchResult result = searchByText(query, cameraId, groupId, topN);
@@ -290,9 +296,8 @@ public class TbirService {
 
 
     /**
-     * 图搜图的实现
-     * 1 首先将图片转为向量
-     * 2 向量搜图
+     * Perform image-to-image retrieval by embedding the probe image and querying Lucene for the
+     * closest stored vectors. The result retains metadata and matched boxes for downstream use.
      */
     public SearchResult imgSearch(BufferedImage bufferedImage, Integer topN) throws OrtException {
         // 1 图片转向量
@@ -309,12 +314,20 @@ public class TbirService {
     }
 
 
+    /**
+     * Fetch all Lucene hits that belong to the specified stored image identifier and adapt them
+     * into the `SearchResult` DTO used by the API layer.
+     */
     public SearchResult searchImg(String imgId) {
         List<LuceHit> hits = TbirLuceneUtil.searchById(imgId);
         List<HitImage> finalList = getFinalList(10, hits);
         return new SearchResult(finalList);
     }
 
+    /**
+     * Convenience variant of {@link #searchImg(String)} that draws matched boxes on the source
+     * images so callers can return JPEG previews directly.
+     */
     public List<BufferedImage> searchImgI(String imgId) throws IOException {
         List<BufferedImage> images = new ArrayList<>();
         SearchResult result = searchImg(imgId);

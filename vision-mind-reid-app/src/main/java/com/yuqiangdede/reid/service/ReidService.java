@@ -84,6 +84,11 @@ public class ReidService {
         return (float) v;
     }
 
+    /**
+     * Detect all persons within the supplied image URL, crop each region, and return the
+     * corresponding feature vectors. The vectors use randomly generated UUIDs because they are
+     * not persisted by this operation.
+     */
     public List<Feature> featureMulti(String url) throws Exception {
         BufferedImage image = ImageUtil.urlToImage(url);
 
@@ -106,6 +111,10 @@ public class ReidService {
         return features;
     }
 
+    /**
+     * Extract a single feature from the provided image and write it to the Lucene index together
+     * with optional camera and human identifiers so that future searches can filter by metadata.
+     */
     public Feature storeSingle(String imgUrl, String cameraId, String humanId) throws IOException, OrtException {
         // 将图片URL转换为Mat对象
         Mat mat = ImageUtil.urlToMat(imgUrl);
@@ -116,6 +125,11 @@ public class ReidService {
     }
 
 
+    /**
+     * Search the Lucene gallery for the given probe image, optionally filtering by camera and
+     * limiting the number of returned matches. The similarity threshold determines whether a hit
+     * is considered relevant.
+     */
     public List<Human> search(String imgUrl, String cameraId, Integer topN, float threshold) throws IOException, OrtException {
         Mat mat = ImageUtil.urlToMat(imgUrl);
         Feature feature = ReidUtil.featureSingle(mat);// fixme
@@ -123,6 +137,10 @@ public class ReidService {
     }
 
     // 待细化，这里的 storeSingle search 内部走了两次ReidUtil.featureSingle，后续可以进行优化 只走一次 //TODO
+    /**
+     * Single-cover workflow: if the probe does not match any existing human above the given
+     * threshold it will be inserted as a new cover image, otherwise the best match is returned.
+     */
     public Human searchOrStore(String imgUrl, float threshold) throws IOException, OrtException {
         // 单封面的逻辑
         List<Human> humans = this.search(imgUrl, null, 1, threshold);// TODO 需要修改 增加监控点id的逻辑
@@ -142,6 +160,10 @@ public class ReidService {
 
     }
 
+    /**
+     * Multi-cover workflow: even when a match is found, persist the new probe image and associate
+     * it with the matched human so future searches can leverage the expanded cover set.
+     */
     public Human associateStore(String imgUrl, float threshold) throws IOException, OrtException {
         // 多封面的了逻辑
         List<Human> humans = this.search(imgUrl, null, 1, threshold);// TODO 需要修改 增加监控点id的逻辑
