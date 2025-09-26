@@ -1,3 +1,4 @@
 resource/
 target/
 .vscode/settings.json
+.idea
