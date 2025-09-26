@@ -8,7 +8,6 @@ import com.yuqiangdede.yolo.dto.input.DetectionRequest;
 import com.yuqiangdede.yolo.dto.input.DetectionRequestWithArea;
 import com.yuqiangdede.yolo.dto.output.SegDetection;
 import com.yuqiangdede.yolo.service.ImgAnalysisService;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,10 +35,7 @@ class ImgAnalysisControllerTest {
         System.setProperty("vision-mind.skip-opencv", "true");
     }
 
-    @AfterAll
-    static void clearSkipFlag() {
-        System.clearProperty("vision-mind.skip-opencv");
-    }
+
 
     @Autowired
     private MockMvc mockMvc;

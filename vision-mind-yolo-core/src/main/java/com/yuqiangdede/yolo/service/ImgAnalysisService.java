@@ -67,7 +67,7 @@ public class ImgAnalysisService {
     }
 
 
-    public List<Box> detectArea(DetectionRequestWithArea imgAreaInput) throws Exception {
+    public List<Box> detectArea(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
         Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
 
         List<Box> boxs = analysis(mat, imgAreaInput.getThreshold(), imgAreaInput.getTypes());
@@ -107,7 +107,7 @@ public class ImgAnalysisService {
         return new ArrayList<>(result);
     }
 
-    public BufferedImage detectAreaI(DetectionRequestWithArea imgAreaInput) throws Exception {
+    public BufferedImage detectAreaI(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
         BufferedImage image = ImageUtil.urlToImage(imgAreaInput.getImgUrl());
 
         List<Box> boxs = this.detectArea(imgAreaInput);
@@ -145,7 +145,7 @@ public class ImgAnalysisService {
     }
 
 
-    public List<BoxWithKeypoints> poseArea(DetectionRequestWithArea imgAreaInput) throws Exception {
+    public List<BoxWithKeypoints> poseArea(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
         Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
 
         List<BoxWithKeypoints> boxs = analysisPose(mat, imgAreaInput.getThreshold());
@@ -184,7 +184,7 @@ public class ImgAnalysisService {
         return new ArrayList<>(result);
     }
 
-    public BufferedImage poseAreaI(DetectionRequestWithArea imgAreaInput) throws Exception {
+    public BufferedImage poseAreaI(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
         BufferedImage image = ImageUtil.urlToImage(imgAreaInput.getImgUrl());
 
         List<BoxWithKeypoints> boxs = this.poseArea(imgAreaInput);
@@ -210,7 +210,7 @@ public class ImgAnalysisService {
         return boxes;
     }
 
-    public List<Box> detectFace(DetectionRequestWithArea imgAreaInput) throws Exception {
+    public List<Box> detectFace(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
         Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
 
         List<Box> boxs = analysisFace(mat, imgAreaInput.getThreshold());
@@ -250,7 +250,7 @@ public class ImgAnalysisService {
         return new ArrayList<>(result);
     }
 
-    public BufferedImage detectFaceI(DetectionRequestWithArea imgAreaInput) throws Exception {
+    public BufferedImage detectFaceI(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
         BufferedImage image = ImageUtil.urlToImage(imgAreaInput.getImgUrl());
 
         List<Box> boxs = this.detectFace(imgAreaInput);
@@ -276,12 +276,12 @@ public class ImgAnalysisService {
         return boxes;
     }
 
-    public List<Box> sam(DetectionRequest imgAreaInput) throws Exception {
+    public List<Box> sam(DetectionRequest imgAreaInput) throws IOException, OrtException {
         Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
         return YoloFastSAMUtil.predictor(mat);
     }
 
-    public BufferedImage samI(DetectionRequest imgAreaInput) throws Exception {
+    public BufferedImage samI(DetectionRequest imgAreaInput) throws IOException, OrtException {
         BufferedImage image = ImageUtil.urlToImage(imgAreaInput.getImgUrl());
 
 

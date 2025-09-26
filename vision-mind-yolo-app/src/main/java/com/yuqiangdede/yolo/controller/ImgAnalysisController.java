@@ -9,6 +9,7 @@ import com.yuqiangdede.common.dto.output.HttpResult;
 import com.yuqiangdede.common.util.JsonUtils;
 import com.yuqiangdede.yolo.dto.output.SegDetection;
 import com.yuqiangdede.yolo.service.ImgAnalysisService;
+import ai.onnxruntime.OrtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -53,7 +55,7 @@ public class ImgAnalysisController {
             log.info("Img DetectArea : Input：{}.Result:{}.Cost time：{} ms.", imgAreaInput, JsonUtils.object2Json(boxs), (System.currentTimeMillis() - start_time));
 
             return new HttpResult<>(true, boxs);
-        } catch (Exception e) {
+        } catch (IOException | OrtException | RuntimeException e) {
             log.error("detect error", e);
             return new HttpResult<>(false, e.getMessage());
         }
@@ -82,7 +84,7 @@ public class ImgAnalysisController {
 
             // 返回图片数据
             return new ResponseEntity<>(byteArrayOutputStream.toByteArray(), headers, HttpStatus.OK);
-        } catch (Exception e) {
+        } catch (IOException | OrtException | RuntimeException e) {
             log.error("detect error", e);
             return new HttpResult<>(false, e.getMessage());
         }
@@ -107,7 +109,7 @@ public class ImgAnalysisController {
             log.info("Img DetectFace : Input：{}.Result:{}.Cost time：{} ms.", imgAreaInput, JsonUtils.object2Json(boxs), (System.currentTimeMillis() - start_time));
 
             return new HttpResult<>(true, boxs);
-        } catch (Exception e) {
+        } catch (IOException | OrtException | RuntimeException e) {
             log.error("detect error", e);
             return new HttpResult<>(false, e.getMessage());
         }
@@ -130,7 +132,7 @@ public class ImgAnalysisController {
 
             // 返回图片数据
             return new ResponseEntity<>(byteArrayOutputStream.toByteArray(), headers, HttpStatus.OK);
-        } catch (Exception e) {
+        } catch (IOException | OrtException | RuntimeException e) {
             log.error("detect error", e);
             return new HttpResult<>(false, e.getMessage());
         }
@@ -155,7 +157,7 @@ public class ImgAnalysisController {
             log.info("Img PoseArea : Input：{}.Result:{}.Cost time：{} ms.", imgAreaInput, JsonUtils.object2Json(boxs), (System.currentTimeMillis() - start_time));
 
             return new HttpResult<>(true, boxs);
-        } catch (Exception e) {
+        } catch (IOException | OrtException | RuntimeException e) {
             log.error("pose error", e);
             return new HttpResult<>(false, e.getMessage());
         }
@@ -185,7 +187,7 @@ public class ImgAnalysisController {
 
             // 返回图片数据
             return new ResponseEntity<>(byteArrayOutputStream.toByteArray(), headers, HttpStatus.OK);
-        } catch (Exception e) {
+        } catch (IOException | OrtException | RuntimeException e) {
             log.error("pose error", e);
             return new HttpResult<>(false, e.getMessage());
         }
@@ -204,7 +206,7 @@ public class ImgAnalysisController {
             log.info("Img samArea : Input：{}.Result:{}.Cost time：{} ms.", imgAreaInput, JsonUtils.object2Json(boxs), (System.currentTimeMillis() - start_time));
 
             return new HttpResult<>(true, boxs);
-        } catch (Exception e) {
+        } catch (IOException | OrtException | RuntimeException e) {
             log.error("pose error", e);
             return new HttpResult<>(false, e.getMessage());
         }
@@ -227,7 +229,7 @@ public class ImgAnalysisController {
 
             // 返回图片数据
             return new ResponseEntity<>(byteArrayOutputStream.toByteArray(), headers, HttpStatus.OK);
-        } catch (Exception e) {
+        } catch (IOException | OrtException | RuntimeException e) {
             log.error("pose error", e);
             return new HttpResult<>(false, e.getMessage());
         }
@@ -249,7 +251,7 @@ public class ImgAnalysisController {
             headers.setContentType(MediaType.IMAGE_JPEG);
             log.info("Img segArea : Input：{}..Cost time：{} ms.", imgAreaInput, (System.currentTimeMillis() - start_time));
             return new ResponseEntity<>(byteArrayOutputStream.toByteArray(), headers, HttpStatus.OK);
-        } catch (Exception e) {
+        } catch (IOException | OrtException | RuntimeException e) {
             log.error("detect error", e);
             return new HttpResult<>(false, e.getMessage());
         }
@@ -265,7 +267,7 @@ public class ImgAnalysisController {
             List<SegDetection> boxs = imgAnalysisService.segArea(imgAreaInput);
             log.info("Img segArea : Input：{}.Result:{}.Cost time：{} ms.", imgAreaInput, JsonUtils.object2Json(boxs), (System.currentTimeMillis() - start_time));
             return new HttpResult<>(true, boxs);
-        } catch (Exception e) {
+        } catch (IOException | OrtException | RuntimeException e) {
             log.error("segArea error", e);
             return new HttpResult<>(false, e.getMessage());
         }

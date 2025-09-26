@@ -1,25 +1,24 @@
 package com.yuqiangdede.reid.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.yuqiangdede.reid.output.Feature;
-import com.yuqiangdede.reid.output.Human;
-import com.yuqiangdede.reid.service.ReidService;
-import org.junit.jupiter.api.AfterAll;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.util.List;
-import java.util.Map;
-
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.yuqiangdede.reid.output.Feature;
+import com.yuqiangdede.reid.output.Human;
+import com.yuqiangdede.reid.service.ReidService;
 
 @WebMvcTest(ReidController.class)
 class ReidControllerTest {
@@ -28,10 +27,6 @@ class ReidControllerTest {
         System.setProperty("vision-mind.skip-opencv", "true");
     }
 
-    @AfterAll
-    static void clearSkipFlag() {
-        System.clearProperty("vision-mind.skip-opencv");
-    }
 
     @Autowired
     private MockMvc mockMvc;
