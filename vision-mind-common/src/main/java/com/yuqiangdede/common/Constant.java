@@ -22,8 +22,12 @@ public class Constant {
             properties.load(input);
             String envPath = System.getenv("VISION_MIND_PATH");
 
+            boolean skipNativeConfig = Boolean.parseBoolean(System.getProperty("vision-mind.skip-opencv", "false"));
             if (envPath == null) {
-                throw new RuntimeException("无法获取环境变量 VISION_MIND_PATH");
+                if (!skipNativeConfig && !isTestEnvironment()) {
+                    log.warn("VISION_MIND_PATH is not defined. Native resources will be resolved relative to the current directory.");
+                }
+                envPath = "";
             }
 
             MATRIX_PATH = envPath + properties.getProperty("matrix.path");
@@ -40,4 +44,14 @@ public class Constant {
             }
         }
     }
+
+    private static boolean isTestEnvironment() {
+        try {
+            Class.forName("org.junit.jupiter.api.Test");
+            return true;
+        } catch (ClassNotFoundException ex) {
+            return false;
+        }
+    }
+
 }

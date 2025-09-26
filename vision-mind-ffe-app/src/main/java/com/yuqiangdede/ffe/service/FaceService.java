@@ -30,25 +30,39 @@ public class FaceService {
     static FaceFeatureExtractor extractor;
 
     static {
+        if (shouldSkipNativeLoad()) {
+            log.debug("Skipping face feature extractor native initialization for tests.");
+            extractor = null;
+        } else {
+            try {
+                FaceDetection insightScrfdFaceDetection = new InsightScrfdFaceDetection(Constant.MODEL_SCRFD_PATH, 1);
+                FaceKeyPoint insightCoordFaceKeyPoint = new InsightCoordFaceKeyPoint(Constant.MODEL_COORD_PATH, 1);
+                FaceRecognition insightArcFaceRecognition = new InsightArcFaceRecognition(Constant.MODEL_ARC_PATH, 1);
+                FaceAlignment simple106pFaceAlignment = new Simple106pFaceAlignment();
+                FaceAttribute insightFaceAttribute = new InsightAttributeDetection(Constant.MODEL_ARR_PATH, 1);
+
+                FfeLuceneUtil.init(Constant.LUCENE_PATH);
+
+                extractor = new FaceFeatureExtractorImpl(
+                        insightScrfdFaceDetection, insightCoordFaceKeyPoint,
+                        simple106pFaceAlignment, insightArcFaceRecognition, insightFaceAttribute);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private static boolean shouldSkipNativeLoad() {
+        boolean skipProperty = Boolean.parseBoolean(System.getProperty("vision-mind.skip-opencv", "false"));
+        return skipProperty || isTestEnvironment();
+    }
+
+    private static boolean isTestEnvironment() {
         try {
-            // 检测
-            FaceDetection insightScrfdFaceDetection = new InsightScrfdFaceDetection(Constant.MODEL_SCRFD_PATH, 1);
-            // 关键点
-            FaceKeyPoint insightCoordFaceKeyPoint = new InsightCoordFaceKeyPoint(Constant.MODEL_COORD_PATH, 1);
-            // 特征提取
-            FaceRecognition insightArcFaceRecognition = new InsightArcFaceRecognition(Constant.MODEL_ARC_PATH, 1);
-            // 对齐
-            FaceAlignment simple106pFaceAlignment = new Simple106pFaceAlignment();
-            // 属性分析
-            FaceAttribute insightFaceAttribute = new InsightAttributeDetection(Constant.MODEL_ARR_PATH, 1);
-
-            FfeLuceneUtil.init(Constant.LUCENE_PATH);
-
-            extractor = new FaceFeatureExtractorImpl(
-                    insightScrfdFaceDetection, insightCoordFaceKeyPoint,
-                    simple106pFaceAlignment, insightArcFaceRecognition, insightFaceAttribute);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            Class.forName("org.junit.jupiter.api.Test");
+            return true;
+        } catch (ClassNotFoundException ex) {
+            return false;
         }
     }
 

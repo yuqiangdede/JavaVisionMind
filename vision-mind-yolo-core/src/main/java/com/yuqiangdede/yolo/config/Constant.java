@@ -1,6 +1,5 @@
 package com.yuqiangdede.yolo.config;
 
-
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -15,11 +14,11 @@ public class Constant {
     public static final float SAM_IOU = 0.7f;
     public static final int SAM_SIZE = 640;
 
-    // dll so 路径
+    // Native library locations
     public static final String OPENCV_DLL_PATH;
     public static final String OPENCV_SO_PATH;
 
-    // yolov模型 onnx 路径
+    // YOLO ONNX model locations
     public static final String YOLO_ONNX_PATH;
     public static final String YOLO_FACE_ONNX_PATH;
     public static final String YOLO_POSE_ONNX_PATH;
@@ -27,20 +26,15 @@ public class Constant {
     public static final String YOLO_OBB_ONNX_PATH;
     public static final String FAST_SAM_ONNX;
 
-    // 帧间隔
+    // Detection configuration
     public static final Integer FRAME_INTERVAL;
-    // 置信度阈值
     public static final float CONF_THRESHOLD;
     public static final float POSE_CONF_THRESHOLD;
-
     public static final float DETECT_RATIO;
     public static final float BLOCK_RATIO;
-    // nms 阈值
     public static final float NMS_THRESHOLD;
-    // 是否使用gpu,影响加载onnxruntime的版本
     public static final Boolean USE_GPU;
 
-    // yolo检测的类型
     public static List<Integer> YOLO_TYPES = new ArrayList<>();
 
     public static final Boolean TOKEN_FILTER;
@@ -50,14 +44,19 @@ public class Constant {
         InputStream input = null;
         try {
             input = Constant.class.getClassLoader().getResourceAsStream("application.properties");
+            if (input == null) {
+                throw new RuntimeException("application.properties not found");
+            }
             properties.load(input);
             String envPath = System.getenv("VISION_MIND_PATH");
-
+            boolean skipNativeConfig = Boolean.parseBoolean(System.getProperty("vision-mind.skip-opencv", "false"));
             if (envPath == null) {
-                throw new RuntimeException("无法获取环境变量 VISION_MIND_PATH");
+                if (!skipNativeConfig && !isTestEnvironment()) {
+                    log.warn("VISION_MIND_PATH is not defined. Native resources will be resolved relative to the current directory.");
+                }
+                envPath = "";
             }
 
-            // 从属性文件中获取路径
             OPENCV_DLL_PATH = envPath + properties.getProperty("opencv.dll.path");
             OPENCV_SO_PATH = envPath + properties.getProperty("opencv.so.path");
 
@@ -67,27 +66,26 @@ public class Constant {
             FAST_SAM_ONNX = envPath + properties.getProperty("yolo.sam.onnx.path");
             YOLO_SEG_ONNX_PATH = envPath + properties.getProperty("yolo.seg.onnx.path");
             YOLO_OBB_ONNX_PATH = envPath + properties.getProperty("yolo.obb.onnx.path");
-            FRAME_INTERVAL = Integer.parseInt(properties.getProperty("frame.interval"));
 
+            FRAME_INTERVAL = Integer.parseInt(properties.getProperty("frame.interval"));
             CONF_THRESHOLD = Float.parseFloat(properties.getProperty("yolo.conf.Threshold"));
             POSE_CONF_THRESHOLD = Float.parseFloat(properties.getProperty("yolo.pose.conf.Threshold"));
             NMS_THRESHOLD = Float.parseFloat(properties.getProperty("yolo.nms.Threshold"));
             SAM_CONF = Float.parseFloat(properties.getProperty("sam.nms.Threshold"));
-
             DETECT_RATIO = Float.parseFloat(properties.getProperty("detect.ratio"));
             BLOCK_RATIO = Float.parseFloat(properties.getProperty("block.ratio"));
-
             USE_GPU = Boolean.valueOf(properties.getProperty("use.gpu"));
-
             TOKEN_FILTER = Boolean.valueOf(properties.getProperty("token.filter"));
 
             String types = properties.getProperty("yolo.types");
-            for (String type : types.split(",")) {
-                YOLO_TYPES.add(Integer.parseInt(type));
+            if (types != null) {
+                for (String type : types.split(",")) {
+                    YOLO_TYPES.add(Integer.parseInt(type.trim()));
+                }
             }
 
         } catch (IOException e) {
-            throw new RuntimeException("读取配置文件失败");
+            throw new RuntimeException("Failed to read configuration file", e);
         } finally {
             if (input != null) {
                 try {
@@ -99,4 +97,12 @@ public class Constant {
         }
     }
 
+    private static boolean isTestEnvironment() {
+        try {
+            Class.forName("org.junit.jupiter.api.Test");
+            return true;
+        } catch (ClassNotFoundException ex) {
+            return false;
+        }
+    }
 }

@@ -1,6 +1,5 @@
 package com.yuqiangdede.tbir.config;
 
-
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -13,7 +12,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class Constant {
 
-    // dll so 路径
+    // Native library locations
     public static final String OPENCV_DLL_PATH;
     public static final String OPENCV_SO_PATH;
 
@@ -31,10 +30,10 @@ public class Constant {
 
     public static final int KEY_NUM;
 
-    // 增强类型
+    // Augment configuration
     public static final Set<String> AUGMENT_TYPES;
 
-    // 小图向量化的类型
+    // Vectorization configuration
     public static final Set<String> DETECT_TYPES;
 
     static {
@@ -42,15 +41,19 @@ public class Constant {
         InputStream input = null;
         try {
             input = Constant.class.getClassLoader().getResourceAsStream("application.properties");
+            if (input == null) {
+                throw new RuntimeException("application.properties not found");
+            }
             properties.load(input);
             String envPath = System.getenv("VISION_MIND_PATH");
-            ;
-
+            boolean skipNativeConfig = Boolean.parseBoolean(System.getProperty("vision-mind.skip-opencv", "false"));
             if (envPath == null) {
-                throw new RuntimeException("无法获取环境变量 VISION_MIND_PATH");
+                if (!skipNativeConfig && !isTestEnvironment()) {
+                    log.warn("VISION_MIND_PATH is not defined. Native resources will be resolved relative to the current directory.");
+                }
+                envPath = "";
             }
 
-            // 从属性文件中获取路径
             OPENCV_DLL_PATH = envPath + properties.getProperty("opencv.dll.path");
             OPENCV_SO_PATH = envPath + properties.getProperty("opencv.so.path");
 
@@ -62,9 +65,9 @@ public class Constant {
 
             TOKEN_FILTER = Boolean.valueOf(properties.getProperty("token.filter"));
             OPEN_DETECT = Boolean.valueOf(properties.getProperty("open.detect"));
-            DETECT_TYPES = Arrays.stream(properties.getProperty("detect.types", "")
-                            .split(","))
+            DETECT_TYPES = Arrays.stream(properties.getProperty("detect.types", "").split(","))
                     .map(String::trim)
+                    .filter(s -> !s.isEmpty())
                     .collect(Collectors.toSet());
 
             String[] range = properties.getProperty("filter.box.size", "0,Integer.MAX_VALUE").split(",");
@@ -73,13 +76,13 @@ public class Constant {
 
             KEY_NUM = Integer.parseInt(properties.getProperty("key.expand.num"));
 
-            AUGMENT_TYPES = Arrays.stream(properties.getProperty("augment.types", "")
-                            .split(","))
+            AUGMENT_TYPES = Arrays.stream(properties.getProperty("augment.types", "").split(","))
                     .map(String::trim)
+                    .filter(s -> !s.isEmpty())
                     .collect(Collectors.toSet());
 
         } catch (IOException e) {
-            throw new RuntimeException("读取配置文件失败");
+            throw new RuntimeException("Failed to read configuration file", e);
         } finally {
             if (input != null) {
                 try {
@@ -88,6 +91,15 @@ public class Constant {
                     log.error("read application.properties error", e);
                 }
             }
+        }
+    }
+
+    private static boolean isTestEnvironment() {
+        try {
+            Class.forName("org.junit.jupiter.api.Test");
+            return true;
+        } catch (ClassNotFoundException ex) {
+            return false;
         }
     }
 }
