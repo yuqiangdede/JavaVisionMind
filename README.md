@@ -1,4 +1,6 @@
-# JavaVisionMind
+﻿# JavaVisionMind
+
+[中文文档](README.zh-CN.md) | [English](README.md)
 
 > A modular Spring Boot toolkit that bundles computer-vision and multimodal utilities such as detection, retrieval, and LLM integration.
 
@@ -50,10 +52,10 @@ JavaVisionMind is a collection of independent Spring Boot services that cover ob
 
    ```text
    ${VISION_MIND_PATH}
-   └── lib
-       └── opencv
-           ├── opencv_java490.dll   # Windows
-           └── libopencv_java490.so # Linux
+   鈹斺攢鈹€ lib
+       鈹斺攢鈹€ opencv
+           鈹溾攢鈹€ opencv_java490.dll   # Windows
+           鈹斺攢鈹€ libopencv_java490.so # Linux
    ```
 
 3. Verify the JVM can load `opencv_java490` for your OS (the services auto-pick `.dll` or `.so`).
@@ -149,7 +151,7 @@ Below tables outline the primary REST endpoints exposed by each runnable module.
 ## Resources
 
 - `JavaVisionMind.postman_collection.json` (repository root) provides ready-to-run Postman/Apifox requests for every endpoint.
-- Model configuration lives under each module’s `src/main/resources/application*.properties` for per-service tuning.
+- Model configuration lives under each module鈥檚 `src/main/resources/application*.properties` for per-service tuning.
 
 ## Roadmap
 
@@ -158,3 +160,4 @@ Below tables outline the primary REST endpoints exposed by each runnable module.
 - YOLO video-stream processing pipeline resurrection in `vision-mind-yolo-core`.
 
 Contributions and issue reports are welcome.
+
