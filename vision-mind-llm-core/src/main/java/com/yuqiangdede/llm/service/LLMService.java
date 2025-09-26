@@ -46,9 +46,28 @@ public class LLMService {
         throw new IllegalStateException("未配置 OpenAI 或 Ollama，无法对话");
     }
 
-    public String chatWithImg(String message, String img) {
-        // TODO: 预留图文多模态调用能力，后续接入具备图像理解能力的模型再补充实现。
-        return null;
+    public String chatWithImg(String message, String imageUrl, String systemPrompt) throws IOException {
+        if (!StringUtils.hasText(message) && !StringUtils.hasText(imageUrl)) {
+            throw new IllegalArgumentException("图文对话需要提供文本或图片");
+        }
+
+        if (isConfigured(config.getOpenaiBaseUrl()) &&
+                isConfigured(config.getOpenaiKey()) &&
+                isConfigured(config.getOpenaiModel())) {
+            String effectiveSystem = StringUtils.hasText(systemPrompt)
+                    ? systemPrompt
+                    : "请使用中文回答问题.";
+            return OpenAIClient.chatWithImage(
+                    config.getOpenaiBaseUrl(),
+                    config.getOpenaiKey(),
+                    config.getOpenaiModel(),
+                    effectiveSystem,
+                    message,
+                    imageUrl
+            );
+        }
+
+        throw new IllegalStateException("未配置支持图像的 OpenAI 服务，无法进行图文对话");
     }
 
     private boolean isConfigured(String value) {

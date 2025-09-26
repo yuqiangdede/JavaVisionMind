@@ -1,6 +1,7 @@
 package com.yuqiangdede.llm.controller;
 
 
+import com.yuqiangdede.common.dto.output.HttpResult;
 import com.yuqiangdede.llm.dto.Message;
 import com.yuqiangdede.llm.service.LLMService;
 import lombok.RequiredArgsConstructor;
@@ -20,33 +21,42 @@ public class ChatController {
     private final LLMService lLMService;
 
     @PostMapping("/translate")
-    public String translate(@RequestBody Message msg) {
-        String chatResponse;
+    public HttpResult<String> translate(@RequestBody Message msg) {
         try {
-            chatResponse = lLMService.chat("You are a translator who cherishes words like gold." +
+            String chatResponse = lLMService.chat("You are a translator who cherishes words like gold." +
                     "Translate the following Chinese text to English: " + msg.getMessage() + "." +
                     "Directly return the translated English without any additional description." +
                     "For example, input：Translate the following Chinese text to English: 红色盒子." +
                     "output：red box.");
+            log.info("translate response={}", chatResponse);
+            return new HttpResult<>(true, chatResponse);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            log.error("translate failed", e);
+            return new HttpResult<>(false, e.getMessage());
         }
-        System.out.println("content = " + chatResponse);
-        return chatResponse;
     }
 
     @PostMapping("/chat")
-    public String chat(@RequestBody Message msg) throws IOException {
-        String chatResponse = lLMService.chat(msg.getMessage());
-        System.out.println("content = " + chatResponse);
-        return chatResponse;
+    public HttpResult<String> chat(@RequestBody Message msg) {
+        try {
+            String chatResponse = lLMService.chat(msg.getMessage());
+            log.info("chat response={}", chatResponse);
+            return new HttpResult<>(true, chatResponse);
+        } catch (IOException e) {
+            log.error("chat failed", e);
+            return new HttpResult<>(false, e.getMessage());
+        }
     }
     @PostMapping("/chatWithImg")
-    public String chatWithImg(@RequestBody Message msg) throws IOException {
-
-             String chatResponse = lLMService.chatWithImg(msg.getMessage() ,msg.getImg());
-        System.out.println("content = " + chatResponse);
-        return chatResponse;
+    public HttpResult<String> chatWithImg(@RequestBody Message msg) {
+        try {
+            String chatResponse = lLMService.chatWithImg(msg.getMessage(), msg.getImageUrl(), msg.getSystem());
+            log.info("chatWithImg response={}", chatResponse);
+            return new HttpResult<>(true, chatResponse);
+        } catch (IOException | RuntimeException e) {
+            log.error("chatWithImg failed", e);
+            return new HttpResult<>(false, e.getMessage());
+        }
     }
 
 }
