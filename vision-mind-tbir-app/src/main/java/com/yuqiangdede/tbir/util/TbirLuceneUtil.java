@@ -1,37 +1,5 @@
 package com.yuqiangdede.tbir.util;
 
-import com.yuqiangdede.common.chroma.ChromaStore;
-import com.yuqiangdede.common.chroma.EmbeddingRecord;
-import com.yuqiangdede.common.chroma.InMemoryChromaStore;
-import com.yuqiangdede.common.chroma.SearchResult;
-import com.yuqiangdede.common.dto.output.Box;
-import com.yuqiangdede.common.util.JsonUtils;
-import com.yuqiangdede.common.util.VectorUtil;
-import com.yuqiangdede.tbir.dto.ImageEmbedding;
-import com.yuqiangdede.tbir.dto.LuceHit;
-import com.yuqiangdede.tbir.dto.input.SaveImageRequest;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.KnnFloatVectorField;
-import org.apache.lucene.document.LongPoint;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.StoredFields;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.KnnFloatVectorQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.SearcherFactory;
-import org.apache.lucene.search.SearcherManager;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.store.FSDirectory;
-
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -45,7 +13,39 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.KnnFloatVectorField;
+import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.StoredFields;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.KnnFloatVectorQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.SearcherFactory;
+import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.FSDirectory;
+
+import com.yuqiangdede.common.chroma.ChromaStore;
+import com.yuqiangdede.common.chroma.EmbeddingRecord;
+import com.yuqiangdede.common.chroma.InMemoryChromaStore;
+import com.yuqiangdede.common.chroma.SearchResult;
+import com.yuqiangdede.common.dto.output.Box;
+import com.yuqiangdede.common.util.JsonUtils;
+import com.yuqiangdede.common.util.VectorUtil;
 import static com.yuqiangdede.tbir.config.Constant.OPEN_DETECT;
+import com.yuqiangdede.tbir.dto.ImageEmbedding;
+import com.yuqiangdede.tbir.dto.LuceHit;
+import com.yuqiangdede.tbir.dto.input.SaveImageRequest;
 
 /**
  * Utility wrapping vector storage for TBIR. Supports Lucene persistence or an in-memory chroma alternative.
@@ -379,8 +379,8 @@ public final class TbirLuceneUtil {
         Map<String, Object> payload = record.getPayload();
         Box box = null;
         Object boxObj = payload.get("box");
-        if (boxObj instanceof Box) {
-            box = (Box) boxObj;
+        if (boxObj instanceof Box b) {
+            box = b;
         }
         Map<String, String> meta = Collections.emptyMap();
         Object metaObj = payload.get("meta");

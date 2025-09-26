@@ -1,28 +1,38 @@
 package com.yuqiangdede.ffe.controller;
 
-import com.yuqiangdede.common.dto.output.HttpResult;
-import com.yuqiangdede.common.util.ImageUtil;
-import com.yuqiangdede.ffe.core.domain.FaceImage;
-import com.yuqiangdede.ffe.core.domain.FaceInfo;
-import com.yuqiangdede.ffe.dto.input.*;
-import com.yuqiangdede.ffe.dto.output.FaceInfo4Add;
-import com.yuqiangdede.ffe.dto.output.FaceInfo4Search;
-import com.yuqiangdede.ffe.dto.output.FaceInfo4SearchAdd;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.imageio.ImageIO;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.ObjectUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.yuqiangdede.common.dto.output.HttpResult;
+import com.yuqiangdede.common.util.ImageUtil;
+import com.yuqiangdede.ffe.core.domain.FaceImage;
+import com.yuqiangdede.ffe.core.domain.FaceInfo;
+import com.yuqiangdede.ffe.dto.input.Input4Compare;
+import com.yuqiangdede.ffe.dto.input.Input4Del;
+import com.yuqiangdede.ffe.dto.input.Input4Save;
+import com.yuqiangdede.ffe.dto.input.Input4Search;
+import com.yuqiangdede.ffe.dto.input.InputWithUrl;
+import com.yuqiangdede.ffe.dto.output.FaceInfo4Add;
+import com.yuqiangdede.ffe.dto.output.FaceInfo4Search;
+import com.yuqiangdede.ffe.dto.output.FaceInfo4SearchAdd;
 import com.yuqiangdede.ffe.service.FaceService;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @Slf4j
@@ -48,6 +58,7 @@ public class FaceController {
 //    }
 
     @PostMapping(value = "/v1/face/computeFaceVector", produces = "application/json", consumes = "application/json")
+    @SuppressWarnings("UseSpecificCatch")
     public HttpResult<FaceImage> computeFaceVector(@RequestBody InputWithUrl input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getImgUrl())) {
@@ -65,6 +76,7 @@ public class FaceController {
     }
 
     @PostMapping(value = "/v1/face/saveFaceVector", produces = "application/json", consumes = "application/json")
+    @SuppressWarnings("UseSpecificCatch")
     public HttpResult<Object> saveFaceVector(@RequestBody Input4Save input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getImgUrl())) {
@@ -82,6 +94,7 @@ public class FaceController {
     }
 
     @PostMapping(value = "/v1/face/computeAndSaveFaceVector", produces = "application/json", consumes = "application/json")
+    @SuppressWarnings("UseSpecificCatch")
     public HttpResult<List<FaceInfo4Add>> computeAndSaveFaceVector(@RequestBody InputWithUrl input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getImgUrl())) {
@@ -103,6 +116,7 @@ public class FaceController {
     }
 
     @PostMapping(value = "/v1/face/deleteFace", produces = "application/json", consumes = "application/json")
+    @SuppressWarnings("UseSpecificCatch")
     public HttpResult<Object> deleteFace(@RequestBody Input4Del input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getId())) {
@@ -119,6 +133,7 @@ public class FaceController {
     }
 
     @PostMapping(value = "/v1/face/findMostSimilarFace", produces = "application/json", consumes = "application/json")
+    @SuppressWarnings("UseSpecificCatch")
     public HttpResult<List<FaceInfo4Search>> findMostSimilarFace(@RequestBody Input4Search input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getImgUrl())) {
@@ -136,6 +151,7 @@ public class FaceController {
     }
 
     @PostMapping(value = "/v1/face/findMostSimilarFaceI", produces = "application/json", consumes = "application/json")
+    @SuppressWarnings("UseSpecificCatch")
     public Object findMostSimilarFaceI(@RequestBody Input4Search input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getImgUrl())) {
@@ -168,6 +184,7 @@ public class FaceController {
      * @return HttpResult对象，包含操作结果和相似度信息(注意这个相似度和搜索中的相似度不可比较，这个是代码算的，搜索的那个是用Lucene底层算的)
      */
     @PostMapping(value = "/v1/face/calculateSimilarity", produces = "application/json", consumes = "application/json")
+    @SuppressWarnings("UseSpecificCatch")
     public HttpResult<Object> calculateSimilarity(@RequestBody Input4Compare input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getImgUrl())) {
@@ -193,6 +210,7 @@ public class FaceController {
      * @return 包含操作结果的HttpResult对象
      */
     @PostMapping(value = "/v1/face/findSave", produces = "application/json", consumes = "application/json")
+    @SuppressWarnings("UseSpecificCatch")
     public HttpResult<FaceInfo4SearchAdd> findSave(@RequestBody Input4Search input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getImgUrl())) {
