@@ -49,6 +49,11 @@
             <artifactId>onnxruntime</artifactId>
             <version>${onnx.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-core</artifactId>
+            <version>${lucene.version}</version>
+        </dependency>
 
     </dependencies>
 </project>

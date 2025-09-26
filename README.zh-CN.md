@@ -85,6 +85,12 @@ mvn clean install -DskipTests
 
 服务默认监听 `/api` 前缀，可在各模块的 `application.properties` 中调整端口与路径。
 
+### 向量存储配置
+
+- `vision-mind-ffe-app`、`vision-mind-reid-app` 与 `vision-mind-tbir-app` 新增 `vector.persistence.enabled` 开关。
+- `true`（默认）使用 Lucene 将向量落盘；`false` 时使用内置的 chroma 内存向量库，方便快速体验或临时部署。
+- 切换为内存模式后同一模块重启会丢失索引数据，请视需求选择。
+
 ## 接口概览
 
 每个模块均使用统一的响应结构 `HttpResult<T>`，包含 `code`、`msg`、`data` 字段，`code="0"` 表示成功。

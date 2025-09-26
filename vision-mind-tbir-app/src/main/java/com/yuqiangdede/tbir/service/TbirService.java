@@ -37,7 +37,7 @@ public class TbirService {
 
     static {
         try {
-            TbirLuceneUtil.init(Constant.LUCENE_PATH);
+            TbirLuceneUtil.init(Constant.LUCENE_PATH, Constant.VECTOR_PERSISTENCE_ENABLED);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

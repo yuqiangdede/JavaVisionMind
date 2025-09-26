@@ -11,6 +11,7 @@ public class ReidConstant {
 
     public static final String LUCENE_PATH;
     public static final String ONNX_PATH;
+    public static final boolean VECTOR_PERSISTENCE_ENABLED;
 
     static {
         Properties properties = new Properties();
@@ -32,6 +33,8 @@ public class ReidConstant {
 
             LUCENE_PATH = envPath + properties.getProperty("lucene.path");
             ONNX_PATH = envPath + properties.getProperty("reid.onnx.path");
+            VECTOR_PERSISTENCE_ENABLED = Boolean.parseBoolean(
+                    properties.getProperty("vector.persistence.enabled", "true"));
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to read configuration file", e);

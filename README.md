@@ -79,6 +79,12 @@ mvn clean install -DskipTests
 
 Each service uses `/api` as the context root. Default ports can be overridden in the respective `application.properties`.
 
+### Vector storage toggle
+
+- `vision-mind-ffe-app`, `vision-mind-reid-app`, and `vision-mind-tbir-app` expose a `vector.persistence.enabled` flag.
+- Leave it at `true` (default) to persist vectors with Lucene, or flip to `false` to run entirely in-memory via the embedded chroma store.
+- Memory mode is ideal for quick validation but discards vectors on restart.
+
 ## API Reference
 
 Below tables outline the primary REST endpoints exposed by each runnable module. `HttpResult<T>` denotes the project-wide response wrapper containing `success`, `message`, and `data` fields.

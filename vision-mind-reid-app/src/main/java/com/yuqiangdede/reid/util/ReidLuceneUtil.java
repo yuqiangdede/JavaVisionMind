@@ -1,195 +1,271 @@
 package com.yuqiangdede.reid.util;
 
+import com.yuqiangdede.common.chroma.ChromaStore;
+import com.yuqiangdede.common.chroma.EmbeddingRecord;
+import com.yuqiangdede.common.chroma.InMemoryChromaStore;
+import com.yuqiangdede.common.chroma.SearchResult;
+import com.yuqiangdede.common.util.VectorUtil;
 import com.yuqiangdede.reid.output.Feature;
 import com.yuqiangdede.reid.output.Human;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.KnnFloatVectorField;
+import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.KnnFloatVectorQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.SearcherFactory;
+import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.FSDirectory;
 
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
+/**
+ * Vector storage helper for ReID that can switch between Lucene persistence and
+ * an in-memory chroma-compatible store.
+ */
+public final class ReidLuceneUtil {
+    private static final String VECTOR_FIELD = "vector";
+    private static final Object LUCENE_LOCK = new Object();
 
-public class ReidLuceneUtil {
+    private static volatile boolean persistenceEnabled;
     private static SearcherManager searcherManager;
     private static IndexWriter writer;
     private static FSDirectory directory;
-    private static IndexSearcher searcher;
-    private static final String VECTOR_FIELD = "vector";
+    private static ChromaStore inMemoryStore;
+
+    private ReidLuceneUtil() {
+    }
 
     /**
-     * 初始化索引功能
+     * Initialise storage layer.
      *
-     * @throws Exception 如果初始化过程中出现错误，则抛出异常
+     * @param indexPath location for Lucene indices
+     * @param persistVectors whether vectors should be persisted to disk
      */
-    public static void init(String indexPath) throws Exception {
-        directory = FSDirectory.open(Paths.get(indexPath));
-
-        // 创建 IndexWriter
-        IndexWriterConfig config = new IndexWriterConfig();
-        config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-        writer = new IndexWriter(directory, config);
-
-        // 初始化 SearcherManager
-        searcherManager = new SearcherManager(writer, new SearcherFactory());
-
-        // 提交并刷新 SearcherManager
-        writer.commit();
-        searcherManager.maybeRefresh();
-        searcher = searcherManager.acquire();
+    public static void init(String indexPath, boolean persistVectors) throws Exception {
+        persistenceEnabled = persistVectors;
+        if (persistVectors) {
+            synchronized (LUCENE_LOCK) {
+                directory = FSDirectory.open(Paths.get(indexPath));
+                IndexWriterConfig config = new IndexWriterConfig();
+                config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+                writer = new IndexWriter(directory, config);
+                searcherManager = new SearcherManager(writer, new SearcherFactory());
+                writer.commit();
+                searcherManager.maybeRefresh();
+            }
+        } else {
+            inMemoryStore = new InMemoryChromaStore();
+        }
     }
 
     public static void close() throws Exception {
-        // 关闭资源
-        searcherManager.close();
-        writer.close();
-        directory.close();
+        if (persistenceEnabled) {
+            synchronized (LUCENE_LOCK) {
+                if (searcherManager != null) {
+                    searcherManager.close();
+                    searcherManager = null;
+                }
+                if (writer != null) {
+                    writer.close();
+                    writer = null;
+                }
+                if (directory != null) {
+                    directory.close();
+                    directory = null;
+                }
+            }
+        } else {
+            inMemoryStore = null;
+        }
     }
 
-    public static void add(String imgUrl, String cameraId,String humanId, Feature feature) {
+    public static void add(String imgUrl, String cameraId, String humanId, Feature feature) {
+        Objects.requireNonNull(feature, "feature");
+        if (persistenceEnabled) {
+            addToLucene(imgUrl, cameraId, humanId, feature);
+        } else {
+            addToMemory(imgUrl, cameraId, humanId, feature);
+        }
+    }
+
+    public static void delete(String id) throws IOException {
+        if (persistenceEnabled) {
+            synchronized (LUCENE_LOCK) {
+                writer.deleteDocuments(new Term("image_id", id));
+                writer.commit();
+                searcherManager.maybeRefresh();
+            }
+        } else if (inMemoryStore != null) {
+            inMemoryStore.delete(id);
+        }
+    }
+
+    public static void deleteAll() throws IOException {
+        if (persistenceEnabled) {
+            synchronized (LUCENE_LOCK) {
+                writer.deleteAll();
+                writer.commit();
+                searcherManager.maybeRefresh();
+            }
+        } else if (inMemoryStore != null) {
+            inMemoryStore.clear();
+        }
+    }
+
+    public static List<Human> searchByVector(float[] vec, String cameraId, Integer topN, float confThreshold) {
+        if (persistenceEnabled) {
+            return searchWithLucene(vec, cameraId, topN, confThreshold);
+        }
+        return searchInMemory(vec, cameraId, topN, confThreshold);
+    }
+
+    private static void addToLucene(String imgUrl, String cameraId, String humanId, Feature feature) {
         Document doc = new Document();
-        // 向量字段
-        doc.add(new KnnFloatVectorField("vector", feature.getEmbeds()));
-        // 图像主键  +  图片url
+        doc.add(new KnnFloatVectorField(VECTOR_FIELD, feature.getEmbeds()));
         doc.add(new StringField("image_id", feature.getUuid(), Field.Store.YES));
         if (imgUrl != null) {
             doc.add(new StoredField("img_url", imgUrl));
         }
-        // 可选业务字段
         if (cameraId != null) {
             doc.add(new StringField("camera_id", cameraId, Field.Store.YES));
         }
-        // 如果humanId 有值 说明要关联到其他人上 就设置进去；如果没有值就说明自己要做封面 把自己的image_id 设置进去
-        if (humanId != null) {
-            doc.add(new StringField("human_id", humanId, Field.Store.YES));
-        } else {
-            doc.add(new StringField("human_id", feature.getUuid(), Field.Store.YES));
-        }
-        // 时间戳
+        String resolvedHumanId = humanId != null ? humanId : feature.getUuid();
+        doc.add(new StringField("human_id", resolvedHumanId, Field.Store.YES));
         long now = System.currentTimeMillis();
         doc.add(new LongPoint("timestamp", now));
         doc.add(new StoredField("timestamp", now));
-        // 写入 Lucene
+
         try {
-            writer.addDocument(doc);
-            searcherManager.maybeRefresh();     // 刷新索引
-            searcher = searcherManager.acquire(); // 更新最新的 IndexSearcher
-            writer.commit();
+            synchronized (LUCENE_LOCK) {
+                writer.addDocument(doc);
+                writer.commit();
+                searcherManager.maybeRefresh();
+            }
         } catch (IOException e) {
-            throw new RuntimeException("Lucene 写入失败", e);
+            throw new RuntimeException("Lucene write failed", e);
         }
     }
 
-    /**
-     * 根据给定的ID删除对应的文档。
-     *
-     * @param id 需要删除的文档的ID。
-     * @throws IOException 如果在删除文档的过程中发生I/O错误。
-     */
-    public static void delete(String id) throws IOException {
-        writer.deleteDocuments(new Term("image_id", id));
-        writer.commit();
-        searcherManager.maybeRefresh();
+    private static void addToMemory(String imgUrl, String cameraId, String humanId, Feature feature) {
+        if (inMemoryStore == null) {
+            throw new IllegalStateException("In-memory vector store is not initialised");
+        }
+        Map<String, String> metadata = new HashMap<>();
+        if (cameraId != null) {
+            metadata.put("camera_id", cameraId);
+        }
+        String resolvedHumanId = humanId != null ? humanId : feature.getUuid();
+        metadata.put("human_id", resolvedHumanId);
+        metadata.put("image_id", feature.getUuid());
+
+        Map<String, Object> payload = new HashMap<>();
+        if (imgUrl != null) {
+            payload.put("img_url", imgUrl);
+        }
+
+        EmbeddingRecord record = new EmbeddingRecord(
+                feature.getUuid(),
+                VectorUtil.normalizeVector(feature.getEmbeds()),
+                metadata,
+                payload,
+                System.currentTimeMillis());
+        inMemoryStore.upsert(record);
     }
 
-    /**
-     * 删除所有文档。
-     * 该方法会删除索引中的所有文档，并提交更改，同时刷新搜索管理器以反映最新的索引状态。
-     *
-     * @throws IOException 如果在删除文档或提交更改的过程中发生I/O错误。
-     */
-    public static void deleteAll() throws IOException {
-        writer.deleteAll();
-        writer.commit();
-        searcherManager.maybeRefresh();
-    }
-
-
-    public static List<Human> searchByVector(float[] vec, String cameraId, Integer topN, float confThreshold) {
+    private static List<Human> searchWithLucene(float[] vec, String cameraId, Integer topN, float confThreshold) {
         List<Human> results = new ArrayList<>();
         try {
-            // 1. 向量查询
-            Query knnQuery = new KnnFloatVectorQuery(VECTOR_FIELD, vec, topN);
-            // 2. 布尔过滤条件（cameraId）
-            BooleanQuery.Builder builder = new BooleanQuery.Builder();
-            builder.add(knnQuery, BooleanClause.Occur.MUST);
-
-            if (cameraId != null) {
-                builder.add(new TermQuery(new Term("camera_id", cameraId)), BooleanClause.Occur.FILTER);
+            SearcherManager manager;
+            synchronized (LUCENE_LOCK) {
+                manager = searcherManager;
             }
-
-            Query finalQuery = builder.build();
-            // 3. 执行查询
-            TopDocs topDocs = searcher.search(finalQuery, topN);
-            // 4. 遍历结果，构建 LuceHit
-            for (ScoreDoc sd : topDocs.scoreDocs) {
-                Document doc = searcher.storedFields().document(sd.doc);
-                if (sd.score < confThreshold) {
-                    // 如果得分低于阈值，则跳过该结果
-                    continue;
+            if (manager == null) {
+                return results;
+            }
+            int limit = topN == null ? 10 : topN;
+            if (limit <= 0) {
+                return results;
+            }
+            IndexSearcher searcher = manager.acquire();
+            try {
+                Query knnQuery = new KnnFloatVectorQuery(VECTOR_FIELD, vec, limit);
+                BooleanQuery.Builder builder = new BooleanQuery.Builder();
+                builder.add(knnQuery, BooleanClause.Occur.MUST);
+                if (cameraId != null) {
+                    builder.add(new TermQuery(new Term("camera_id", cameraId)), BooleanClause.Occur.FILTER);
                 }
-                Human hit = new Human(
-                        doc.get("human_id"),
-                        doc.get("image_id"),
-                        doc.get("img_url"),
-                        sd.score, // Lucene 的打分（不是余弦相似度，但也可排序）
-                        doc.get("camera_id"),
-                        "exist"
-                );
-                results.add(hit);
+                TopDocs topDocs = searcher.search(builder.build(), limit);
+                for (ScoreDoc sd : topDocs.scoreDocs) {
+                    if (sd.score < confThreshold) {
+                        continue;
+                    }
+                    Document doc = searcher.storedFields().document(sd.doc);
+                    Human hit = new Human(
+                            doc.get("human_id"),
+                            doc.get("image_id"),
+                            doc.get("img_url"),
+                            sd.score,
+                            doc.get("camera_id"),
+                            "exist"
+                    );
+                    results.add(hit);
+                }
+            } finally {
+                manager.release(searcher);
             }
-
         } catch (IOException e) {
             throw new RuntimeException("Lucene search failed", e);
         }
-
         return results;
     }
 
-//    public static List<LuceHit> searchById(String imgId) {
-//        List<LuceHit> results = new ArrayList<>();
-//        try {
-//            BooleanQuery.Builder builder = new BooleanQuery.Builder();
-//            builder.add(new TermQuery(new Term("image_id", imgId)), BooleanClause.Occur.FILTER);
-//            Query finalQuery = builder.build();
-//            TopDocs topDocs = searcher.search(finalQuery, 999999);
-//
-//            for (ScoreDoc sd : topDocs.scoreDocs) {
-//                Document doc = searcher.storedFields().document(sd.doc);
-//                // 坐标框
-//                int isMain = Integer.parseInt(doc.get("main"));
-//                Box box = null;
-//                if (isMain == 0) { // 非主图 → 有框
-//                    box = new Box(
-//                            Float.parseFloat(doc.get("box_x1")),
-//                            Float.parseFloat(doc.get("box_y1")),
-//                            Float.parseFloat(doc.get("box_x2")),
-//                            Float.parseFloat(doc.get("box_y2")),
-//                            0, "", 0
-//                    );
-//                }
-//                // 元信息
-//                Map<String, String> meta = JsonUtils.json2Map(doc.get("meta_json")); // 使用你之前的 Jackson 工具类
-//                LuceHit hit = new LuceHit(
-//                        doc.get("image_id"),
-//                        doc.get("img_url"),
-//                        box,
-//                        sd.score, // Lucene 的打分（不是余弦相似度，但也可排序）
-//                        doc.get("camera_id"),
-//                        doc.get("group_id"),
-//                        meta
-//                );
-//
-//                results.add(hit);
-//            }
-//        } catch (IOException e) {
-//            throw new RuntimeException("Lucene search failed", e);
-//        }
-//        return results;
-//    }
+    private static List<Human> searchInMemory(float[] vec, String cameraId, Integer topN, float confThreshold) {
+        if (inMemoryStore == null) {
+            return List.of();
+        }
+        Map<String, String> filter = new HashMap<>();
+        if (cameraId != null) {
+            filter.put("camera_id", cameraId);
+        }
+        List<SearchResult> hits = inMemoryStore.similaritySearch(
+                VectorUtil.normalizeVector(vec),
+                topN == null ? 10 : topN,
+                filter,
+                confThreshold);
+        List<Human> humans = new ArrayList<>(hits.size());
+        for (SearchResult hit : hits) {
+            EmbeddingRecord record = hit.getRecord();
+            String humanId = record.getMetadata().getOrDefault("human_id", record.getId());
+            String imageId = record.getMetadata().getOrDefault("image_id", record.getId());
+            Object imgUrlObj = record.getPayload().get("img_url");
+            String imgUrl = imgUrlObj instanceof String ? (String) imgUrlObj : null;
+            String cameraValue = record.getMetadata().get("camera_id");
+            humans.add(new Human(
+                    humanId,
+                    imageId,
+                    imgUrl,
+                    (float) hit.getScore(),
+                    cameraValue,
+                    "exist"));
+        }
+        return humans;
+    }
 }

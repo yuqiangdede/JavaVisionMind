@@ -41,7 +41,7 @@ public class ReidService {
             }
 
             try {
-                ReidLuceneUtil.init(ReidConstant.LUCENE_PATH);
+                ReidLuceneUtil.init(ReidConstant.LUCENE_PATH, ReidConstant.VECTOR_PERSISTENCE_ENABLED);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

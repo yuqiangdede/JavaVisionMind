@@ -3,7 +3,11 @@ package com.yuqiangdede.ffe.util;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.document.Document;
@@ -28,137 +32,211 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
 
+import com.yuqiangdede.common.chroma.ChromaStore;
+import com.yuqiangdede.common.chroma.EmbeddingRecord;
+import com.yuqiangdede.common.chroma.InMemoryChromaStore;
+import com.yuqiangdede.common.chroma.SearchResult;
 import com.yuqiangdede.common.util.VectorUtil;
 import com.yuqiangdede.ffe.dto.output.FaceInfo4Search;
 
-public class FfeLuceneUtil {
+/**
+ * Shared utility that supports Lucene persistence or an in-memory chroma store.
+ */
+public final class FfeLuceneUtil {
+    private static final Object LUCENE_LOCK = new Object();
+
+    private static volatile boolean persistenceEnabled;
     private static SearcherManager searcherManager;
     private static IndexWriter writer;
     private static FSDirectory directory;
+    private static ChromaStore inMemoryStore;
 
+    private FfeLuceneUtil() {
+    }
 
-
-    /**
-     * 初始化索引功能
-     *
-     * @throws Exception 如果初始化过程中出现错误，则抛出异常
-     */
-    public static void init(String indexPath) throws Exception {
-        directory = FSDirectory.open(Paths.get(indexPath));
-
-        // 创建 IndexWriter
-        IndexWriterConfig config = new IndexWriterConfig();
-        writer = new IndexWriter(directory, config);
-
-        // 初始化 SearcherManager
-        searcherManager = new SearcherManager(writer, new SearcherFactory());
-
-        // 提交并刷新 SearcherManager
-        writer.commit();
-        searcherManager.maybeRefresh();
+    public static void init(String indexPath, boolean persistVectors) throws Exception {
+        persistenceEnabled = persistVectors;
+        if (persistVectors) {
+            synchronized (LUCENE_LOCK) {
+                directory = FSDirectory.open(Paths.get(indexPath));
+                IndexWriterConfig config = new IndexWriterConfig();
+                config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+                writer = new IndexWriter(directory, config);
+                searcherManager = new SearcherManager(writer, new SearcherFactory());
+                writer.commit();
+                searcherManager.maybeRefresh();
+            }
+        } else {
+            inMemoryStore = new InMemoryChromaStore();
+        }
     }
 
     public static void close() throws Exception {
-        // 关闭资源
-        searcherManager.close();
-        writer.close();
-        directory.close();
+        if (persistenceEnabled) {
+            synchronized (LUCENE_LOCK) {
+                if (searcherManager != null) {
+                    searcherManager.close();
+                    searcherManager = null;
+                }
+                if (writer != null) {
+                    writer.close();
+                    writer = null;
+                }
+                if (directory != null) {
+                    directory.close();
+                    directory = null;
+                }
+            }
+        } else {
+            inMemoryStore = null;
+        }
     }
 
-    /**
-     * 添加文档的方法
-     *
-     * @param vector  人脸的向量信息
-     * @param imgUrl  人脸图像URL
-     * @param id      人脸唯一标识符
-     * @param groupId 人脸分组ID
-     * @throws IOException 如果添加文档过程中出现错误，则抛出异常
-     */
-    // 添加文档的方法
     public static void add(float[] vector, String imgUrl, String id, String groupId) throws IOException {
-        Document doc = new Document();
-        // 向量索引 暂时不需要存储
-        doc.add(new KnnFloatVectorField("vector", VectorUtil.normalizeVector(vector)));
+        Objects.requireNonNull(vector, "vector");
+        Objects.requireNonNull(id, "id");
+        Objects.requireNonNull(groupId, "groupId");
+        if (persistenceEnabled) {
+            addToLucene(vector, imgUrl, id, groupId);
+        } else {
+            addToMemory(vector, imgUrl, id, groupId);
+        }
+    }
 
-        // 时间字段
+    public static void delete(String id) throws IOException {
+        if (persistenceEnabled) {
+            synchronized (LUCENE_LOCK) {
+                writer.deleteDocuments(new Term("id", id));
+                writer.commit();
+                searcherManager.maybeRefresh();
+            }
+        } else if (inMemoryStore != null) {
+            inMemoryStore.delete(id);
+        }
+    }
+
+    public static void deleteAll() throws IOException {
+        if (persistenceEnabled) {
+            synchronized (LUCENE_LOCK) {
+                writer.deleteAll();
+                writer.commit();
+                searcherManager.maybeRefresh();
+            }
+        } else if (inMemoryStore != null) {
+            inMemoryStore.clear();
+        }
+    }
+
+    public static List<FaceInfo4Search> searchTop(float[] queryVector, String groupId, float confThreshold, int n) throws IOException {
+        if (persistenceEnabled) {
+            return searchWithLucene(queryVector, groupId, confThreshold, n);
+        }
+        return searchInMemory(queryVector, groupId, confThreshold, n);
+    }
+
+    private static void addToLucene(float[] vector, String imgUrl, String id, String groupId) throws IOException {
+        Document doc = new Document();
+        doc.add(new KnnFloatVectorField("vector", VectorUtil.normalizeVector(vector)));
         long time = System.currentTimeMillis();
         doc.add(new LongPoint("time", time));
         doc.add(new StoredField("time_stored", time));
-
         doc.add(new StringField("groupId", groupId, Field.Store.YES));
         doc.add(new StringField("id", id, Field.Store.YES));
         doc.add(new StringField("imgUrl", imgUrl, Field.Store.YES));
-        // 添加文档到索引
-        writer.addDocument(doc);
-        writer.commit();
-        searcherManager.maybeRefresh();
+        synchronized (LUCENE_LOCK) {
+            writer.addDocument(doc);
+            writer.commit();
+            searcherManager.maybeRefresh();
+        }
     }
 
-    /**
-     * 根据给定的ID删除对应的文档。
-     *
-     * @param id 需要删除的文档的ID。
-     * @throws IOException 如果在删除文档的过程中发生I/O错误。
-     */
-    public static void delete(String id) throws IOException {
-        writer.deleteDocuments(new Term("id", id));
-        writer.commit();
-        searcherManager.maybeRefresh();
+    private static void addToMemory(float[] vector, String imgUrl, String id, String groupId) {
+        if (inMemoryStore == null) {
+            throw new IllegalStateException("In-memory vector store is not initialised");
+        }
+        Map<String, String> metadata = new HashMap<>();
+        metadata.put("groupId", groupId);
+        metadata.put("id", id);
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("imgUrl", imgUrl);
+        payload.put("time", System.currentTimeMillis());
+        EmbeddingRecord record = new EmbeddingRecord(
+                id,
+                VectorUtil.normalizeVector(vector),
+                metadata,
+                payload,
+                System.currentTimeMillis());
+        inMemoryStore.upsert(record);
     }
 
-    /**
-     * 删除所有文档。
-     * 该方法会删除索引中的所有文档，并提交更改，同时刷新搜索管理器以反映最新的索引状态。
-     * @throws IOException 如果在删除文档或提交更改的过程中发生I/O错误。
-     */
-    public static void deleteAll() throws IOException {
-        writer.deleteAll();
-        writer.commit();
-        searcherManager.maybeRefresh();
-    }
-
-    // 执行搜索的方法
-    public static List<FaceInfo4Search> searchTop(float[] queryVector, String groupId, float confThreshold, int n) throws IOException {
+    private static List<FaceInfo4Search> searchWithLucene(float[] queryVector, String groupId, float confThreshold, int n) throws IOException {
         List<FaceInfo4Search> face4Search = new ArrayList<>();
-
-        // 获取 IndexSearcher
-        IndexSearcher searcher = searcherManager.acquire();
+        SearcherManager manager;
+        synchronized (LUCENE_LOCK) {
+            manager = searcherManager;
+        }
+        if (manager == null) {
+            return face4Search;
+        }
+        int limit = Math.max(n, 0);
+        if (limit == 0) {
+            return face4Search;
+        }
+        IndexSearcher searcher = manager.acquire();
         try {
-            // 组合查询条件
             BooleanQuery.Builder finalQueryBuilder = new BooleanQuery.Builder();
-
-            // 构建 KnnVectorQuery
-            KnnFloatVectorQuery knnQuery = new KnnFloatVectorQuery("vector", VectorUtil.normalizeVector(queryVector), 100);
+            KnnFloatVectorQuery knnQuery = new KnnFloatVectorQuery("vector", VectorUtil.normalizeVector(queryVector), Math.max(limit, 1));
             finalQueryBuilder.add(knnQuery, BooleanClause.Occur.MUST);
-
             if (groupId != null) {
                 Query resourceQuery = new TermQuery(new Term("groupId", groupId));
                 finalQueryBuilder.add(resourceQuery, BooleanClause.Occur.FILTER);
             }
-
-            // 执行查询
-            Query finalQuery = finalQueryBuilder.build();
-            TopDocs topDocs = searcher.search(finalQuery, n);
-
-            // 解析结果
+            TopDocs topDocs = searcher.search(finalQueryBuilder.build(), limit);
             StoredFields storedFields = searcher.storedFields();
+            Set<String> fields = new HashSet<>();
+            fields.add("id");
+            fields.add("imgUrl");
             for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
                 if (scoreDoc.score < confThreshold) {
-                    // 如果得分低于阈值，则跳过该结果
                     continue;
                 }
-                Document doc = storedFields.document(scoreDoc.doc, Set.of("id", "imgUrl"));
+                Document doc = storedFields.document(scoreDoc.doc, fields);
                 String id = doc.get("id");
                 String imgUrl = doc.get("imgUrl");
                 float confidence = scoreDoc.score;
-
                 face4Search.add(new FaceInfo4Search(id, imgUrl, confidence));
             }
-
         } finally {
-            searcherManager.release(searcher);
+            manager.release(searcher);
         }
         return face4Search;
     }
 
+    private static List<FaceInfo4Search> searchInMemory(float[] queryVector, String groupId, float confThreshold, int n) {
+        if (inMemoryStore == null) {
+            return List.of();
+        }
+        int limit = Math.max(n, 0);
+        if (limit == 0) {
+            return List.of();
+        }
+        Map<String, String> filter = new HashMap<>();
+        if (groupId != null) {
+            filter.put("groupId", groupId);
+        }
+        List<SearchResult> results = inMemoryStore.similaritySearch(
+                VectorUtil.normalizeVector(queryVector),
+                limit,
+                filter,
+                confThreshold);
+        List<FaceInfo4Search> face4Search = new ArrayList<>(results.size());
+        for (SearchResult result : results) {
+            EmbeddingRecord record = result.getRecord();
+            String id = record.getMetadata().getOrDefault("id", record.getId());
+            Object imgUrlObj = record.getPayload().get("imgUrl");
+            String imgUrl = imgUrlObj instanceof String ? (String) imgUrlObj : null;
+            face4Search.add(new FaceInfo4Search(id, imgUrl, (float) result.getScore()));
+        }
+        return face4Search;
+    }
 }

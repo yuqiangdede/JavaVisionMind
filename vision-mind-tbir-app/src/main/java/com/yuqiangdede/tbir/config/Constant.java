@@ -21,6 +21,7 @@ public class Constant {
     public static final String CLIP_TOKENIZER;
 
     public static final String LUCENE_PATH;
+    public static final boolean VECTOR_PERSISTENCE_ENABLED;
 
     public static final Boolean TOKEN_FILTER;
     public static final Boolean OPEN_DETECT;
@@ -62,6 +63,8 @@ public class Constant {
             CLIP_TOKENIZER = envPath + properties.getProperty("clip.tokenizer");
 
             LUCENE_PATH = envPath + properties.getProperty("lucene.path");
+            VECTOR_PERSISTENCE_ENABLED = Boolean.parseBoolean(
+                    properties.getProperty("vector.persistence.enabled", "true"));
 
             TOKEN_FILTER = Boolean.valueOf(properties.getProperty("token.filter"));
             OPEN_DETECT = Boolean.valueOf(properties.getProperty("open.detect"));

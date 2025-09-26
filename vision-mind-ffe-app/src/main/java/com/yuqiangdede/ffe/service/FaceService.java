@@ -41,7 +41,7 @@ public class FaceService {
                 FaceAlignment simple106pFaceAlignment = new Simple106pFaceAlignment();
                 FaceAttribute insightFaceAttribute = new InsightAttributeDetection(Constant.MODEL_ARR_PATH, 1);
 
-                FfeLuceneUtil.init(Constant.LUCENE_PATH);
+                FfeLuceneUtil.init(Constant.LUCENE_PATH, Constant.VECTOR_PERSISTENCE_ENABLED);
 
                 extractor = new FaceFeatureExtractorImpl(
                         insightScrfdFaceDetection, insightCoordFaceKeyPoint,

@@ -19,6 +19,7 @@ public class Constant {
     public static final String MODEL_ARC_PATH;
     public static final String MODEL_ARR_PATH;
     public static final String LUCENE_PATH;
+    public static final boolean VECTOR_PERSISTENCE_ENABLED;
 
     public static final Boolean TOKEN_FILTER;
 
@@ -46,6 +47,8 @@ public class Constant {
             MODEL_ARC_PATH = envPath + properties.getProperty("model.arc.path");
             MODEL_ARR_PATH = envPath + properties.getProperty("model.arr.path");
             LUCENE_PATH = envPath + properties.getProperty("lucene.path");
+            VECTOR_PERSISTENCE_ENABLED = Boolean.parseBoolean(
+                    properties.getProperty("vector.persistence.enabled", "true"));
 
             TOKEN_FILTER = Boolean.valueOf(properties.getProperty("token.filter"));
         } catch (IOException e) {
