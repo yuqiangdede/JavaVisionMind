@@ -2,7 +2,7 @@ package com.yuqiangdede.ffe.core.domain;
 
 import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
-import com.yuqiangdede.ffe.core.utils.MatUtil;
+import com.yuqiangdede.common.util.MatUtil;
 import org.opencv.core.*;
 import org.opencv.core.Point;
 import org.opencv.dnn.Dnn;

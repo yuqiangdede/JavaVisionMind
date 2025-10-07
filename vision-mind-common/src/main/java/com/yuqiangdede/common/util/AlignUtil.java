@@ -1,16 +1,19 @@
-package com.yuqiangdede.ffe.core.utils;
+package com.yuqiangdede.common.util;
 
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.linear.SingularValueDecomposition;
-import org.opencv.core.*;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfDouble;
+import org.opencv.core.Rect;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 /**
  * 图像对齐工具
  */
 public class AlignUtil {
-
 
     /**
      * 人脸对齐
@@ -31,8 +34,8 @@ public class AlignUtil {
             if (stdWidth <= imgWidth && stdHeight <= imgHeight) {
                 return new Mat(warp, new Rect(0, 0, stdWidth, stdHeight));
             }
-            //计算需要裁剪的宽和高
-            int h, w;
+            int h;
+            int w;
             if ((imgWidth / imgHeight) >= (1.0 * stdWidth / stdHeight)) {
                 h = (int) Math.floor(imgHeight);
                 w = (int) Math.floor(1.0 * stdWidth * imgHeight / stdHeight);
@@ -41,7 +44,6 @@ public class AlignUtil {
                 w = (int) Math.floor(imgWidth);
                 h = (int) Math.floor(1.0 * stdHeight * imgWidth / stdWidth);
             }
-            //需要裁剪图片
             rectMat = new Mat(warp, new Rect(0, 0, w, h));
             Mat crop = new Mat();
             Imgproc.resize(rectMat, crop, new Size(stdWidth, stdHeight), 0, 0, Imgproc.INTER_NEAREST);
@@ -56,7 +58,6 @@ public class AlignUtil {
         }
     }
 
-
     /**
      * 图像仿射变换
      *
@@ -69,34 +70,25 @@ public class AlignUtil {
         Mat matM = null;
         Mat matMTemp = null;
         try {
-            //转换为矩阵
             RealMatrix imgPointMatrix = MathUtil.createMatrix(imgPoint);
             RealMatrix stdPointMatrix = MathUtil.createMatrix(stdPoint);
-            //判断数据的行列是否一致
             int row = imgPointMatrix.getRowDimension();
             int col = imgPointMatrix.getColumnDimension();
             if (row <= 0 || col <= 0 || row != stdPointMatrix.getRowDimension() || col != stdPointMatrix.getColumnDimension()) {
                 throw new RuntimeException("row or col is not equal");
             }
-            //求列的均值
             RealVector imgPointMeanVector = MathUtil.mean(imgPointMatrix, 0);
             RealVector stdPointMeanVector = MathUtil.mean(stdPointMatrix, 0);
-            //对关键点进行减去均值
             RealMatrix imgPointMatrix1 = imgPointMatrix.subtract(MathUtil.createMatrix(row, imgPointMeanVector.toArray()));
             RealMatrix stdPointMatrix1 = stdPointMatrix.subtract(MathUtil.createMatrix(row, stdPointMeanVector.toArray()));
-            //计算关键点的标准差
             double imgPointStd = MathUtil.std(imgPointMatrix1);
             double stdPointStd = MathUtil.std(stdPointMatrix1);
-            //对关键点除以标准差
             RealMatrix imgPointMatrix2 = MathUtil.scalarDivision(imgPointMatrix1, imgPointStd);
             RealMatrix stdPointMatrix2 = MathUtil.scalarDivision(stdPointMatrix1, stdPointStd);
-            //获取矩阵的分量
             RealMatrix pointsT = imgPointMatrix2.transpose().multiply(stdPointMatrix2);
             SingularValueDecomposition svdH = new SingularValueDecomposition(pointsT);
             RealMatrix U = svdH.getU();
-//            RealMatrix S = svdH.getS();
             RealMatrix Vt = svdH.getVT();
-            //计算仿射矩阵
             RealMatrix R = U.multiply(Vt).transpose();
             RealMatrix R1 = R.scalarMultiply(stdPointStd / imgPointStd);
             RealMatrix v21 = MathUtil.createMatrix(1, stdPointMeanVector.toArray()).transpose();
@@ -104,11 +96,9 @@ public class AlignUtil {
             RealMatrix v23 = v22.scalarMultiply(stdPointStd / imgPointStd);
             RealMatrix R2 = v21.subtract(v23);
             RealMatrix M = MathUtil.hstack(R1, R2);
-            //变化仿射矩阵为Mat
             matMTemp = new MatOfDouble(MathUtil.flatMatrix(M, 1).toArray());
             matM = new Mat(2, 3, CvType.CV_32FC3);
             matMTemp.reshape(1, 2).copyTo(matM);
-            //使用open cv做仿射变换
             Mat dst = new Mat();
             Imgproc.warpAffine(image, dst, matM, image.size());
             return dst;

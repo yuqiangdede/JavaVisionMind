@@ -3,7 +3,7 @@ package com.yuqiangdede.ffe.core.models;
 import com.yuqiangdede.ffe.core.base.FaceAlignment;
 import com.yuqiangdede.ffe.core.domain.FaceInfo;
 import com.yuqiangdede.ffe.core.domain.ImageMat;
-import com.yuqiangdede.ffe.core.utils.AlignUtil;
+import com.yuqiangdede.common.util.AlignUtil;
 import org.opencv.core.Mat;
 
 import java.util.Map;

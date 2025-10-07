@@ -1,4 +1,4 @@
-package com.yuqiangdede.ffe.core.utils;
+package com.yuqiangdede.common.util;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;

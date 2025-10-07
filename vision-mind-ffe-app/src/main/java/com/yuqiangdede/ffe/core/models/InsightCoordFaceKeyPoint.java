@@ -6,7 +6,7 @@ import com.yuqiangdede.ffe.core.base.BaseOnnxInfer;
 import com.yuqiangdede.ffe.core.base.FaceKeyPoint;
 import com.yuqiangdede.ffe.core.domain.FaceInfo;
 import com.yuqiangdede.ffe.core.domain.ImageMat;
-import com.yuqiangdede.ffe.core.utils.MathUtil;
+import com.yuqiangdede.common.util.MathUtil;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;

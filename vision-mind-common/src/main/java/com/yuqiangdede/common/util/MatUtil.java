@@ -1,4 +1,4 @@
-package com.yuqiangdede.ffe.core.utils;
+package com.yuqiangdede.common.util;
 
 import org.opencv.core.Mat;
 import org.opencv.core.Range;
@@ -45,10 +45,10 @@ public class MatUtil {
             byte[] bytes = byteArrayOutputStream.toByteArray();
             Base64.Encoder encoder = Base64.getMimeEncoder();
             return encoder.encodeToString(Objects.requireNonNull(bytes));
-        }catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException(e);
-        }finally {
-            if(null != byteArrayOutputStream){
+        } finally {
+            if (null != byteArrayOutputStream) {
                 try {
                     byteArrayOutputStream.close();
                 } catch (Exception ignored) {}
@@ -64,29 +64,20 @@ public class MatUtil {
      * @param m2 要合并的图像2（右图）
      * @return 拼接好的Mat图像数据集。其高度等于两个图像中高度较大者的高度；其宽度等于两个图像的宽度之和。类型与两个输入图像相同。
      */
-    public static Mat concat(Mat m1, Mat m2){
-        if(m1.type() != m2.type()){
+    public static Mat concat(Mat m1, Mat m2) {
+        if (m1.type() != m2.type()) {
             throw new RuntimeException("concat:两个图像数据的类型不同！");
         }
-        //宽度为两图的宽度之和
         double w = m1.size().width + m2.size().width;
-        //高度取两个矩阵中的较大者的高度
-        double h = m1.size().height > m2.size().height ? m1.size().height : m2.size().height;
-        //创建一个大矩阵对象
-        Mat des = Mat.zeros((int)h, (int)w, m1.type());
-        //在最终的大图上标记一块区域，用于存放复制图1（左图）的数据，大小为从第0列到m1.cols()列
+        double h = Math.max(m1.size().height, m2.size().height);
+        Mat des = Mat.zeros((int) h, (int) w, m1.type());
         Mat rectForM1 = des.colRange(new Range(0, m1.cols()));
-        //标记出位于rectForM1的垂直方向上中间位置的区域，高度为图1的高度，此时该区域的大小已经和图1的大小相同。（用于存放复制图1（左图）的数据）
-        int rowOffset1 = (int)(rectForM1.size().height-m1.rows())/2;
+        int rowOffset1 = (int) (rectForM1.size().height - m1.rows()) / 2;
         rectForM1 = rectForM1.rowRange(rowOffset1, rowOffset1 + m1.rows());
-        //在最终的大图上标记一块区域，用于存放复制图2（右图）的数据
         Mat rectForM2 = des.colRange(new Range(m1.cols(), des.cols()));
-        //标记出位于rectForM2的垂直方向上中间位置的区域，高度为图2的高度，此时该区域的大小已经和图2的大小相同。（用于存放复制图2（右图）的数据）
-        int rowOffset2 = (int)(rectForM2.size().height-m2.rows())/2;
+        int rowOffset2 = (int) (rectForM2.size().height - m2.rows()) / 2;
         rectForM2 = rectForM2.rowRange(rowOffset2, rowOffset2 + m2.rows());
-        //将图1拷贝到des的指定区域 rectForM1
         m1.copyTo(rectForM1);
-        //将图2拷贝到des的指定区域 rectForM2
         m2.copyTo(rectForM2);
         return des;
     }
