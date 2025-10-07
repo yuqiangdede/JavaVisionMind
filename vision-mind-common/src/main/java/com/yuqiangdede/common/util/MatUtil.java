@@ -1,13 +1,14 @@
 package com.yuqiangdede.common.util;
 
-import org.opencv.core.Mat;
-import org.opencv.core.Range;
-
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.Base64;
 import java.util.Objects;
+
+import javax.imageio.ImageIO;
+
+import org.opencv.core.Mat;
+import org.opencv.core.Range;
 
 public class MatUtil {
 
@@ -45,13 +46,13 @@ public class MatUtil {
             byte[] bytes = byteArrayOutputStream.toByteArray();
             Base64.Encoder encoder = Base64.getMimeEncoder();
             return encoder.encodeToString(Objects.requireNonNull(bytes));
-        } catch (Exception e) {
+        } catch (java.io.IOException e) {
             throw new RuntimeException(e);
         } finally {
             if (null != byteArrayOutputStream) {
                 try {
                     byteArrayOutputStream.close();
-                } catch (Exception ignored) {}
+                } catch (java.io.IOException ignored) {}
             }
         }
     }
