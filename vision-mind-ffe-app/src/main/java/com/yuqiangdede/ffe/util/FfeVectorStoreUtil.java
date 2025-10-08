@@ -42,7 +42,7 @@ import com.yuqiangdede.ffe.dto.output.FaceInfo4Search;
 /**
  * Shared utility that supports Lucene persistence or an in-memory chroma store.
  */
-public final class FfeLuceneUtil {
+public final class FfeVectorStoreUtil {
     private static final Object LUCENE_LOCK = new Object();
 
     private static volatile boolean persistenceEnabled;
@@ -51,7 +51,7 @@ public final class FfeLuceneUtil {
     private static FSDirectory directory;
     private static ChromaStore inMemoryStore;
 
-    private FfeLuceneUtil() {
+    private FfeVectorStoreUtil() {
     }
 
     public static void init(String indexPath, boolean persistVectors) throws Exception {
@@ -240,3 +240,5 @@ public final class FfeLuceneUtil {
         return face4Search;
     }
 }
+
+

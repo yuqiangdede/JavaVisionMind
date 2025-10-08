@@ -7,7 +7,7 @@ import com.yuqiangdede.common.util.VectorUtil;
 import com.yuqiangdede.reid.config.ReidConstant;
 import com.yuqiangdede.reid.output.Feature;
 import com.yuqiangdede.reid.output.Human;
-import com.yuqiangdede.reid.util.ReidLuceneUtil;
+import com.yuqiangdede.reid.util.ReidVectorStoreUtil;
 import com.yuqiangdede.reid.util.ReidUtil;
 import com.yuqiangdede.yolo.config.Constant;
 import com.yuqiangdede.yolo.dto.input.DetectionRequestWithArea;
@@ -41,7 +41,7 @@ public class ReidService {
             }
 
             try {
-                ReidLuceneUtil.init(ReidConstant.LUCENE_PATH, ReidConstant.VECTOR_PERSISTENCE_ENABLED);
+                ReidVectorStoreUtil.init(ReidConstant.LUCENE_PATH, ReidConstant.VECTOR_PERSISTENCE_ENABLED);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -65,12 +65,12 @@ public class ReidService {
     private final ImgAnalysisService imgAnalysisService;
 
     /**
-     * 根据给定的图片URL获取单个特征
+     * 鏍规嵁缁欏畾鐨勫浘鐗嘦RL鑾峰彇鍗曚釜鐗瑰緛
      *
-     * @param url 图片的URL地址
-     * @return 返回一个包含图片特征信息的Feature对象
-     * @throws IOException  如果在处理过程中发生输入输出异常
-     * @throws OrtException 如果在处理过程中发生ORT异常
+     * @param url 鍥剧墖鐨刄RL鍦板潃
+     * @return 杩斿洖涓€涓寘鍚浘鐗囩壒寰佷俊鎭殑Feature瀵硅薄
+     * @throws IOException  濡傛灉鍦ㄥ鐞嗚繃绋嬩腑鍙戠敓杈撳叆杈撳嚭寮傚父
+     * @throws OrtException 濡傛灉鍦ㄥ鐞嗚繃绋嬩腑鍙戠敓ORT寮傚父
      */
     public Feature featureSingle(String url) throws IOException, OrtException {
         Mat mat = ImageUtil.urlToMat(url);
@@ -110,14 +110,14 @@ public class ReidService {
         Mat mat = ImageUtil.urlToMat(imgUrl);
         Feature feature = ReidUtil.featureSingle(mat);
         feature.setUuid(UUID.randomUUID().toString());
-        ReidLuceneUtil.add(imgUrl, cameraId, humanId, feature);
+        ReidVectorStoreUtil.add(imgUrl, cameraId, humanId, feature);
         return feature;
     }
 
     public List<Human> search(String imgUrl, String cameraId, Integer topN, float threshold) throws IOException, OrtException {
         Mat mat = ImageUtil.urlToMat(imgUrl);
         Feature feature = ReidUtil.featureSingle(mat);
-        return ReidLuceneUtil.searchByVector(feature.getEmbeds(), cameraId, topN, threshold);
+        return ReidVectorStoreUtil.searchByVector(feature.getEmbeds(), cameraId, topN, threshold);
     }
 
     public Human searchOrStore(String imgUrl, float threshold) throws IOException, OrtException {
@@ -127,7 +127,7 @@ public class ReidService {
             Mat mat = ImageUtil.urlToMat(imgUrl);
             Feature feature = ReidUtil.featureSingle(mat);
             feature.setUuid(UUID.randomUUID().toString());
-            ReidLuceneUtil.add(imgUrl, null, null, feature);
+            ReidVectorStoreUtil.add(imgUrl, null, null, feature);
             return new Human(feature.getUuid(), feature.getUuid(), imgUrl, 1, null, "new");
         } else {
             return humans.get(0);
@@ -142,15 +142,17 @@ public class ReidService {
             Mat mat = ImageUtil.urlToMat(imgUrl);
             Feature feature = ReidUtil.featureSingle(mat);
             feature.setUuid(UUID.randomUUID().toString());
-            ReidLuceneUtil.add(imgUrl, null, null, feature);
+            ReidVectorStoreUtil.add(imgUrl, null, null, feature);
             return new Human(feature.getUuid(), feature.getUuid(), imgUrl, 1, null, "new");
         } else {
             Mat mat = ImageUtil.urlToMat(imgUrl);
             Feature feature = ReidUtil.featureSingle(mat);
             feature.setUuid(UUID.randomUUID().toString());
-            ReidLuceneUtil.add(imgUrl, null, humans.get(0).getHumanId(), feature);
+            ReidVectorStoreUtil.add(imgUrl, null, humans.get(0).getHumanId(), feature);
 
             return humans.get(0);
         }
     }
 }
+
+

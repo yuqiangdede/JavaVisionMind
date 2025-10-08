@@ -50,7 +50,7 @@ import com.yuqiangdede.tbir.dto.input.SaveImageRequest;
 /**
  * Utility wrapping vector storage for TBIR. Supports Lucene persistence or an in-memory chroma alternative.
  */
-public final class TbirLuceneUtil {
+public final class TbirVectorStoreUtil {
     private static final String VECTOR_FIELD = "vector";
     private static final Object LUCENE_LOCK = new Object();
 
@@ -61,7 +61,7 @@ public final class TbirLuceneUtil {
     private static ChromaStore inMemoryStore;
     private static final Map<String, Set<String>> memoryIndex = new ConcurrentHashMap<>();
 
-    private TbirLuceneUtil() {
+    private TbirVectorStoreUtil() {
     }
 
     public static void init(String indexPath, boolean persistVectors) throws IOException {
@@ -398,3 +398,5 @@ public final class TbirLuceneUtil {
         );
     }
 }
+
+

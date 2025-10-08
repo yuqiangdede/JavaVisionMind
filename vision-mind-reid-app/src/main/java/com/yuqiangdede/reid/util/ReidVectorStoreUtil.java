@@ -40,7 +40,7 @@ import java.util.Objects;
  * Vector storage helper for ReID that can switch between Lucene persistence and
  * an in-memory chroma-compatible store.
  */
-public final class ReidLuceneUtil {
+public final class ReidVectorStoreUtil {
     private static final String VECTOR_FIELD = "vector";
     private static final Object LUCENE_LOCK = new Object();
 
@@ -50,7 +50,7 @@ public final class ReidLuceneUtil {
     private static FSDirectory directory;
     private static ChromaStore inMemoryStore;
 
-    private ReidLuceneUtil() {
+    private ReidVectorStoreUtil() {
     }
 
     /**
@@ -269,3 +269,5 @@ public final class ReidLuceneUtil {
         return humans;
     }
 }
+
+
