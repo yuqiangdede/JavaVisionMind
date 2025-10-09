@@ -1,4 +1,4 @@
-﻿# JavaVisionMind
+# JavaVisionMind
 
 [中文文档](README.zh-CN.md) | [English](README.md)
 
@@ -54,10 +54,10 @@ JavaVisionMind is a collection of independent Spring Boot services that cover ob
 
    ```text
    ${VISION_MIND_PATH}
-   鈹斺攢鈹€ lib
-       鈹斺攢鈹€ opencv
-           鈹溾攢鈹€ opencv_java490.dll   # Windows
-           鈹斺攢鈹€ libopencv_java490.so # Linux
+   |-- lib
+       |-- opencv
+           |-- opencv_java490.dll   # Windows
+           `-- libopencv_java490.so # Linux
    ```
 
 3. Verify the JVM can load `opencv_java490` for your OS (the services auto-pick `.dll` or `.so`).
