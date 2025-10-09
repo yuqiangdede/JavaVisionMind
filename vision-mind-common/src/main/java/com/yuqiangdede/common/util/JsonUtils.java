@@ -1,15 +1,15 @@
 package com.yuqiangdede.common.util;
 
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.Map;
-
 public class JsonUtils {
-    public static ObjectMapper objectMapper = new ObjectMapper();
-    public static ObjectMapper objectNoNullMapper = new ObjectMapper();
+    public static final ObjectMapper objectMapper = new ObjectMapper();
+    public static final ObjectMapper objectNoNullMapper = new ObjectMapper();
 
     static {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
