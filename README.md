@@ -16,6 +16,7 @@
   - [vision-mind-tbir-app](#vision-mind-tbir-app-text-based-image-retrieval)
   - [vision-mind-llm-core](#vision-mind-llm-core-language-services)
 - [Resources](#resources)
+- [Endpoint Flow Reference](#endpoint-flow-reference)
 - [Roadmap](#roadmap)
 
 ## Overview
@@ -112,6 +113,7 @@ Below tables outline the primary REST endpoints exposed by each runnable module.
 | POST | `/api/v1/face/computeFaceVector` | Detect faces and return embeddings without persisting. | `InputWithUrl` (`imgUrl`, `groupId?`, `faceScoreThreshold?`) | `HttpResult<FaceImage>` |
 | POST | `/api/v1/face/saveFaceVector` | Persist an externally computed face vector. | `Input4Save` (`imgUrl`, `groupId`, `id`, `embeds`) | `HttpResult<Void>` |
 | POST | `/api/v1/face/computeAndSaveFaceVector` | Detect faces, store high-quality embeddings, and return inserted items. | `InputWithUrl` | `HttpResult<List<FaceInfo4Add>>` |
+| POST | `/api/v1/face/deleteFace` | Remove a stored face vector by document ID. | `Input4Del` (`id`) | `HttpResult<Void>` |
 | POST | `/api/v1/face/findMostSimilarFace` | Search the index with a probe image. | `Input4Search` (`imgUrl`, `groupId?`, `faceScoreThreshold?`, `confidenceThreshold?`) | `HttpResult<List<FaceInfo4Search>>` |
 | POST | `/api/v1/face/findMostSimilarFaceI` | Retrieve the best match preview image. | `Input4Search` | `image/jpeg` bytes |
 | POST | `/api/v1/face/calculateSimilarity` | Compare two image URLs using cosine similarity. | `Input4Compare` (`imgUrl`, `imgUrl2`) | `HttpResult<Double>` |
@@ -165,6 +167,172 @@ Below tables outline the primary REST endpoints exposed by each runnable module.
 - LLaMA deployment support with streaming responses.
 - Alternative in-memory vector backends alongside Lucene.
 - YOLO video-stream processing pipeline resurrection in `vision-mind-yolo-core`.
+
+
+
+## Endpoint Flow Reference
+
+### vision-mind-yolo-app
+
+#### /api/v1/img/detect
+1. Controller validates imgUrl and logs before delegating (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:45).
+2. ImgAnalysisService.detectArea downloads the image into an OpenCV Mat (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:70).
+3. analysis runs YOLOv11 inference, maps raw outputs to Box objects, and filters by requested class IDs (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:121).
+4. Detections must overlap include polygons and avoid block polygons according to the configured ratios before they are returned (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:82).
+5. Remaining boxes are wrapped in HttpResult and returned (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:60).
+
+#### /api/v1/img/detectI
+1. Controller repeats validation and timing (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:70).
+2. detectAreaI renders the image as BufferedImage and reuses detectArea (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:110).
+3. Include/block frames and boxes are drawn over the image before the controller streams JPEG bytes (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:80).
+
+#### /api/v1/img/detectFace
+1. Controller checks the payload (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:99).
+2. ImgAnalysisService.detectFace runs the face-trained YOLO model (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:213).
+3. Polygon filtering is applied identically to generic detections (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:220).
+4. Boxes are returned to the controller for response wrapping (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:112).
+
+#### /api/v1/img/detectFaceI
+1. Validation mirrors the JSON endpoint (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:118).
+2. detectFaceI draws bounding boxes plus include/exclude frames and returns the annotated image (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:253).
+3. Controller streams the JPEG bytes (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:128).
+
+#### /api/v1/img/pose
+1. Controller validates payload and logs (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:147).
+2. poseArea invokes the YOLOv11 pose model and filters polygons (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:148).
+3. Filtered BoxWithKeypoints are returned (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:160).
+
+#### /api/v1/img/poseI
+1. Controller handles validation (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:173).
+2. poseAreaI reuses poseArea, draws skeleton overlays, and returns a BufferedImage (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:187).
+3. Controller streams JPEG (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:183).
+
+#### /api/v1/img/sam
+1. Controller validates and passes through (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:197).
+2. sam executes FastSAM segmentation and returns boxes (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:279).
+
+#### /api/v1/img/samI
+1. Controller validates (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:216).
+2. samI draws FastSAM boxes onto the image and returns annotated bytes (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:284).
+
+#### /api/v1/img/seg
+1. Controller checks payload and delegates (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:260).
+2. segArea runs segmentation and returns per-class polygons (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:294).
+
+#### /api/v1/img/segI
+1. Controller forwards to the service (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:238).
+2. segAreaI draws segmentation polygons on the original image and returns them (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:299).
+
+### vision-mind-ffe-app
+
+#### /api/v1/face/computeFaceVector
+1. Controller validates imgUrl and logs (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:60).
+2. FaceService.computeFaceVector extracts faces and embeddings (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/service/FaceService.java:142).
+3. getFaceInfos strips base64 payloads before returning (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/service/FaceService.java:154).
+
+#### /api/v1/face/saveFaceVector
+1. Controller demands vector info (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:78).
+2. saveFaceVector persists embeddings with FfeVectorStoreUtil.add (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/service/FaceService.java:95).
+
+#### /api/v1/face/computeAndSaveFaceVector
+1. Controller validates payload (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:96).
+2. computeAndSaveFaceVector filters faces by the requested threshold, stores qualifying embeddings, and returns the trimmed list (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/service/FaceService.java:77).
+
+#### /api/v1/face/deleteFace
+1. Controller checks document ID (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:118).
+2. delete removes the Lucene record (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/service/FaceService.java:105).
+
+#### /api/v1/face/findMostSimilarFace
+1. Controller validates thresholds (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:135).
+2. findMostSimilarFace runs extraction, filters by quality, and executes a Lucene top-1 search (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/service/FaceService.java:116).
+
+#### /api/v1/face/findMostSimilarFaceI
+1. Controller repeats validation (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:153).
+2. The controller streams the top match image returned by the service (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:163).
+
+#### /api/v1/face/calculateSimilarity
+1. Controller ensures two URLs (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:186).
+2. calculateSimilarity extracts both embeddings, normalizes them, and computes cosine similarity (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/service/FaceService.java:177).
+
+#### /api/v1/face/findSave
+1. Controller validates the request (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:212).
+2. findSave searches for each quality face, inserting any misses and returning both found and added items (vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/service/FaceService.java:197).
+
+### vision-mind-reid-app
+
+#### /api/v1/reid/feature/single
+1. Controller validates request (vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/controller/ReidController.java:23).
+2. featureSingle embeds the probe and tags it with a UUID (vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/service/ReidService.java:75).
+
+#### /api/v1/reid/feature/calculateSimilarity
+1. Controller checks both URLs (vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/controller/ReidController.java:39).
+2. calculateSimilarity embeds both probes and computes cosine similarity (vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/service/ReidService.java:82).
+
+#### /api/v1/reid/feature/multi
+1. Controller validates payload (vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/controller/ReidController.java:56).
+2. featureMulti runs YOLO detection via ImgAnalysisService.detectArea, crops each person, embeds them, and returns the list (vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/service/ReidService.java:89).
+
+#### /api/v1/reid/store/single
+1. Controller enforces required IDs (vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/controller/ReidController.java:72).
+2. storeSingle embeds the probe, assigns a UUID, and stores using ReidVectorStoreUtil.add (vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/service/ReidService.java:109).
+
+#### /api/v1/reid/search
+1. Controller validates imgUrl, topN, and threshold (vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/controller/ReidController.java:106).
+2. search embeds the probe and queries Lucene for matching humans with optional camera scoping (vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/service/ReidService.java:117).
+
+#### /api/v1/reid/searchOrStore
+1. Controller validates payload (vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/controller/ReidController.java:125).
+2. searchOrStore returns the best match or persists a new feature when none is found (vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/service/ReidService.java:123).
+
+#### /api/v1/reid/associateStore
+1. Controller validates request (vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/controller/ReidController.java:142).
+2. associateStore searches for an existing match and always persists the new embedding, linking it to the matched human if available (vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/service/ReidService.java:138).
+
+### vision-mind-tbir-app
+
+#### /api/v1/tbir/saveImg
+1. Controller validates payload (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:46).
+2. saveImg generates or reuses imgId, optionally collects YOLO/FastSAM detections, crops and augments regions, embeds both main and sub-images with CLIP, and persists embeddings with metadata (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:61).
+
+#### /api/v1/tbir/deleteImg
+1. Controller checks imgId (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:66).
+2. The service method is currently a TODO (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:167).
+
+#### /api/v1/tbir/searchImg
+1. Controller validates (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:82).
+2. searchImg collects Lucene hits by stored ID and merges them into HitImage DTOs (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:321).
+
+#### /api/v1/tbir/searchImgI
+1. Controller validates payload (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:98).
+2. searchImgI reuses searchImg, downloads matched images, draws boxes, and returns buffered previews (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:331).
+
+#### /api/v1/tbir/search
+1. Controller validates query text (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:124).
+2. searchByText expands prompts via LLM, embeds each with CLIP, queries Lucene, merges hits through getFinalList, and returns ranked HitImage results (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:182).
+
+#### /api/v1/tbir/searchI
+1. Controller validates and delegates (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:143).
+2. searchByTextI draws matched boxes on each result image for preview streaming (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:285).
+
+#### /api/v1/tbir/imgSearch
+1. Controller accepts multipart upload (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:170).
+2. imgSearch embeds the probe image, queries Lucene, and returns ranked matches (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:302).
+
+### vision-mind-llm-core
+
+#### /api/translate
+1. Controller applies a translation prompt wrapper and delegates (vision-mind-llm-core/src/main/java/com/yuqiangdede/llm/controller/ChatController.java:23).
+2. LLMService.chat validates input and routes to OpenAI or Ollama, throwing if neither is configured (vision-mind-llm-core/src/main/java/com/yuqiangdede/llm/service/LLMService.java:22).
+
+#### /api/chat
+1. Controller forwards the free-form prompt (vision-mind-llm-core/src/main/java/com/yuqiangdede/llm/controller/ChatController.java:39).
+2. LLMService.chat handles provider selection as above (vision-mind-llm-core/src/main/java/com/yuqiangdede/llm/service/LLMService.java:22).
+
+#### /api/chatWithImg
+1. Controller validates text and optional image (vision-mind-llm-core/src/main/java/com/yuqiangdede/llm/controller/ChatController.java:50).
+2. chatWithImg enforces payload completeness, injects a default system prompt if needed, and calls the configured OpenAI vision endpoint (vision-mind-llm-core/src/main/java/com/yuqiangdede/llm/service/LLMService.java:49).
+
+*Pending follow-up:* implement the TODO in vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:167 if delete support is required.
 
 Contributions and issue reports are welcome.
 
