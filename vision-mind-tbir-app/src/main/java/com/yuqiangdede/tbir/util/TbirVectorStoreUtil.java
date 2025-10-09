@@ -85,6 +85,7 @@ public final class TbirVectorStoreUtil {
     private static ChromaStore inMemoryStore;
     private static final Map<String, Set<String>> memoryIndex = new ConcurrentHashMap<>();
 
+    @SuppressWarnings("deprecation")
     private static RestHighLevelClient esClient;
     private static ElasticsearchConfig esConfig;
     private static boolean esIndexReady;
