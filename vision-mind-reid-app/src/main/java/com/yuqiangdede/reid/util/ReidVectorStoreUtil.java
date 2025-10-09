@@ -4,6 +4,7 @@ import com.yuqiangdede.common.chroma.ChromaStore;
 import com.yuqiangdede.common.chroma.EmbeddingRecord;
 import com.yuqiangdede.common.chroma.InMemoryChromaStore;
 import com.yuqiangdede.common.chroma.SearchResult;
+import com.yuqiangdede.common.util.RandomProjectionUtils;
 import com.yuqiangdede.common.util.VectorUtil;
 import com.yuqiangdede.reid.output.Feature;
 import com.yuqiangdede.reid.output.Human;
@@ -132,14 +133,27 @@ public final class ReidVectorStoreUtil {
 
     public static List<Human> searchByVector(float[] vec, String cameraId, Integer topN, float confThreshold) {
         if (persistenceEnabled) {
-            return searchWithLucene(vec, cameraId, topN, confThreshold);
+            return searchWithLucene(projectForLucene(vec), cameraId, topN, confThreshold);
         }
         return searchInMemory(vec, cameraId, topN, confThreshold);
     }
 
+    private static float[] projectForLucene(float[] source) {
+        if (source == null) {
+            throw new IllegalArgumentException("Vector source must not be null");
+        }
+        if (source.length > 1024) {
+            return VectorUtil.normalizeVector(RandomProjectionUtils.transform(source));
+        }
+        if (source.length == 1024) {
+            return VectorUtil.normalizeVector(source);
+        }
+        throw new IllegalArgumentException("Unsupported vector length: " + source.length);
+    }
+
     private static void addToLucene(String imgUrl, String cameraId, String humanId, Feature feature) {
         Document doc = new Document();
-        doc.add(new KnnFloatVectorField(VECTOR_FIELD, feature.getEmbeds()));
+        doc.add(new KnnFloatVectorField(VECTOR_FIELD, projectForLucene(feature.getEmbeds())));
         doc.add(new StringField("image_id", feature.getUuid(), Field.Store.YES));
         if (imgUrl != null) {
             doc.add(new StoredField("img_url", imgUrl));

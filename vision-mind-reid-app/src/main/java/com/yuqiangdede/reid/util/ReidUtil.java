@@ -4,7 +4,6 @@ import ai.onnxruntime.OnnxTensor;
 import ai.onnxruntime.OrtEnvironment;
 import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
-import com.yuqiangdede.common.util.RandomProjectionUtils;
 import com.yuqiangdede.reid.output.Feature;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
@@ -32,16 +31,16 @@ public class ReidUtil {
     }
 
     /**
-     * 使用单个图像生成特征嵌入。因为直接生成的是2048维的embedding，为了降低计算和存储成本（lucene仅支持1024维），使用随机投影将其降维到1024维。
-     * 后面更换向量数据库，可以不在降维
-     * @param img 输入的图像，类型为Mat。
-     * @return Embedding类型，包含生成的特征嵌入。
-     * @throws OrtException 当使用ONNX Runtime进行推理时，如果发生错误，则抛出此异常。
+     * 使用单个图像生成特征嵌入。保留模型原生的 2048 维向量，降维由后续存储层决定。
+     *
+     * @param img 输入的图像，类型为Mat
+     * @return Embedding类型，包含生成的特征嵌入
+     * @throws OrtException 当使用ONNX Runtime进行推理时，如果发生错误，则抛出此异常
      */
     public static Feature featureSingle(Mat img) throws OrtException {
         float[] f = getFeatWithFlip(env, sess, img);
         
-        return new Feature(null, RandomProjectionUtils.transform(f));
+        return new Feature(null, f);
     }
 
     /**
