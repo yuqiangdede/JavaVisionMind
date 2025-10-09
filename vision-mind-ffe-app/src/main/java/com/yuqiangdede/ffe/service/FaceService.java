@@ -200,6 +200,7 @@ public class FaceService {
         List<FaceInfo4Search> searchList = new ArrayList<>();
 
         // 拿到人脸特征
+        Mat mat = ImageUtil.urlToMat(input.getImgUrl());
         FaceImage faceImage = getFaceInfos(mat);
 
         for (FaceInfo face : faceImage.getFaceInfos()) {
