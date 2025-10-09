@@ -22,6 +22,7 @@
 
 JavaVisionMind is a collection of independent Spring Boot services that cover object detection, pose estimation, face recognition, person re-identification, text-based image retrieval, and large-language-model interactions. Each capability ships as a separate module so you can deploy only what you need.
 
+
 ## Repository Layout
 
 | Module | Description |
