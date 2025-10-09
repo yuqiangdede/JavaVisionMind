@@ -65,12 +65,12 @@ public class ReidService {
     private final ImgAnalysisService imgAnalysisService;
 
     /**
-     * 鏍规嵁缁欏畾鐨勫浘鐗嘦RL鑾峰彇鍗曚釜鐗瑰緛
+     * 根据给定的图片URL获取单个特征
      *
-     * @param url 鍥剧墖鐨刄RL鍦板潃
-     * @return 杩斿洖涓€涓寘鍚浘鐗囩壒寰佷俊鎭殑Feature瀵硅薄
-     * @throws IOException  濡傛灉鍦ㄥ鐞嗚繃绋嬩腑鍙戠敓杈撳叆杈撳嚭寮傚父
-     * @throws OrtException 濡傛灉鍦ㄥ鐞嗚繃绋嬩腑鍙戠敓ORT寮傚父
+     * @param url 图片的URL地址
+     * @return 返回一个包含图片特征信息的Feature对象
+     * @throws IOException  如果在处理过程中发生输入输出异常
+     * @throws OrtException 如果在处理过程中发生ORT异常
      */
     public Feature featureSingle(String url) throws IOException, OrtException {
         Mat mat = ImageUtil.urlToMat(url);
