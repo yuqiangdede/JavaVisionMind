@@ -42,10 +42,33 @@ import com.yuqiangdede.common.chroma.SearchResult;
 import com.yuqiangdede.common.dto.output.Box;
 import com.yuqiangdede.common.util.JsonUtils;
 import com.yuqiangdede.common.util.VectorUtil;
+import com.yuqiangdede.common.vector.ElasticsearchClientFactory;
+import com.yuqiangdede.common.vector.ElasticsearchConfig;
+import com.yuqiangdede.common.vector.VectorStoreMode;
 import static com.yuqiangdede.tbir.config.Constant.OPEN_DETECT;
 import com.yuqiangdede.tbir.dto.ImageEmbedding;
 import com.yuqiangdede.tbir.dto.LuceHit;
 import com.yuqiangdede.tbir.dto.input.SaveImageRequest;
+
+import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.functionscore.FunctionScoreQueryBuilder;
+import org.elasticsearch.index.query.functionscore.ScriptScoreFunctionBuilder;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 /**
  * Utility wrapping vector storage for TBIR. Supports Lucene persistence or an in-memory chroma alternative.
@@ -53,110 +76,166 @@ import com.yuqiangdede.tbir.dto.input.SaveImageRequest;
 public final class TbirVectorStoreUtil {
     private static final String VECTOR_FIELD = "vector";
     private static final Object LUCENE_LOCK = new Object();
+    private static final Object ES_LOCK = new Object();
 
-    private static volatile boolean persistenceEnabled;
+    private static volatile VectorStoreMode mode = VectorStoreMode.MEMORY;
     private static SearcherManager searcherManager;
     private static IndexWriter writer;
     private static FSDirectory directory;
     private static ChromaStore inMemoryStore;
     private static final Map<String, Set<String>> memoryIndex = new ConcurrentHashMap<>();
 
+    private static RestHighLevelClient esClient;
+    private static ElasticsearchConfig esConfig;
+    private static boolean esIndexReady;
+
     private TbirVectorStoreUtil() {
     }
 
-    public static void init(String indexPath, boolean persistVectors) throws IOException {
-        persistenceEnabled = persistVectors;
-        if (persistVectors) {
-            synchronized (LUCENE_LOCK) {
-                directory = FSDirectory.open(Paths.get(indexPath));
-                IndexWriterConfig config = new IndexWriterConfig();
-                config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-                writer = new IndexWriter(directory, config);
-                searcherManager = new SearcherManager(writer, new SearcherFactory());
-                writer.commit();
-                searcherManager.maybeRefresh();
+    public static void init(String indexPath, VectorStoreMode storeMode, ElasticsearchConfig config) throws IOException {
+        close();
+        mode = storeMode == null ? VectorStoreMode.LUCENE : storeMode;
+        switch (mode) {
+            case LUCENE -> initLucene(indexPath);
+            case MEMORY -> {
+                inMemoryStore = new InMemoryChromaStore();
+                memoryIndex.clear();
             }
-        } else {
-            inMemoryStore = new InMemoryChromaStore();
-            memoryIndex.clear();
+            case ELASTICSEARCH -> initElasticsearch(config);
+            default -> throw new IllegalStateException("Unsupported vector store mode: " + mode);
         }
     }
 
-    public static void close() throws IOException {
-        if (persistenceEnabled) {
-            synchronized (LUCENE_LOCK) {
-                if (searcherManager != null) {
-                    searcherManager.close();
-                    searcherManager = null;
-                }
-                if (writer != null) {
-                    writer.close();
-                    writer = null;
-                }
-                if (directory != null) {
-                    directory.close();
-                    directory = null;
-                }
-            }
-        } else {
-            inMemoryStore = null;
-            memoryIndex.clear();
+    private static void initLucene(String indexPath) throws IOException {
+        synchronized (LUCENE_LOCK) {
+            directory = FSDirectory.open(Paths.get(indexPath));
+            IndexWriterConfig config = new IndexWriterConfig();
+            config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+            writer = new IndexWriter(directory, config);
+            searcherManager = new SearcherManager(writer, new SearcherFactory());
+            writer.commit();
+            searcherManager.maybeRefresh();
         }
+    }
+
+    private static void initElasticsearch(ElasticsearchConfig config) {
+        if (config == null || !config.hasValidIndex()) {
+            throw new IllegalArgumentException("Elasticsearch configuration must include an index name.");
+        }
+        esConfig = config;
+        esClient = ElasticsearchClientFactory.createClient(
+                config.getUris(),
+                config.getUsername(),
+                config.getPassword(),
+                config.getApiKey());
+        esIndexReady = false;
+    }
+
+    public static void close() throws IOException {
+        synchronized (LUCENE_LOCK) {
+            if (searcherManager != null) {
+                searcherManager.close();
+                searcherManager = null;
+            }
+            if (writer != null) {
+                writer.close();
+                writer = null;
+            }
+            if (directory != null) {
+                directory.close();
+                directory = null;
+            }
+        }
+        inMemoryStore = null;
+        memoryIndex.clear();
+        if (esClient != null) {
+            esClient.close();
+            esClient = null;
+        }
+        esConfig = null;
+        esIndexReady = false;
     }
 
     public static void add(String imageId, ImageEmbedding emb, SaveImageRequest input) {
         Objects.requireNonNull(imageId, "imageId");
         Objects.requireNonNull(emb, "emb");
         Objects.requireNonNull(input, "input");
-        if (persistenceEnabled) {
-            addToLucene(imageId, emb, input);
-        } else {
-            addToMemory(imageId, emb, input);
+        switch (mode) {
+            case LUCENE -> addToLucene(imageId, emb, input);
+            case MEMORY -> addToMemory(imageId, emb, input);
+            case ELASTICSEARCH -> addToElasticsearch(imageId, emb, input);
+            default -> throw new IllegalStateException("Unsupported vector store mode: " + mode);
         }
     }
 
     public static void delete(String id) throws IOException {
-        if (persistenceEnabled) {
-            synchronized (LUCENE_LOCK) {
-                writer.deleteDocuments(new Term("image_id", id));
-                writer.commit();
-                searcherManager.maybeRefresh();
-            }
-        } else if (inMemoryStore != null) {
-            Set<String> docIds = memoryIndex.remove(id);
-            if (docIds != null) {
-                for (String docId : docIds) {
-                    inMemoryStore.delete(docId);
+        switch (mode) {
+            case LUCENE -> {
+                synchronized (LUCENE_LOCK) {
+                    if (writer != null) {
+                        writer.deleteDocuments(new Term("image_id", id));
+                        writer.commit();
+                        if (searcherManager != null) {
+                            searcherManager.maybeRefresh();
+                        }
+                    }
                 }
             }
+            case MEMORY -> {
+                if (inMemoryStore != null) {
+                    Set<String> docIds = memoryIndex.remove(id);
+                    if (docIds != null) {
+                        for (String docId : docIds) {
+                            inMemoryStore.delete(docId);
+                        }
+                    }
+                }
+            }
+            case ELASTICSEARCH -> deleteFromElasticsearch(id);
+            default -> throw new IllegalStateException("Unsupported vector store mode: " + mode);
         }
     }
 
     public static void deleteAll() throws IOException {
-        if (persistenceEnabled) {
-            synchronized (LUCENE_LOCK) {
-                writer.deleteAll();
-                writer.commit();
-                searcherManager.maybeRefresh();
+        switch (mode) {
+            case LUCENE -> {
+                synchronized (LUCENE_LOCK) {
+                    if (writer != null) {
+                        writer.deleteAll();
+                        writer.commit();
+                        if (searcherManager != null) {
+                            searcherManager.maybeRefresh();
+                        }
+                    }
+                }
             }
-        } else if (inMemoryStore != null) {
-            inMemoryStore.clear();
-            memoryIndex.clear();
+            case MEMORY -> {
+                if (inMemoryStore != null) {
+                    inMemoryStore.clear();
+                }
+                memoryIndex.clear();
+            }
+            case ELASTICSEARCH -> deleteAllFromElasticsearch();
+            default -> throw new IllegalStateException("Unsupported vector store mode: " + mode);
         }
     }
 
     public static List<LuceHit> searchByVector(float[] vec, String cameraId, String groupId, Integer topN) {
-        if (persistenceEnabled) {
-            return searchWithLucene(vec, cameraId, groupId, topN);
-        }
-        return searchInMemory(vec, cameraId, groupId, topN);
+        return switch (mode) {
+            case LUCENE -> searchWithLucene(vec, cameraId, groupId, topN);
+            case MEMORY -> searchInMemory(vec, cameraId, groupId, topN);
+            case ELASTICSEARCH -> searchWithElasticsearch(vec, cameraId, groupId, topN);
+            default -> throw new IllegalStateException("Unsupported vector store mode: " + mode);
+        };
     }
 
     public static List<LuceHit> searchById(String imgId) {
-        if (persistenceEnabled) {
-            return searchByIdWithLucene(imgId);
-        }
-        return searchByIdInMemory(imgId);
+        return switch (mode) {
+            case LUCENE -> searchByIdWithLucene(imgId);
+            case MEMORY -> searchByIdInMemory(imgId);
+            case ELASTICSEARCH -> searchByIdWithElasticsearch(imgId);
+            default -> throw new IllegalStateException("Unsupported vector store mode: " + mode);
+        };
     }
 
     private static void addToLucene(String imageId, ImageEmbedding emb, SaveImageRequest input) {
@@ -225,6 +304,48 @@ public final class TbirVectorStoreUtil {
         inMemoryStore.upsert(record);
         memoryIndex.computeIfAbsent(imageId, key -> Collections.newSetFromMap(new ConcurrentHashMap<>()))
                 .add(docId);
+    }
+
+    private static void addToElasticsearch(String imageId, ImageEmbedding emb, SaveImageRequest input) {
+        if (esClient == null || esConfig == null) {
+            throw new IllegalStateException("Elasticsearch is not initialised");
+        }
+        try {
+            ensureEsReady(emb.getVector().length);
+            String docId = imageId + ":" + UUID.randomUUID();
+            Map<String, Object> document = new HashMap<>();
+            document.put("image_id", imageId);
+            document.put("main", emb.isMainImage() ? "1" : "0");
+            if (input.getImgUrl() != null) {
+                document.put("img_url", input.getImgUrl());
+            }
+            if (input.getCameraId() != null) {
+                document.put("camera_id", input.getCameraId());
+            }
+            if (input.getGroupId() != null) {
+                document.put("group_id", input.getGroupId());
+            }
+            Box sourceBox = emb.getSourceBox();
+            if (sourceBox != null) {
+                document.put("box_x1", sourceBox.getX1());
+                document.put("box_y1", sourceBox.getY1());
+                document.put("box_x2", sourceBox.getX2());
+                document.put("box_y2", sourceBox.getY2());
+            }
+            if (input.getMeta() != null && !input.getMeta().isEmpty()) {
+                document.put("meta_json", JsonUtils.map2Json(input.getMeta()));
+            }
+            document.put("timestamp", System.currentTimeMillis());
+            document.put(VECTOR_FIELD, floatArrayToList(VectorUtil.normalizeVector(emb.getVector())));
+
+            IndexRequest request = new IndexRequest(esConfig.getIndex())
+                    .id(docId)
+                    .source(document)
+                    .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+            esClient.index(request, RequestOptions.DEFAULT);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to persist vector to Elasticsearch", e);
+        }
     }
 
     private static List<LuceHit> searchWithLucene(float[] vec, String cameraId, String groupId, Integer topN) {
@@ -304,6 +425,52 @@ public final class TbirVectorStoreUtil {
         return results;
     }
 
+    private static List<LuceHit> searchWithElasticsearch(float[] vec, String cameraId, String groupId, Integer topN) {
+        if (esClient == null || esConfig == null) {
+            return List.of();
+        }
+        try {
+            ensureEsReady(vec.length);
+            int limit = topN == null ? 10 : topN;
+            if (limit <= 0) {
+                return List.of();
+            }
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+            sourceBuilder.size(limit);
+            Map<String, Object> params = new HashMap<>();
+            params.put("query_vector", floatArrayToList(VectorUtil.normalizeVector(vec)));
+            Script script = new Script(ScriptType.INLINE, "painless",
+                    "double cosine = cosineSimilarity(params.query_vector, '" + VECTOR_FIELD + "'); return (cosine + 1.0) / 2.0;",
+                    params);
+
+            BoolQueryBuilder filter = QueryBuilders.boolQuery();
+            if (!OPEN_DETECT) {
+                filter.filter(QueryBuilders.termQuery("main", "1"));
+            }
+            if (cameraId != null) {
+                filter.filter(QueryBuilders.termQuery("camera_id", cameraId));
+            }
+            if (groupId != null) {
+                filter.filter(QueryBuilders.termQuery("group_id", groupId));
+            }
+            QueryBuilder baseQuery = filter.hasClauses() ? filter : QueryBuilders.matchAllQuery();
+            ScriptScoreFunctionBuilder scriptFunction = new ScriptScoreFunctionBuilder(script);
+            FunctionScoreQueryBuilder query = QueryBuilders.functionScoreQuery(baseQuery, scriptFunction);
+            sourceBuilder.query(query);
+
+            SearchRequest request = new SearchRequest(esConfig.getIndex());
+            request.source(sourceBuilder);
+            SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+            List<LuceHit> results = new ArrayList<>();
+            for (SearchHit hit : response.getHits().getHits()) {
+                results.add(buildHitFromSource(hit.getSourceAsMap(), hit.getScore()));
+            }
+            return results;
+        } catch (IOException e) {
+            throw new RuntimeException("Elasticsearch search failed", e);
+        }
+    }
+
     private static List<LuceHit> searchByIdWithLucene(String imgId) {
         List<LuceHit> results = new ArrayList<>();
         try {
@@ -348,6 +515,138 @@ public final class TbirVectorStoreUtil {
             hits.add(buildHitFromRecord(record, 1f));
         }
         return hits;
+    }
+
+    private static List<LuceHit> searchByIdWithElasticsearch(String imgId) {
+        if (esClient == null || esConfig == null) {
+            return List.of();
+        }
+        try {
+            ensureEsReady(1);
+            SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+            sourceBuilder.query(QueryBuilders.termQuery("image_id", imgId));
+            sourceBuilder.size(1000);
+            SearchRequest request = new SearchRequest(esConfig.getIndex());
+            request.source(sourceBuilder);
+            SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+            List<LuceHit> results = new ArrayList<>();
+            for (SearchHit hit : response.getHits().getHits()) {
+                results.add(buildHitFromSource(hit.getSourceAsMap(), hit.getScore()));
+            }
+            return results;
+        } catch (IOException e) {
+            throw new RuntimeException("Elasticsearch search by id failed", e);
+        }
+    }
+
+    private static void deleteFromElasticsearch(String imageId) throws IOException {
+        if (esClient == null || esConfig == null) {
+            return;
+        }
+        DeleteByQueryRequest request = new DeleteByQueryRequest(esConfig.getIndex());
+        request.setQuery(QueryBuilders.termQuery("image_id", imageId));
+        request.setRefresh(true);
+        esClient.deleteByQuery(request, RequestOptions.DEFAULT);
+    }
+
+    private static void deleteAllFromElasticsearch() throws IOException {
+        if (esClient == null || esConfig == null) {
+            return;
+        }
+        DeleteByQueryRequest request = new DeleteByQueryRequest(esConfig.getIndex());
+        request.setQuery(QueryBuilders.matchAllQuery());
+        request.setRefresh(true);
+        esClient.deleteByQuery(request, RequestOptions.DEFAULT);
+        esIndexReady = false;
+    }
+
+    private static void ensureEsReady(int dims) throws IOException {
+        if (esClient == null || esConfig == null) {
+            throw new IllegalStateException("Elasticsearch is not initialised");
+        }
+        if (esIndexReady) {
+            return;
+        }
+        synchronized (ES_LOCK) {
+            if (esIndexReady) {
+                return;
+            }
+            GetIndexRequest getIndex = new GetIndexRequest(esConfig.getIndex());
+            boolean exists = esClient.indices().exists(getIndex, RequestOptions.DEFAULT);
+            if (!exists) {
+                CreateIndexRequest create = new CreateIndexRequest(esConfig.getIndex());
+                Map<String, Object> vectorMapping = new HashMap<>();
+                vectorMapping.put("type", "dense_vector");
+                vectorMapping.put("dims", dims);
+                vectorMapping.put("index", true);
+                vectorMapping.put("similarity", "cosine");
+
+                Map<String, Object> properties = new HashMap<>();
+                properties.put(VECTOR_FIELD, vectorMapping);
+                properties.put("image_id", Map.of("type", "keyword"));
+                properties.put("main", Map.of("type", "keyword"));
+                properties.put("img_url", Map.of("type", "keyword"));
+                properties.put("camera_id", Map.of("type", "keyword"));
+                properties.put("group_id", Map.of("type", "keyword"));
+                properties.put("meta_json", Map.of("type", "keyword"));
+                properties.put("box_x1", Map.of("type", "float"));
+                properties.put("box_y1", Map.of("type", "float"));
+                properties.put("box_x2", Map.of("type", "float"));
+                properties.put("box_y2", Map.of("type", "float"));
+                properties.put("timestamp", Map.of("type", "date"));
+
+                Map<String, Object> mappings = Map.of("properties", properties);
+                create.mapping(mappings);
+                esClient.indices().create(create, RequestOptions.DEFAULT);
+            }
+            esIndexReady = true;
+        }
+    }
+
+    private static LuceHit buildHitFromSource(Map<String, Object> source, float score) {
+        String mainValue = source.get("main") != null ? String.valueOf(source.get("main")) : "0";
+        int isMain;
+        try {
+            isMain = Integer.parseInt(mainValue);
+        } catch (NumberFormatException ex) {
+            isMain = "1".equals(mainValue) ? 1 : 0;
+        }
+        Box box = null;
+        if (isMain == 0 && source.get("box_x1") != null) {
+            box = new Box(
+                    toFloat(source.get("box_x1")),
+                    toFloat(source.get("box_y1")),
+                    toFloat(source.get("box_x2")),
+                    toFloat(source.get("box_y2")),
+                    0, "", 0
+            );
+        }
+        String metaJson = source.get("meta_json") instanceof String ? (String) source.get("meta_json") : null;
+        Map<String, String> meta = metaJson != null ? JsonUtils.json2Map(metaJson) : Collections.emptyMap();
+        return new LuceHit(
+                (String) source.get("image_id"),
+                (String) source.get("img_url"),
+                box,
+                score,
+                (String) source.get("camera_id"),
+                (String) source.get("group_id"),
+                meta
+        );
+    }
+
+    private static float toFloat(Object value) {
+        if (value instanceof Number number) {
+            return number.floatValue();
+        }
+        return value != null ? Float.parseFloat(value.toString()) : 0f;
+    }
+
+    private static List<Float> floatArrayToList(float[] source) {
+        List<Float> list = new ArrayList<>(source.length);
+        for (float v : source) {
+            list.add(v);
+        }
+        return list;
     }
 
     private static LuceHit buildHitFromDocument(Document doc, float score) {

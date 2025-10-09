@@ -30,7 +30,7 @@
 
         <javacv.version>1.5.10</javacv.version>
         <onnx.version>1.20.0</onnx.version>
-
+        <elasticsearch.version>7.17.29</elasticsearch.version>
 
     </properties>
 

@@ -4,6 +4,7 @@ import ai.onnxruntime.OrtException;
 import com.yuqiangdede.common.dto.output.Box;
 import com.yuqiangdede.common.util.ImageUtil;
 import com.yuqiangdede.common.util.VectorUtil;
+import com.yuqiangdede.common.vector.ElasticsearchConfig;
 import com.yuqiangdede.reid.config.ReidConstant;
 import com.yuqiangdede.reid.output.Feature;
 import com.yuqiangdede.reid.output.Human;
@@ -41,7 +42,13 @@ public class ReidService {
             }
 
             try {
-                ReidVectorStoreUtil.init(ReidConstant.LUCENE_PATH, ReidConstant.VECTOR_PERSISTENCE_ENABLED);
+                ElasticsearchConfig esConfig = new ElasticsearchConfig(
+                        ReidConstant.ES_URIS,
+                        ReidConstant.ES_USERNAME,
+                        ReidConstant.ES_PASSWORD,
+                        ReidConstant.ES_API_KEY,
+                        ReidConstant.ES_REID_INDEX);
+                ReidVectorStoreUtil.init(ReidConstant.LUCENE_PATH, ReidConstant.VECTOR_STORE_MODE, esConfig);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

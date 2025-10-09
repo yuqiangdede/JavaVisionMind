@@ -3,6 +3,7 @@ package com.yuqiangdede.tbir.service;
 import ai.onnxruntime.OrtException;
 import com.yuqiangdede.common.dto.output.Box;
 import com.yuqiangdede.common.util.ImageUtil;
+import com.yuqiangdede.common.vector.ElasticsearchConfig;
 import com.yuqiangdede.tbir.config.Constant;
 import com.yuqiangdede.tbir.dto.AugmentedImage;
 import com.yuqiangdede.tbir.dto.ImageEmbedding;
@@ -37,7 +38,13 @@ public class TbirService {
 
     static {
         try {
-            TbirVectorStoreUtil.init(Constant.LUCENE_PATH, Constant.VECTOR_PERSISTENCE_ENABLED);
+            ElasticsearchConfig esConfig = new ElasticsearchConfig(
+                    Constant.ES_URIS,
+                    Constant.ES_USERNAME,
+                    Constant.ES_PASSWORD,
+                    Constant.ES_API_KEY,
+                    Constant.ES_TBIR_INDEX);
+            TbirVectorStoreUtil.init(Constant.LUCENE_PATH, Constant.VECTOR_STORE_MODE, esConfig);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

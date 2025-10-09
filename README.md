@@ -83,9 +83,9 @@ Each service uses `/api` as the context root. Default ports can be overridden in
 
 ### Vector storage toggle
 
-- `vision-mind-ffe-app`, `vision-mind-reid-app`, and `vision-mind-tbir-app` expose a `vector.persistence.enabled` flag.
-- Leave it at `true` (default) to persist vectors with Lucene, or flip to `false` to run entirely in-memory via the embedded chroma store.
-- Memory mode is ideal for quick validation but discards vectors on restart.
+- `vision-mind-ffe-app`, `vision-mind-reid-app`, and `vision-mind-tbir-app` expose a `vector.store.mode` switch.
+- Set to `lucene` (default) to persist vectors on disk, `memory` to use the embedded chroma store, or `elasticsearch` to back vectors with an external ES cluster.
+- The Elasticsearch mode shares full-dimension embeddings; only the Lucene backend applies the ReID projection matrix.
 
 ## API Reference
 

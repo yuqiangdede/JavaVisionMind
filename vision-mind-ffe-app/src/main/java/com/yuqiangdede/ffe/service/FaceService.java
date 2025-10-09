@@ -2,6 +2,7 @@ package com.yuqiangdede.ffe.service;
 
 import com.yuqiangdede.common.util.ImageUtil;
 import com.yuqiangdede.common.util.VectorUtil;
+import com.yuqiangdede.common.vector.ElasticsearchConfig;
 import com.yuqiangdede.ffe.config.Constant;
 import com.yuqiangdede.ffe.core.base.*;
 import com.yuqiangdede.ffe.core.domain.FaceImage;
@@ -41,7 +42,13 @@ public class FaceService {
                 FaceAlignment simple106pFaceAlignment = new Simple106pFaceAlignment();
                 FaceAttribute insightFaceAttribute = new InsightAttributeDetection(Constant.MODEL_ARR_PATH, 1);
 
-                FfeVectorStoreUtil.init(Constant.LUCENE_PATH, Constant.VECTOR_PERSISTENCE_ENABLED);
+                ElasticsearchConfig esConfig = new ElasticsearchConfig(
+                        Constant.ES_URIS,
+                        Constant.ES_USERNAME,
+                        Constant.ES_PASSWORD,
+                        Constant.ES_API_KEY,
+                        Constant.ES_FACE_INDEX);
+                FfeVectorStoreUtil.init(Constant.LUCENE_PATH, Constant.VECTOR_STORE_MODE, esConfig);
 
                 extractor = new FaceFeatureExtractorImpl(
                         insightScrfdFaceDetection, insightCoordFaceKeyPoint,
