@@ -336,4 +336,16 @@ Below tables outline the primary REST endpoints exposed by each runnable module.
 
 Contributions and issue reports are welcome.
 
+## Ideas for Future Enhancements
+
+The following directions can extend the current toolkit and may serve as inspiration for upcoming releases:
+
+- **Multi-object tracking (MOT)**: Integrate trackers such as DeepSORT or ByteTrack within `vision-mind-yolo-core` and pair them with detection outputs to provide cross-frame trajectories for security patrols or pedestrian-path analytics.
+- **Fine-grained attribute recognition**: Add attribute classifiers for pedestrians, faces, or vehicles (e.g., gender, clothing color, license-plate region) so that vector indexes can support richer filtering.
+- **Video structuring pipeline**: Build a batch video ingestion service that runs detection, segmentation, and re-identification on key frames, then archives the structured results for large-scale video libraries or case investigations.
+- **Cross-camera association**: Combine the existing re-identification stack with spatiotemporal constraints to correlate identities across camera feeds and trigger rule-based alerts.
+- **Richer multimodal interactions**: Extend `vision-mind-llm-core` with image captioning, visual question answering (VQA), or prompt-template management to improve multimodal Q&A use cases.
+- **Model management & observability**: Provide unified model versioning, hot swapping, and inference performance dashboards to streamline operating multiple models in production.
+
+
 
