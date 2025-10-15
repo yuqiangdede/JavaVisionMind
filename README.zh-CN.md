@@ -30,8 +30,8 @@ JavaVisionMind 是一组相互独立的 Spring Boot 服务，覆盖目标检测�
 | `vision-mind-yolo-core` | 提供 YOLOv11、FAST-SAM、姿态估计与分割模型的核心推理工具。 |
 | `vision-mind-yolo-app` | 基于 `vision-mind-yolo-core` 的 REST API 外壳，用于图像分析。 |
 | `vision-mind-ffe-app` | 包含检测、对齐、特征提取、相似度检索与索引维护的人脸服务。 |
-| `vision-mind-reid-app` | 基于 Lucene 的行人重识别向量检索流程。 |
-| `vision-mind-tbir-app` | 基于 CLIP 向量与 Lucene 的文本图像检索服务。 |
+| `vision-mind-reid-app` | 行人重识别流程，支持 Lucene、内存与 Elasticsearch 向量检索。 |
+| `vision-mind-tbir-app` | 基于 CLIP 向量的图像检索服务，兼容 Lucene、内存与 Elasticsearch 存储。 |
 | `vision-mind-llm-core` | 封装 OpenAI/Ollama 等聊天接口，为多模态提示提供统一入口。 |
 | `vision-mind-common` | 共享的 DTO、数学工具以及图像/向量辅助方法。 |
 | `vision-mind-test-sth` | 用于集成实验和手工验证的测试沙箱。 |
@@ -86,9 +86,9 @@ mvn clean install -DskipTests
 
 ### 向量存储开关
 
-- `vision-mind-ffe-app`、`vision-mind-reid-app` 与 `vision-mind-tbir-app` 提供 `vector.persistence.enabled` 配置。
-- 设置为 `true`（默认）时使用 Lucene 持久化向量；设置为 `false` 时通过内置 chroma 向量库在内存中运行。
-- 内存模式适合快速验证，但服务重启后会丢失向量数据。
+- `vision-mind-ffe-app`、`vision-mind-reid-app` 与 `vision-mind-tbir-app` 暴露 `vector.store.mode` 配置。
+- 取值 `lucene`（默认）时将向量持久化到磁盘，`memory` 使用内置 chroma 向量库运行于内存，`elasticsearch` 可接入外部 ES 集群。
+- 选择 Elasticsearch 模式时会直接写入全维度向量；仅有 Lucene 后端会应用 ReID 投影矩阵。
 
 ## 接口概览
 
@@ -330,7 +330,7 @@ mvn clean install -DskipTests
 ## 路线图
 
 - 支持 LLaMA 等离线大模型的流式响应。
-- 提供 Lucene 之外的替代内存向量后端。
+- 为 Elasticsearch 向量后端补充更完善的索引维护与监控工具。
 - 在 `vision-mind-yolo-core` 中恢复 YOLO 视频流处理管线。
 
 欢迎通过 Issue 或 PR 参与贡献。
