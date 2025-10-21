@@ -289,7 +289,7 @@ mvn clean install -DskipTests
 
 #### /api/v1/tbir/deleteImg
 1. 控制器检查 `imgId`（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:66）。
-2. 服务端实现目前仍为 TODO，保留占位逻辑（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:167）。
+2. `deleteImg` 会校验标识、调用向量存储删除并记录执行耗时（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:167）。
 
 #### /api/v1/tbir/searchImg
 1. 控制器校验请求（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:82）。
@@ -324,8 +324,6 @@ mvn clean install -DskipTests
 #### /api/chatWithImg
 1. 控制器校验文本与可选图像参数（vision-mind-llm-core/src/main/java/com/yuqiangdede/llm/controller/ChatController.java:50）。
 2. `chatWithImg` 补充默认系统提示（若缺失），并调用配置好的 OpenAI 视觉端点（vision-mind-llm-core/src/main/java/com/yuqiangdede/llm/service/LLMService.java:49）。
-
-*待办提示：若需要完善删除能力，请实现 vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:167 中的 TODO。*
 
 ## 路线图
 

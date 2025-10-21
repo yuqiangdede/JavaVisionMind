@@ -296,7 +296,7 @@ Below tables outline the primary REST endpoints exposed by each runnable module.
 
 #### /api/v1/tbir/deleteImg
 1. Controller checks imgId (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:66).
-2. The service method is currently a TODO (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:167).
+2. deleteImg validates the identifier, invokes the vector store deletion, and records execution time (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:167).
 
 #### /api/v1/tbir/searchImg
 1. Controller validates (vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:82).
@@ -331,8 +331,6 @@ Below tables outline the primary REST endpoints exposed by each runnable module.
 #### /api/chatWithImg
 1. Controller validates text and optional image (vision-mind-llm-core/src/main/java/com/yuqiangdede/llm/controller/ChatController.java:50).
 2. chatWithImg enforces payload completeness, injects a default system prompt if needed, and calls the configured OpenAI vision endpoint (vision-mind-llm-core/src/main/java/com/yuqiangdede/llm/service/LLMService.java:49).
-
-*Pending follow-up:* implement the TODO in vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:167 if delete support is required.
 
 Contributions and issue reports are welcome.
 

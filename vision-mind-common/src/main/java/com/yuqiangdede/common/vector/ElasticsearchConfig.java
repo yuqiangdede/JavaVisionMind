@@ -1,7 +1,5 @@
 package com.yuqiangdede.common.vector;
 
-import java.util.Objects;
-
 /**
  * Minimal configuration holder for Elasticsearch connectivity and target index.
  */
