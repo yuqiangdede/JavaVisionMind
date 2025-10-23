@@ -37,8 +37,6 @@ public class Constant {
 
     public static List<Integer> YOLO_TYPES = new ArrayList<>();
 
-    public static final Boolean TOKEN_FILTER;
-
     static {
         Properties properties = new Properties();
         InputStream input = null;
@@ -75,7 +73,6 @@ public class Constant {
             DETECT_RATIO = Float.parseFloat(properties.getProperty("detect.ratio"));
             BLOCK_RATIO = Float.parseFloat(properties.getProperty("block.ratio"));
             USE_GPU = Boolean.valueOf(properties.getProperty("use.gpu"));
-            TOKEN_FILTER = Boolean.valueOf(properties.getProperty("token.filter"));
 
             String types = properties.getProperty("yolo.types");
             if (types != null) {

@@ -30,7 +30,6 @@ public class Constant {
     public static final String ES_API_KEY;
     public static final String ES_TBIR_INDEX;
 
-    public static final Boolean TOKEN_FILTER;
     public static final Boolean OPEN_DETECT;
 
     public static final int MIN_SIZE;
@@ -77,7 +76,6 @@ public class Constant {
             ES_API_KEY = trimToNull(properties.getProperty("es.api-key"));
             ES_TBIR_INDEX = getOrDefault(properties, "es.index.tbir", "vision_mind_tbir");
 
-            TOKEN_FILTER = Boolean.valueOf(properties.getProperty("token.filter"));
             OPEN_DETECT = Boolean.valueOf(properties.getProperty("open.detect"));
             DETECT_TYPES = Arrays.stream(properties.getProperty("detect.types", "").split(","))
                     .map(String::trim)

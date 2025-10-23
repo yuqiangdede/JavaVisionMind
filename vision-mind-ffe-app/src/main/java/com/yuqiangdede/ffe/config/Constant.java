@@ -27,8 +27,6 @@ public class Constant {
     public static final String ES_API_KEY;
     public static final String ES_FACE_INDEX;
 
-    public static final Boolean TOKEN_FILTER;
-
     static {
         Properties properties = new Properties();
         InputStream input = null;
@@ -63,8 +61,6 @@ public class Constant {
             ES_PASSWORD = trimToNull(properties.getProperty("es.password"));
             ES_API_KEY = trimToNull(properties.getProperty("es.api-key"));
             ES_FACE_INDEX = getOrDefault(properties, "es.index.face", "vision_mind_face");
-
-            TOKEN_FILTER = Boolean.valueOf(properties.getProperty("token.filter"));
         } catch (IOException e) {
             throw new RuntimeException("读取配置文件失败", e);
         } finally {
