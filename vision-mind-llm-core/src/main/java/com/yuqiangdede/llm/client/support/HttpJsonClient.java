@@ -28,14 +28,19 @@ public final class HttpJsonClient {
     }
 
     public static String post(URL url, Map<String, String> headers, JsonNode body) throws IOException {
+        return post(url, headers, body, DEFAULT_TIMEOUT_MS);
+    }
+
+    public static String post(URL url, Map<String, String> headers, JsonNode body, int timeoutMs) throws IOException {
         Objects.requireNonNull(url, "url");
         Objects.requireNonNull(body, "body");
 
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod(METHOD_POST);
         connection.setDoOutput(true);
-        connection.setConnectTimeout(DEFAULT_TIMEOUT_MS);
-        connection.setReadTimeout(DEFAULT_TIMEOUT_MS);
+        int effectiveTimeout = timeoutMs > 0 ? timeoutMs : DEFAULT_TIMEOUT_MS;
+        connection.setConnectTimeout(effectiveTimeout);
+        connection.setReadTimeout(effectiveTimeout);
         connection.setRequestProperty(HEADER_CONTENT_TYPE, CONTENT_TYPE_JSON);
 
         if (headers != null) {

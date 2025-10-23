@@ -45,13 +45,9 @@ public class Constant {
 
     static {
         Properties properties = new Properties();
-        InputStream input = null;
         try {
-            input = Constant.class.getClassLoader().getResourceAsStream("application.properties");
-            if (input == null) {
-                throw new RuntimeException("application.properties not found");
-            }
-            properties.load(input);
+            loadProperties(properties, "native-defaults.properties", false);
+            loadProperties(properties, "application.properties", true);
             String envPath = System.getenv("VISION_MIND_PATH");
             boolean skipNativeConfig = Boolean.parseBoolean(System.getProperty("vision-mind.skip-opencv", "false"));
             if (envPath == null) {
@@ -95,14 +91,18 @@ public class Constant {
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to read configuration file", e);
-        } finally {
-            if (input != null) {
-                try {
-                    input.close();
-                } catch (IOException e) {
-                    log.error("read application.properties error", e);
+        }
+    }
+
+    private static void loadProperties(Properties target, String resourceName, boolean required) throws IOException {
+        try (InputStream stream = Constant.class.getClassLoader().getResourceAsStream(resourceName)) {
+            if (stream == null) {
+                if (required) {
+                    throw new IOException(resourceName + " not found");
                 }
+                return;
             }
+            target.load(stream);
         }
     }
 

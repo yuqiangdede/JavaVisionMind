@@ -26,27 +26,32 @@ public final class OpenAIClient {
         throw new UnsupportedOperationException("Utility class");
     }
 
-
     /**
-     * 调用 OpenAI Chat Completions 接口并返回纯文本回答。
-     *
-     * @param openaiBaseUrl OpenAI 接口地址
-     * @param openaiKey     OpenAI API Key
-     * @param openaiModel   目标模型名称
-     * @param prompt        用户输入的提示词
+     * 调用 OpenAI Chat Completions 接口，返回纯文本结果。
      */
-    public static String chat(String openaiBaseUrl, String openaiKey, String openaiModel, String prompt) throws IOException {
+    public static String chat(String openaiBaseUrl,
+                              String openaiKey,
+                              String openaiModel,
+                              String prompt) throws IOException {
+        return chat(openaiBaseUrl, openaiKey, openaiModel, prompt, 0);
+    }
+
+    public static String chat(String openaiBaseUrl,
+                              String openaiKey,
+                              String openaiModel,
+                              String prompt,
+                              int timeoutMs) throws IOException {
         Objects.requireNonNull(openaiBaseUrl, "openaiBaseUrl");
         Objects.requireNonNull(openaiKey, "openaiKey");
         Objects.requireNonNull(openaiModel, "openaiModel");
         Objects.requireNonNull(prompt, "prompt");
 
-        String responseJson = sendPrompt(openaiBaseUrl, openaiKey, openaiModel, prompt);
+        String responseJson = sendPrompt(openaiBaseUrl, openaiKey, openaiModel, prompt, timeoutMs);
         JsonNode root = MAPPER.readTree(responseJson);
 
         JsonNode contentNode = root.path("choices").path(0).path("message").path("content");
         if (contentNode.isMissingNode() || contentNode.isNull()) {
-            throw new IOException("OpenAI 响应中缺少 message.content 字段");
+            throw new IOException("OpenAI 响应缺少 message.content 字段");
         }
         return contentNode.asText().trim();
     }
@@ -57,24 +62,38 @@ public final class OpenAIClient {
                                        String systemPrompt,
                                        String textPrompt,
                                        String imageUrl) throws IOException {
+        return chatWithImage(openaiBaseUrl, openaiKey, openaiModel, systemPrompt, textPrompt, imageUrl, 0);
+    }
+
+    public static String chatWithImage(String openaiBaseUrl,
+                                       String openaiKey,
+                                       String openaiModel,
+                                       String systemPrompt,
+                                       String textPrompt,
+                                       String imageUrl,
+                                       int timeoutMs) throws IOException {
         Objects.requireNonNull(openaiBaseUrl, "openaiBaseUrl");
         Objects.requireNonNull(openaiKey, "openaiKey");
         Objects.requireNonNull(openaiModel, "openaiModel");
 
         if (!StringUtils.hasText(textPrompt) && !StringUtils.hasText(imageUrl)) {
-            throw new IllegalArgumentException("图文对话请求需要文本或图片信息");
+            throw new IllegalArgumentException("图文对话需要提供文本或图片信息");
         }
 
-        String responseJson = sendMultimodalPrompt(openaiBaseUrl, openaiKey, openaiModel, systemPrompt, textPrompt, imageUrl);
+        String responseJson = sendMultimodalPrompt(openaiBaseUrl, openaiKey, openaiModel, systemPrompt, textPrompt, imageUrl, timeoutMs);
         JsonNode root = MAPPER.readTree(responseJson);
         JsonNode contentNode = root.path("choices").path(0).path("message").path("content");
         if (contentNode.isMissingNode() || contentNode.isNull()) {
-            throw new IOException("OpenAI 响应中缺少 message.content 字段");
+            throw new IOException("OpenAI 响应缺少 message.content 字段");
         }
         return contentNode.asText().trim();
     }
 
-    private static String sendPrompt(String openaiBaseUrl, String openaiKey, String openaiModel, String prompt) throws IOException {
+    private static String sendPrompt(String openaiBaseUrl,
+                                     String openaiKey,
+                                     String openaiModel,
+                                     String prompt,
+                                     int timeoutMs) throws IOException {
         ObjectNode body = MAPPER.createObjectNode();
         body.put("model", openaiModel);
 
@@ -83,19 +102,15 @@ public final class OpenAIClient {
         messageNode.put("role", "user");
         messageNode.put("content", prompt);
 
-
         Map<String, String> headers = Collections.singletonMap(HEADER_AUTHORIZATION, BEARER_PREFIX + openaiKey);
 
-
         String normalizedUrl = openaiBaseUrl.trim();
-
 
         log.debug("OpenAIClient POST to: {}", normalizedUrl);
         log.debug("OpenAIClient Body: {}", body);
 
         URL url = URI.create(normalizedUrl).toURL();
-        String response = HttpJsonClient.post(url, headers, body);
-
+        String response = HttpJsonClient.post(url, headers, body, timeoutMs);
 
         log.debug("OpenAIClient Response: {}", response);
         return response;
@@ -106,7 +121,8 @@ public final class OpenAIClient {
                                                String openaiModel,
                                                String systemPrompt,
                                                String textPrompt,
-                                               String imageUrl) throws IOException {
+                                               String imageUrl,
+                                               int timeoutMs) throws IOException {
         ObjectNode body = MAPPER.createObjectNode();
         body.put("model", openaiModel);
 
@@ -142,7 +158,7 @@ public final class OpenAIClient {
         log.debug("OpenAIClient multimodal Body: {}", body);
 
         URL url = URI.create(normalizedUrl).toURL();
-        String response = HttpJsonClient.post(url, headers, body);
+        String response = HttpJsonClient.post(url, headers, body, timeoutMs);
 
         log.debug("OpenAIClient multimodal Response: {}", response);
         return response;

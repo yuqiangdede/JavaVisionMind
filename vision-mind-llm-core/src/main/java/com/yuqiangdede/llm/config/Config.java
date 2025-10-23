@@ -3,9 +3,11 @@ package com.yuqiangdede.llm.config;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 
-@Component
+@Configuration
+@PropertySource(value = "classpath:llm-defaults.properties", ignoreResourceNotFound = false)
 @Getter
 @Setter
 public class Config {
@@ -24,5 +26,8 @@ public class Config {
 
     @Value("${openai.chat.options.model}")
     private String openaiModel;
+
+    @Value("${llm.http-timeout-ms:100000}")
+    private int httpTimeoutMs;
 
 }
