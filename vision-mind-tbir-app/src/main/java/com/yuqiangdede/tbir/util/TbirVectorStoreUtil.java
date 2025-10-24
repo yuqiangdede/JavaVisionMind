@@ -50,7 +50,6 @@ import com.yuqiangdede.tbir.dto.ImageEmbedding;
 import com.yuqiangdede.tbir.dto.LuceHit;
 import com.yuqiangdede.tbir.dto.input.SaveImageRequest;
 
-import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -85,7 +84,7 @@ public final class TbirVectorStoreUtil {
     private static ChromaStore inMemoryStore;
     private static final Map<String, Set<String>> memoryIndex = new ConcurrentHashMap<>();
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation"})
     private static RestHighLevelClient esClient;
     private static ElasticsearchConfig esConfig;
     private static boolean esIndexReady;
@@ -303,7 +302,7 @@ public final class TbirVectorStoreUtil {
                 payload,
                 System.currentTimeMillis());
         inMemoryStore.upsert(record);
-        memoryIndex.computeIfAbsent(imageId, key -> Collections.newSetFromMap(new ConcurrentHashMap<>()))
+        memoryIndex.computeIfAbsent(imageId, _ -> Collections.newSetFromMap(new ConcurrentHashMap<>()))
                 .add(docId);
     }
 

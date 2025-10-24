@@ -8,10 +8,12 @@ import com.yuqiangdede.llm.client.support.HttpJsonClient;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.Base64;
 
 /**
  * 面向 Ollama 本地服务的对话客户端。
@@ -29,14 +31,10 @@ public final class OllamaClient {
     /**
      * 调用 Ollama 生成一段回复文本。
      *
-     * @param ollamaBaseUrl Ollama 服务地址，例如 http://127.0.0.1:11434
+     * @param ollamaBaseUrl Ollama 服务地址，例如 <a href="http://127.0.0.1:11434">...</a>
      * @param ollamaModel   使用的模型名称
      * @param prompt        用户输入的提示词
      */
-    public static String chat(String ollamaBaseUrl, String ollamaModel, String prompt) throws IOException {
-        return chat(ollamaBaseUrl, ollamaModel, prompt, 0);
-    }
-
     public static String chat(String ollamaBaseUrl, String ollamaModel, String prompt, int timeoutMs) throws IOException {
         Objects.requireNonNull(ollamaBaseUrl, "ollamaBaseUrl");
         Objects.requireNonNull(ollamaModel, "ollamaModel");
@@ -83,7 +81,7 @@ public final class OllamaClient {
         if (imageBase64 != null) {
             body.putArray("images").add(imageBase64);
         }
-        URL url = new URL(normalizeBaseUrl(ollamaBaseUrl) + GENERATE_PATH);
+        URL url = toUrl(normalizeBaseUrl(ollamaBaseUrl) + GENERATE_PATH);
         return HttpJsonClient.post(url, Collections.emptyMap(), body, timeoutMs);
     }
 
@@ -96,7 +94,7 @@ public final class OllamaClient {
     }
 
     private static String encodeImageToBase64(String imageUrl) throws IOException {
-        URL url = new URL(imageUrl);
+        URL url = toUrl(imageUrl);
         try (InputStream inputStream = url.openStream();
              ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
             byte[] chunk = new byte[4096];
@@ -105,6 +103,14 @@ public final class OllamaClient {
                 buffer.write(chunk, 0, bytesRead);
             }
             return Base64.getEncoder().encodeToString(buffer.toByteArray());
+        }
+    }
+
+    private static URL toUrl(String value) throws IOException {
+        try {
+            return URI.create(value.trim()).toURL();
+        } catch (IllegalArgumentException | MalformedURLException ex) {
+            throw new IOException("Invalid URL: " + value, ex);
         }
     }
 }

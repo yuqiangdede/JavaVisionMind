@@ -42,13 +42,20 @@ public class YoloV11Util extends YoloUtil {
      * 补充置信度 和 类型数据
      * 根据经模型中的 confThreshold 来过滤置信度太小的数据
      * 把xywh转xyxy（两个对角点来表示矩形），同时把检测的坐标框进行反resize的操作，得到实际的坐标位置
-     * 非极大值抑制（NMS）用以去除多余的边缘响应或重复的检测框，保留最佳的那些框
-     * 最终返回一个 YoloDetectionResult，包含预测框列表和类型名称映射
-     *
-     * @param src   带预测图片Mat
-     * @param model 模型
-     * @param conf  置信度
-     * @return 封装后的检测结果
+     * 非极大值抑制（NMS）用以去除多余的边缘响应或重复的检测框，保留最佳的那些框
+
+     * 最终返回一个 YoloDetectionResult，包含预测框列表和类型名称映射
+
+     *
+
+     * @param src   带预测图片Mat
+
+     * @param model 模型
+
+     * @param conf  置信度
+
+     * @return 封装后的检测结果
+
      */
     private static YoloDetectionResult predictor(Mat src, Model model, Float conf) {
         try (OnnxTensor tensor = transferTensor(src, model)) {

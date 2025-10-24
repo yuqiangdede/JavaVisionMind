@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -39,7 +40,7 @@ public class LlamaHttpServerCaller {
         """.formatted(dataUri);
 
         // 4. 发送 HTTP POST 到本地 llama-server
-        URL url = new URL("http://10.19.169.37:8080/v1/chat/completions");
+        URL url = URI.create("http://10.19.169.37:8080/v1/chat/completions").toURL();
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json");

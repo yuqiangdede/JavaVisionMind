@@ -14,7 +14,7 @@ public class JsonUtils {
     static {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectNoNullMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectNoNullMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        objectNoNullMapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
     }
 
     public static String object2Json(Object obj) throws JsonProcessingException {

@@ -73,7 +73,7 @@ public final class ReidVectorStoreUtil {
     private static FSDirectory directory;
     private static ChromaStore inMemoryStore;
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings({"deprecation"})
     private static RestHighLevelClient esClient;
     private static ElasticsearchConfig esConfig;
     private static boolean esIndexReady;

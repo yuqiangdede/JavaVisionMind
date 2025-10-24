@@ -16,14 +16,11 @@ import org.apache.http.message.BasicHeader;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Factory for creating Elasticsearch {@link RestHighLevelClient} instances based on configuration.
  */
 public final class ElasticsearchClientFactory {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchClientFactory.class);
 
     private ElasticsearchClientFactory() {
     }
@@ -37,6 +34,7 @@ public final class ElasticsearchClientFactory {
      * @param apiKey encoded API key value (optional, plain value that will be base64-encoded)
      * @return configured client
      */
+    @SuppressWarnings({"deprecation"})
     public static RestHighLevelClient createClient(
             String uris,
             String username,
