@@ -12,19 +12,19 @@ import org.springframework.context.annotation.PropertySource;
 @Setter
 public class Config {
 
-    @Value("${ollama.base-url}")
+    @Value("${ollama.base-url:}")
     private String ollamaBaseUrl;
 
-    @Value("${ollama.chat.options.model}")
+    @Value("${ollama.chat.options.model:}")
     private String ollamaModel;
 
-    @Value("${openai.base-url}")
+    @Value("${openai.base-url:}")
     private String openaiBaseUrl;
 
-    @Value("${openai.api-key}")
+    @Value("${openai.api-key:}")
     private String openaiKey;
 
-    @Value("${openai.chat.options.model}")
+    @Value("${openai.chat.options.model:}")
     private String openaiModel;
 
     @Value("${llm.http-timeout-ms:100000}")

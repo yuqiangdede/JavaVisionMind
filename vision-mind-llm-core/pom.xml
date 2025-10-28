@@ -13,17 +13,7 @@
     <artifactId>vision-mind-llm-core</artifactId>
     <version>1.0.0</version>
     <name>vision-mind-llm-core</name>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <release>25</release>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+
     <packaging>jar</packaging>
 
     <dependencies>

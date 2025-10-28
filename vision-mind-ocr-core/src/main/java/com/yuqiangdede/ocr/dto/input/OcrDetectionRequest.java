@@ -22,6 +22,10 @@ public class OcrDetectionRequest {
     private String detectionLevel;
 
     /**
+     * Detection plan: sr (default，SemanticReconstruction) or patch
+     */
+    private String plan;
+    /**
      * Source image URL to analyse.
      */
     private String imgUrl;
@@ -30,6 +34,7 @@ public class OcrDetectionRequest {
     public String toString() {
         return "OcrDetectionRequest{" +
                 "detectionLevel='" + detectionLevel + '\'' +
+                ", plan='" + plan + '\'' +
                 ", imgUrl='" + imgUrl + '\'' +
                 '}';
     }

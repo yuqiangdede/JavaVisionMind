@@ -302,7 +302,7 @@ public final class TbirVectorStoreUtil {
                 payload,
                 System.currentTimeMillis());
         inMemoryStore.upsert(record);
-        memoryIndex.computeIfAbsent(imageId, _ -> Collections.newSetFromMap(new ConcurrentHashMap<>()))
+        memoryIndex.computeIfAbsent(imageId, e -> Collections.newSetFromMap(new ConcurrentHashMap<>()))
                 .add(docId);
     }
 
