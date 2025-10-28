@@ -1,12 +1,15 @@
 package com.yuqiangdede.ocr.service;
 
 import ai.onnxruntime.OrtException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.yuqiangdede.common.dto.Point;
 import com.yuqiangdede.common.util.ImageUtil;
+import com.yuqiangdede.common.util.JsonUtils;
 import com.yuqiangdede.ocr.config.Constant;
 import com.yuqiangdede.ocr.dto.input.OcrDetectionRequest;
 import com.yuqiangdede.ocr.dto.output.OcrDetectionResult;
 import com.yuqiangdede.ocr.runtime.PaddleOcrEngine;
+import com.yuqiangdede.ocr.util.OcrPrompt;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.opencv.core.Mat;
@@ -37,6 +40,7 @@ public class OcrService {
 
     private final PaddleOcrEngine lightEngine;
     private final PaddleOcrEngine heavyEngine;
+    private final OcrPrompt ocrPrompt;
 
     static {
         boolean skipProperty = Boolean.parseBoolean(System.getProperty("vision-mind.skip-opencv", "false"));
@@ -61,7 +65,8 @@ public class OcrService {
         }
     }
 
-    public OcrService() {
+    public OcrService(OcrPrompt ocrPrompt) {
+        this.ocrPrompt = ocrPrompt;
         try {
             lightEngine = new PaddleOcrEngine(
                     Path.of(Constant.ORC_DET_ONNX_PATH),
@@ -87,6 +92,16 @@ public class OcrService {
         return inferenceResult.detections();
     }
 
+    public String detectWithLLM(OcrDetectionRequest request) throws IOException, OrtException {
+        InferenceResult inferenceResult = runInference(request);
+        return ocrPrompt.fineTuning(inferenceResult.detections());
+
+    }
+    public String detectWithSR(OcrDetectionRequest request) throws IOException, OrtException {
+        InferenceResult inferenceResult = runInference(request);
+        return ocrPrompt.semanticReconstruction(inferenceResult.detections());
+    }
+
     public BufferedImage detectWithOverlay(OcrDetectionRequest request) throws IOException, OrtException {
         InferenceResult inferenceResult = runInference(request);
         BufferedImage image = inferenceResult.image();
@@ -94,7 +109,7 @@ public class OcrService {
         return image;
     }
 
-    public byte[] detectWithOverlayBytes(OcrDetectionRequest request) throws IOException, OrtException {
+    public byte[] detectI(OcrDetectionRequest request) throws IOException, OrtException {
         BufferedImage image = detectWithOverlay(request);
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             javax.imageio.ImageIO.write(image, "jpg", baos);
@@ -287,6 +302,7 @@ public class OcrService {
                 || lower.contains("det")
                 || lower.contains("base");
     }
+
     @PreDestroy
     public void shutdown() {
         tryClose(heavyEngine);
@@ -313,7 +329,63 @@ public class OcrService {
         }
     }
 
+    public byte[] detectWithLLMI(OcrDetectionRequest request) throws IOException, OrtException {
+        InferenceResult inferenceResult = runInference(request);
+        List<OcrDetectionResult> originalDetections = inferenceResult.detections();
+        List<OcrDetectionResult> fineTunedDetections = applyFineTuning(originalDetections);
+
+        BufferedImage image = inferenceResult.image();
+        drawDetections(image, fineTunedDetections);
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            javax.imageio.ImageIO.write(image, "jpg", baos);
+            return baos.toByteArray();
+        }
+    }
+
+    private List<OcrDetectionResult> applyFineTuning(List<OcrDetectionResult> originalDetections) {
+        if (originalDetections == null || originalDetections.isEmpty()) {
+            return originalDetections;
+        }
+        try {
+            String fineTunedJson = ocrPrompt.fineTuning(originalDetections);
+            if (fineTunedJson == null || fineTunedJson.isBlank()) {
+                return originalDetections;
+            }
+            List<OcrDetectionResult> parsed = JsonUtils.objectMapper.readValue(
+                    fineTunedJson,
+                    new TypeReference<List<OcrDetectionResult>>() {
+                    }
+            );
+            if (parsed == null || parsed.isEmpty()) {
+                return originalDetections;
+            }
+            if (parsed.size() != originalDetections.size()) {
+                log.warn("Fine-tuned detection size mismatch, original={}, tuned={}",
+                        originalDetections.size(), parsed.size());
+                return originalDetections;
+            }
+            List<OcrDetectionResult> merged = new ArrayList<>(originalDetections.size());
+            for (int i = 0; i < originalDetections.size(); i++) {
+                OcrDetectionResult source = originalDetections.get(i);
+                OcrDetectionResult tuned = parsed.get(i);
+
+                List<Point> polygon = (tuned.getPolygon() == null || tuned.getPolygon().isEmpty())
+                        ? source.getPolygon()
+                        : tuned.getPolygon();
+                String text = tuned.getText() != null ? tuned.getText() : source.getText();
+                double confidence = tuned.getConfidence() > 0 ? tuned.getConfidence() : source.getConfidence();
+
+                merged.add(new OcrDetectionResult(polygon, text, confidence));
+            }
+            return merged;
+        } catch (Exception ex) {
+            log.warn("Failed to apply LLM fine-tuning, fallback to original detections", ex);
+            return originalDetections;
+        }
+    }
+
+
     private record InferenceResult(BufferedImage image, List<OcrDetectionResult> detections) {
     }
 }
-
