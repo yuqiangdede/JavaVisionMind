@@ -323,7 +323,6 @@ public class OcrService {
                         ? ""
                         : detection.getText().trim();
                 if (!label.isEmpty()) {
-                    label = label + String.format(Locale.US, " (%.2f)", detection.getConfidence());
                     g2d.drawString(label, (float) labelX, (float) labelY);
                 }
             }

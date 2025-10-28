@@ -215,40 +215,46 @@ public class PaddleOcrEngine implements AutoCloseable {
         List<TextPrediction> results = new ArrayList<>(crops.size());
         for (int start = 0; start < crops.size(); start += recBatchNum) {
             int end = Math.min(crops.size(), start + recBatchNum);
-            int batch = end - start;
-            List<float[]> inputs = new ArrayList<>(batch);
+            List<Mat> batchCrops = crops.subList(start, end);
+            int batch = batchCrops.size();
+            int[] sortedIndices = sortByAspectRatio(batchCrops);
+
             double maxRatio = 0.0;
-            for (int idx = start; idx < end; idx++) {
-                double ratio = crops.get(idx).cols() / (double) Math.max(crops.get(idx).rows(), 1);
+            for (int idx : sortedIndices) {
+                Mat crop = batchCrops.get(idx);
+                double ratio = crop.cols() / (double) Math.max(crop.rows(), 1);
                 maxRatio = Math.max(maxRatio, ratio);
             }
-            for (int idx = start; idx < end; idx++) {
-                inputs.add(resizeAndNormalizeForRec(crops.get(idx), maxRatio));
+
+            List<float[]> inputs = new ArrayList<>(batch);
+            for (int idx : sortedIndices) {
+                inputs.add(resizeAndNormalizeForRec(batchCrops.get(idx), maxRatio));
             }
+
             float[] batchData = concat(inputs);
             long[] shape = {batch, recImgC, recImgH, recImgW};
             try (OnnxTensor tensor = OnnxTensor.createTensor(env, FloatBuffer.wrap(batchData), shape);
                  Result result = recSession.run(Collections.singletonMap(recInputName, tensor))) {
                 float[][][] logits = (float[][][]) result.get(0).getValue();
-                int[] indices = sortByAspectRatio(crops.subList(start, end));
-                for (int i = 0; i < logits.length; i++) {
-                    TextPrediction prediction = decodeCtc(logits[i]);
-                    results.add(prediction);
+                List<TextPrediction> batchPredictions = new ArrayList<>(logits.length);
+                for (float[][] logit : logits) {
+                    batchPredictions.add(decodeCtc(logit));
                 }
-                reorder(results, start, end, indices);
+                results.addAll(restoreOrder(batchPredictions, sortedIndices));
             }
         }
         return results;
     }
 
-    private void reorder(List<TextPrediction> results, int start, int end, int[] indices) {
-        if (indices.length <= 1) {
-            return;
+    private List<TextPrediction> restoreOrder(List<TextPrediction> predictions, int[] sortedIndices) {
+        if (sortedIndices.length <= 1) {
+            return new ArrayList<>(predictions);
         }
-        List<TextPrediction> copy = new ArrayList<>(results.subList(start, end));
-        for (int i = 0; i < indices.length; i++) {
-            results.set(start + i, copy.get(indices[i]));
+        TextPrediction[] restored = new TextPrediction[sortedIndices.length];
+        for (int i = 0; i < sortedIndices.length; i++) {
+            restored[sortedIndices[i]] = predictions.get(i);
         }
+        return new ArrayList<>(Arrays.asList(restored));
     }
 
     private int argMax(float[] arr) {
