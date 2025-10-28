@@ -11,6 +11,7 @@
 - [Quick Start](#quick-start)
 - [API Reference](#api-reference)
   - [vision-mind-yolo-app](#vision-mind-yolo-app-image-analysis)
+  - [vision-mind-ocr-app](#vision-mind-ocr-app-optical-character-recognition)
   - [vision-mind-ffe-app](#vision-mind-ffe-app-face-feature-extraction)
   - [vision-mind-reid-app](#vision-mind-reid-app-person-re-identification)
   - [vision-mind-tbir-app](#vision-mind-tbir-app-text-based-image-retrieval)
@@ -30,6 +31,8 @@ JavaVisionMind is a collection of independent Spring Boot services that cover ob
 | --- | --- |
 | `vision-mind-yolo-core` | Core inference utilities for YOLOv11, FAST-SAM, pose estimation, and segmentation models. |
 | `vision-mind-yolo-app` | REST facade that exposes the image-analysis capabilities from `vision-mind-yolo-core`. |
+| `vision-mind-ocr-core` | PaddleOCR detector/recognizer/classifier pipeline reused by the OCR service. |
+| `vision-mind-ocr-app` | REST wrapper that surfaces OCR results as JSON or annotated images. |
 | `vision-mind-ffe-app` | Face feature extraction service including detection, alignment, similarity search, and index maintenance. |
 | `vision-mind-reid-app` | Person re-identification workflows backed by Lucene for vector retrieval. |
 | `vision-mind-tbir-app` | Text-Based Image Retrieval service built on CLIP embeddings plus Lucene vector search. |
@@ -74,6 +77,7 @@ mvn clean install -DskipTests
 ### Run Services
 
 - YOLO API: `mvn -pl vision-mind-yolo-app spring-boot:run`
+- OCR service: `mvn -pl vision-mind-ocr-app spring-boot:run`
 - Face feature service: `mvn -pl vision-mind-ffe-app spring-boot:run`
 - Person re-identification: `mvn -pl vision-mind-reid-app spring-boot:run`
 - Text-based image retrieval: `mvn -pl vision-mind-tbir-app spring-boot:run`
@@ -105,6 +109,13 @@ Below tables outline the primary REST endpoints exposed by each runnable module.
 | POST | `/api/v1/img/samI` | FAST-SAM segmentation visualization. | `DetectionRequest` | `image/jpeg` bytes |
 | POST | `/api/v1/img/seg` | YOLO segmentation output with masks. | `DetectionRequestWithArea` | `HttpResult<List<SegDetection>>` |
 | POST | `/api/v1/img/segI` | Segmentation visualization. | `DetectionRequestWithArea` | `image/jpeg` bytes |
+
+### vision-mind-ocr-app (Optical Character Recognition)
+
+| Method | Path | Description | Request Body | Response |
+| --- | --- | --- | --- | --- |
+| POST | `/api/v1/ocr/detect` | Run PaddleOCR text detection/recognition with optional include/exclude polygons and switchable light (`det/rec.onnx`) or heavy (`det2/rec2.onnx`) models. | `OcrDetectionRequest` (`detectionLevel?`, `imgUrl`, `detectionFrames?`, `blockingFrames?`) | `HttpResult<List<OcrDetectionResult>>` |
+| POST | `/api/v1/ocr/detect-image` | Same as above but streams the annotated image. | `OcrDetectionRequest` | `image/jpeg` bytes |
 
 ### vision-mind-ffe-app (Face Feature Extraction)
 
@@ -222,6 +233,19 @@ Below tables outline the primary REST endpoints exposed by each runnable module.
 #### /api/v1/img/segI
 1. Controller forwards to the service (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:238).
 2. segAreaI draws segmentation polygons on the original image and returns them (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:299).
+
+### vision-mind-ocr-app
+
+#### /api/v1/ocr/detect
+1. Controller validates input, logs timing, and delegates to the service (vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:30).
+2. `OcrService.detect` routes the request into the shared inference pipeline (vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:93).
+3. `runInference` downloads the image, selects the light/heavy engine, executes PaddleOCR, and applies include/exclude polygons (vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:115).
+4. Area-filtered detections are returned to the controller for wrapping (vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:146).
+
+#### /api/v1/ocr/detect-image
+1. Controller invokes the overlay variant and prepares HTTP headers (vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:47).
+2. `detectWithOverlayBytes` reuses `detectWithOverlay` and encodes the annotated image as JPEG (vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:107).
+3. `detectWithOverlay` draws OCR polygons plus include/exclude frames prior to returning (vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:98).
 
 ### vision-mind-ffe-app
 

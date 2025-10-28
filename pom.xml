@@ -33,13 +33,15 @@
     </properties>
 
     <modules>
-        <module>vision-mind-yolo-app</module>
-        <module>vision-mind-ffe-app</module>
-        <module>vision-mind-tbir-app</module>
-        <module>vision-mind-yolo-core</module>
         <module>vision-mind-common</module>
-        <module>vision-mind-llm-core</module>
-        <module>vision-mind-reid-app</module>
+        <module>vision-mind-yolo-app</module> <!-- 17001-->
+        <module>vision-mind-yolo-core</module>
+        <module>vision-mind-ffe-app</module> <!-- 17002-->
+        <module>vision-mind-tbir-app</module> <!-- 17003-->
+        <module>vision-mind-reid-app</module> <!-- 17004-->
+        <module>vision-mind-llm-core</module> <!-- 17005-->
+        <module>vision-mind-ocr-app</module> <!-- 17006-->
+        <module>vision-mind-ocr-core</module>
         <module>vision-mind-test-sth</module>
     </modules>
     <dependencyManagement>

@@ -13,6 +13,7 @@ import java.awt.geom.GeneralPath;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.ComponentSampleModel;
+import java.awt.image.DataBufferByte;
 import java.awt.image.Raster;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,6 +30,7 @@ import javax.imageio.ImageIO;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
 
 import com.yuqiangdede.common.dto.Point;
 import com.yuqiangdede.common.dto.output.Box;
@@ -99,6 +101,34 @@ public class ImageUtil {
         byte[] bytes = byteArrayOutputStream.toByteArray();
         // 将字节数组转换为OpenCV的Mat对象
         return Imgcodecs.imdecode(new MatOfByte(bytes), Imgcodecs.IMREAD_COLOR);
+    }
+
+    public static BufferedImage matToBufferedImage(Mat mat) {
+        if (mat == null || mat.empty()) {
+            throw new IllegalArgumentException("Mat is null or empty");
+        }
+
+        Mat working = mat;
+        if (mat.channels() == 4) {
+            Mat converted = new Mat();
+            Imgproc.cvtColor(mat, converted, Imgproc.COLOR_BGRA2BGR);
+            working = converted;
+        }
+
+        int type = switch (working.channels()) {
+            case 1 -> BufferedImage.TYPE_BYTE_GRAY;
+            case 3 -> BufferedImage.TYPE_3BYTE_BGR;
+            default -> throw new IllegalArgumentException("Unsupported Mat channel count: " + working.channels());
+        };
+
+        BufferedImage bufferedImage = new BufferedImage(working.cols(), working.rows(), type);
+        byte[] data = ((DataBufferByte) bufferedImage.getRaster().getDataBuffer()).getData();
+        working.get(0, 0, data);
+
+        if (working != mat) {
+            working.release();
+        }
+        return bufferedImage;
     }
 
     public static String urlToBase64( String urlStr) throws IOException {
