@@ -114,8 +114,8 @@ Below tables outline the primary REST endpoints exposed by each runnable module.
 
 | Method | Path | Description | Request Body | Response |
 | --- | --- | --- | --- | --- |
-| POST | `/api/v1/ocr/detect` | Run PaddleOCR text detection/recognition with optional include/exclude polygons and switchable light (`det/rec.onnx`) or heavy (`det2/rec2.onnx`) models. | `OcrDetectionRequest` (`detectionLevel?`, `imgUrl`, `detectionFrames?`, `blockingFrames?`) | `HttpResult<List<OcrDetectionResult>>` |
-| POST | `/api/v1/ocr/detect-image` | Same as above but streams the annotated image. | `OcrDetectionRequest` | `image/jpeg` bytes |
+| POST | `/api/v1/ocr/detect` | Run PaddleOCR text detection/recognition with switchable lite (`det/rec.onnx`) or ex (`det2/rec2.onnx`) models across the full image. | `OcrDetectionRequest` (`detectionLevel?`, `imgUrl`) | `HttpResult<List<OcrDetectionResult>>` |
+| POST | `/api/v1/ocr/detect-image` | Same as above but streams the annotated image. | `OcrDetectionRequest` (`detectionLevel?`, `imgUrl`) | `image/jpeg` bytes |
 
 ### vision-mind-ffe-app (Face Feature Extraction)
 

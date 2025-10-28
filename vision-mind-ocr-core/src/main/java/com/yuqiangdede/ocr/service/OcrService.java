@@ -9,14 +9,8 @@ import com.yuqiangdede.ocr.dto.output.OcrDetectionResult;
 import com.yuqiangdede.ocr.runtime.PaddleOcrEngine;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Polygon;
-import org.locationtech.jts.geom.PrecisionModel;
 import org.opencv.core.Mat;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
 import java.awt.BasicStroke;
@@ -31,18 +25,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class OcrService {
 
-    private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory(new PrecisionModel(), 0);
+    private static final String LEVEL_LITE = "lite";
+    private static final String LEVEL_EX = "ex";
 
     private final PaddleOcrEngine lightEngine;
     private final PaddleOcrEngine heavyEngine;
@@ -100,8 +91,6 @@ public class OcrService {
         InferenceResult inferenceResult = runInference(request);
         BufferedImage image = inferenceResult.image();
         drawDetections(image, inferenceResult.detections());
-        ImageUtil.drawImageWithFrames(image, request.getDetectionFrames(), Color.BLUE);
-        ImageUtil.drawImageWithFrames(image, request.getBlockingFrames(), Color.DARK_GRAY);
         return image;
     }
 
@@ -128,10 +117,7 @@ public class OcrService {
         try {
             PaddleOcrEngine engine = selectEngine(request.getDetectionLevel());
             List<PaddleOcrEngine.OcrResult> rawResults = engine.ocr(mat);
-            List<OcrDetectionResult> filtered = filterDetections(
-                    rawResults,
-                    request.getDetectionFrames(),
-                    request.getBlockingFrames());
+            List<OcrDetectionResult> filtered = convertDetections(rawResults);
             log.info("OCR inference completed: url={}, level={}, totalDetections={}, filteredDetections={}, cost={}ms",
                     request.getImgUrl(),
                     normaliseDetectionLevel(request.getDetectionLevel()),
@@ -144,41 +130,13 @@ public class OcrService {
         }
     }
 
-    private List<OcrDetectionResult> filterDetections(List<PaddleOcrEngine.OcrResult> raw,
-                                                      ArrayList<ArrayList<Point>> detectionFrames,
-                                                      ArrayList<ArrayList<Point>> blockingFrames) {
-        if (raw.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<Polygon> includePolygons = toPolygons(detectionFrames);
-        List<Polygon> blockPolygons = toPolygons(blockingFrames);
-
-        List<OcrDetectionResult> results = new ArrayList<>();
+    private List<OcrDetectionResult> convertDetections(List<PaddleOcrEngine.OcrResult> raw) {
+        List<OcrDetectionResult> results = new ArrayList<>(raw.size());
         for (PaddleOcrEngine.OcrResult result : raw) {
-            Polygon detectionPolygon = polygonFromBox(result.getBox());
-            if (detectionPolygon == null || detectionPolygon.getArea() <= 0) {
-                continue;
-            }
-
-            boolean allowed = includePolygons.isEmpty();
-            if (!allowed) {
-                allowed = includePolygons.stream()
-                        .filter(Objects::nonNull)
-                        .anyMatch(frame -> overlapRatio(detectionPolygon, frame) >= Constant.DETECT_RATIO);
-            }
-            if (!allowed) {
-                continue;
-            }
-
-            boolean blocked = blockPolygons.stream()
-                    .filter(Objects::nonNull)
-                    .anyMatch(frame -> overlapRatio(detectionPolygon, frame) >= Constant.BLOCK_RATIO);
-            if (blocked) {
-                continue;
-            }
-
             List<Point> polygon = toPointList(result.getBox());
+            if (polygon.size() < 3) {
+                continue;
+            }
             results.add(new OcrDetectionResult(polygon, result.getText(), result.getScore()));
         }
         return results;
@@ -193,71 +151,6 @@ public class OcrService {
             points.add(new Point((float) coordinate[0], (float) coordinate[1]));
         }
         return points;
-    }
-
-    private List<Polygon> toPolygons(ArrayList<ArrayList<Point>> frames) {
-        if (CollectionUtils.isEmpty(frames)) {
-            return Collections.emptyList();
-        }
-        return frames.stream()
-                .map(this::polygonFromPoints)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-    }
-
-    private Polygon polygonFromBox(double[][] box) {
-        if (box == null || box.length < 3) {
-            return null;
-        }
-        Coordinate[] coordinates = new Coordinate[box.length + 1];
-        for (int i = 0; i < box.length; i++) {
-            coordinates[i] = new Coordinate(box[i][0], box[i][1]);
-        }
-        coordinates[box.length] = coordinates[0];
-        try {
-            return GEOMETRY_FACTORY.createPolygon(coordinates);
-        } catch (IllegalArgumentException ex) {
-            log.debug("Invalid detection polygon ignored: {}", Arrays.deepToString(box), ex);
-            return null;
-        }
-    }
-
-    private Polygon polygonFromPoints(List<Point> points) {
-        if (points == null || points.size() < 3) {
-            return null;
-        }
-        Coordinate[] coordinates = new Coordinate[points.size() + 1];
-        for (int i = 0; i < points.size(); i++) {
-            Point point = points.get(i);
-            if (point == null || point.getX() == null || point.getY() == null) {
-                return null;
-            }
-            coordinates[i] = new Coordinate(point.getX(), point.getY());
-        }
-        coordinates[points.size()] = coordinates[0];
-        try {
-            return GEOMETRY_FACTORY.createPolygon(coordinates);
-        } catch (IllegalArgumentException ex) {
-            log.debug("Invalid frame polygon ignored: {}", points, ex);
-            return null;
-        }
-    }
-
-    private double overlapRatio(Polygon detection, Polygon frame) {
-        if (detection == null || frame == null) {
-            return 0.0;
-        }
-        try {
-            Geometry intersection = detection.intersection(frame);
-            double detectionArea = detection.getArea();
-            if (detectionArea <= 0) {
-                return 0.0;
-            }
-            return intersection.getArea() / detectionArea;
-        } catch (RuntimeException ex) {
-            log.warn("Failed to compute polygon overlap", ex);
-            return 0.0;
-        }
     }
 
     private void drawDetections(BufferedImage image, List<OcrDetectionResult> detections) {
@@ -343,7 +236,7 @@ public class OcrService {
         };
         for (String name : candidates) {
             Font font = new Font(name, Font.BOLD, size);
-            if (font.canDisplay('\u6D4B')) {
+            if (font.canDisplay('测')) {
                 return font;
             }
         }
@@ -352,7 +245,7 @@ public class OcrService {
 
     private PaddleOcrEngine selectEngine(String detectionLevel) {
         String normalized = normaliseDetectionLevel(detectionLevel);
-        if ("heavy".equals(normalized)) {
+        if (LEVEL_EX.equals(normalized)) {
             return heavyEngine;
         }
         return lightEngine;
@@ -360,22 +253,40 @@ public class OcrService {
 
     private String normaliseDetectionLevel(String detectionLevel) {
         if (detectionLevel == null) {
-            return "light";
+            return LEVEL_LITE;
         }
         String trimmed = detectionLevel.trim();
         if (trimmed.isEmpty()) {
-            return "light";
+            return LEVEL_LITE;
         }
         String lower = trimmed.toLowerCase(Locale.ROOT);
-        if (lower.contains("heavy")
-                || lower.contains("det2")
-                || lower.contains("large")
-                || trimmed.contains("重")) {
-            return "heavy";
+        if (isExLevel(lower, trimmed)) {
+            return LEVEL_EX;
         }
-        return "light";
+        if (isLiteLevel(lower)) {
+            return LEVEL_LITE;
+        }
+        return LEVEL_LITE;
     }
 
+    private boolean isExLevel(String lower, String original) {
+        return lower.equals(LEVEL_EX)
+                || lower.equals("extra")
+                || lower.equals("ex-large")
+                || lower.equals("exlarge")
+                || lower.contains("heavy")
+                || lower.contains("det2")
+                || lower.contains("large")
+                || original.contains("重");
+    }
+
+    private boolean isLiteLevel(String lower) {
+        return lower.equals("light")
+                || lower.equals("lite")
+                || lower.equals("default")
+                || lower.contains("det")
+                || lower.contains("base");
+    }
     @PreDestroy
     public void shutdown() {
         tryClose(heavyEngine);
@@ -405,3 +316,4 @@ public class OcrService {
     private record InferenceResult(BufferedImage image, List<OcrDetectionResult> detections) {
     }
 }
+
