@@ -44,6 +44,7 @@ JavaVisionMind is a collection of independent Spring Boot services that cover ob
 
 1. Install **JDK 17** and **Maven 3.8+**.
 2. Download the required model bundles and OpenCV native runtime. Define the `VISION_MIND_PATH` environment variable so every module can locate weights and `.dll/.so` files:
+3. The model files have been uploaded to Alibaba Cloud Drive at [https://www.alipan.com/s/ChvZFAKXUDp](https://www.alipan.com/s/ChvZFAKXUDp). Extraction code: 7i5y
 
    ```bash
    # Windows PowerShell

@@ -40,6 +40,8 @@ JavaVisionMind 是一组相互独立的 Spring Boot 服务，覆盖目标检测�
 
 1. 安装 **JDK 17** 和 **Maven 3.8+**。
 2. 下载所需的模型文件以及 OpenCV 原生运行库。设置环境变量 `VISION_MIND_PATH`，让所有模块都能定位到权重和 `.dll/.so` 文件：
+3. 模型文件放在了阿里云盘上 https://www.alipan.com/s/ChvZFAKXUDp 提取码: 7i5y
+
    
    ```powershell
    # Windows PowerShell
