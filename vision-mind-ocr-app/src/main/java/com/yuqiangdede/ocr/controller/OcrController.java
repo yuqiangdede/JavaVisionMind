@@ -27,6 +27,9 @@ public class OcrController {
 
     private final OcrService ocrService;
 
+    /**
+     * Executes the base OCR detection pipeline and returns structured text regions.
+     */
     @PostMapping(value = "/detect", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public HttpResult<List<OcrDetectionResult>> detect(@RequestBody OcrDetectionRequest request) {
         long start = System.currentTimeMillis();
@@ -43,6 +46,9 @@ public class OcrController {
         }
     }
 
+    /**
+     * Runs OCR detection and returns an annotated image overlay as a JPEG payload.
+     */
     @PostMapping(value = "/detectI", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.IMAGE_JPEG_VALUE)
     public Object detectImage(@RequestBody OcrDetectionRequest request) {
         long start = System.currentTimeMillis();
@@ -62,9 +68,7 @@ public class OcrController {
     }
 
     /**
-     * 经过大模型进行整段语义重建，会根据语义修正一些错误，但是会丢失原始的坐标信息
-     * 文字连贯性强，不关注文字位置的的情况下可以使用
-     *
+     * Performs OCR detection and applies semantic reconstruction for cleaner reading.
      */
     @PostMapping(value = "/detectWithSR", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public HttpResult<String> detectWithSR(@RequestBody OcrDetectionRequest request) {
@@ -83,8 +87,7 @@ public class OcrController {
     }
 
     /**
-     * 使用大模型修复语义
-     * 本模式很依赖大模型的能力（推荐现场上了DeepSeek V3.1能力以上的大模型再用）
+     * Performs OCR detection then invokes the LLM prompt to refine the textual output.
      */
     @PostMapping(value = "/detectWithLLM", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public HttpResult<String> detectWithLLM(@RequestBody OcrDetectionRequest request) {
@@ -102,6 +105,9 @@ public class OcrController {
         }
     }
 
+    /**
+     * Applies LLM fine-tuning and responds with an annotated image showing refined text spans.
+     */
     @PostMapping(value = "/detectWithLLMI", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Object detectWithLLMI(@RequestBody OcrDetectionRequest request) {
         long start = System.currentTimeMillis();

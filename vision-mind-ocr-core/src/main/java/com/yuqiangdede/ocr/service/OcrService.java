@@ -43,6 +43,7 @@ public class OcrService {
     private final OcrPrompt ocrPrompt;
 
     static {
+        // Load OpenCV's native binaries unless tests or configuration skip it.
         boolean skipProperty = Boolean.parseBoolean(System.getProperty("vision-mind.skip-opencv", "false"));
         boolean testEnv = isTestEnvironment();
         boolean skipLoad = skipProperty || testEnv;
@@ -117,6 +118,9 @@ public class OcrService {
         }
     }
 
+    /**
+     * Runs the full OCR pipeline for a single request: download image, infer text, convert results.
+     */
     private InferenceResult runInference(OcrDetectionRequest request) throws IOException, OrtException {
         if (request == null) {
             throw new IllegalArgumentException("request must not be null");
@@ -126,12 +130,15 @@ public class OcrService {
         }
 
         long start = System.currentTimeMillis();
+        // Materialise the source as both OpenCV matrix and buffered image for later reuse.
         Mat mat = ImageUtil.urlToMat(request.getImgUrl());
         BufferedImage image = ImageUtil.matToBufferedImage(mat);
 
         try {
+            // Select the appropriate detector variant and execute ONNX inference.
             PaddleOcrEngine engine = selectEngine(request.getDetectionLevel());
             List<PaddleOcrEngine.OcrResult> rawResults = engine.ocr(mat);
+            // Translate engine output into DTOs, removing entries that cannot form polygons.
             List<OcrDetectionResult> filtered = convertDetections(rawResults);
             log.info("OCR inference completed: url={}, level={}, totalDetections={}, filteredDetections={}, cost={}ms",
                     request.getImgUrl(),
@@ -145,6 +152,9 @@ public class OcrService {
         }
     }
 
+    /**
+     * Converts raw OCR engine results into public DTOs while filtering invalid detections.
+     */
     private List<OcrDetectionResult> convertDetections(List<PaddleOcrEngine.OcrResult> raw) {
         List<OcrDetectionResult> results = new ArrayList<>(raw.size());
         for (PaddleOcrEngine.OcrResult result : raw) {
@@ -168,6 +178,9 @@ public class OcrService {
         return points;
     }
 
+    /**
+     * Renders detection polygons and optional labels on top of the original image.
+     */
     private void drawDetections(BufferedImage image, List<OcrDetectionResult> detections) {
         if (detections == null || detections.isEmpty()) {
             return;
@@ -175,6 +188,7 @@ public class OcrService {
 
         Graphics2D g2d = image.createGraphics();
         try {
+            // Enable anti-aliasing so both shapes and text annotations remain crisp.
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             g2d.setColor(Color.RED);
@@ -239,6 +253,9 @@ public class OcrService {
         }
     }
 
+    /**
+     * Finds a font capable of rendering Chinese characters to keep label text readable.
+     */
     private Font resolveLabelFont(int size) {
         String[] candidates = {
                 "Microsoft YaHei",
@@ -258,6 +275,9 @@ public class OcrService {
         return new Font(Font.SANS_SERIF, Font.BOLD, size);
     }
 
+    /**
+     * Chooses between the lightweight and heavyweight OCR engines.
+     */
     private PaddleOcrEngine selectEngine(String detectionLevel) {
         String normalized = normaliseDetectionLevel(detectionLevel);
         if (LEVEL_EX.equals(normalized)) {
@@ -266,6 +286,9 @@ public class OcrService {
         return lightEngine;
     }
 
+    /**
+     * Maps various user inputs into a bounded detection level vocabulary.
+     */
     private String normaliseDetectionLevel(String detectionLevel) {
         if (detectionLevel == null) {
             return LEVEL_LITE;
@@ -329,6 +352,9 @@ public class OcrService {
         }
     }
 
+    /**
+     * Runs OCR inference, applies LLM refinement and returns an annotated JPEG payload.
+     */
     public byte[] detectWithLLMI(OcrDetectionRequest request) throws IOException, OrtException {
         InferenceResult inferenceResult = runInference(request);
         List<OcrDetectionResult> originalDetections = inferenceResult.detections();
@@ -343,6 +369,9 @@ public class OcrService {
         }
     }
 
+    /**
+     * Reconciles LLM-generated corrections with original detections, preserving geometry when needed.
+     */
     private List<OcrDetectionResult> applyFineTuning(List<OcrDetectionResult> originalDetections) {
         if (originalDetections == null || originalDetections.isEmpty()) {
             return originalDetections;
