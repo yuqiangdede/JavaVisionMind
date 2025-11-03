@@ -9,8 +9,10 @@
 - [目录结构](#目录结构)
 - [环境准备](#环境准备)
 - [快速开始](#快速开始)
+- [OCR 能力](#ocr-能力)
 - [接口概览](#接口概览)
   - [vision-mind-yolo-app（图像分析）](#vision-mind-yolo-app图像分析)
+  - [vision-mind-ocr-app（光学字符识别）](#vision-mind-ocr-app光学字符识别)
   - [vision-mind-ffe-app（人脸特征提取）](#vision-mind-ffe-app人脸特征提取)
   - [vision-mind-reid-app（行人重识别）](#vision-mind-reid-app行人重识别)
   - [vision-mind-tbir-app（文本图像检索）](#vision-mind-tbir-app文本图像检索)
@@ -29,12 +31,14 @@ JavaVisionMind 是一组相互独立的 Spring Boot 服务，覆盖目标检测�
 | --- | --- |
 | `vision-mind-yolo-core` | 提供 YOLOv11、FAST-SAM、姿态估计与分割模型的核心推理工具。 |
 | `vision-mind-yolo-app` | 基于 `vision-mind-yolo-core` 的 REST API 外壳，用于图像分析。 |
+| `vision-mind-ocr-core` | PaddleOCR 检测/识别/分类流水线，供 OCR 服务复用。 |
+| `vision-mind-ocr-app` | OCR REST 包装层，可输出结构化文本或标注图像。 |
 | `vision-mind-ffe-app` | 包含检测、对齐、特征提取、相似度检索与索引维护的人脸服务。 |
 | `vision-mind-reid-app` | 行人重识别流程，支持 Lucene、内存与 Elasticsearch 向量检索。 |
 | `vision-mind-tbir-app` | 基于 CLIP 向量的图像检索服务，兼容 Lucene、内存与 Elasticsearch 存储。 |
-| `vision-mind-llm-core` | 封装 OpenAI/Ollama 等聊天接口，为多模态提示提供统一入口。 |
-| `vision-mind-common` | 共享的 DTO、数学工具以及图像/向量辅助方法。 |
-| `vision-mind-test-sth` | 用于集成实验和手工验证的测试沙箱。 |
+| `vision-mind-llm-core` | 封装 OpenAI/Ollama 等语言模型接口，提供统一调用。 |
+| `vision-mind-common` | 公用的 DTO、数学工具、图像/向量辅助方法。 |
+| `vision-mind-test-sth` | 用于集成实验与手工校验的临时沙箱。 |
 
 ## 环境准备
 
@@ -79,10 +83,11 @@ mvn clean install -DskipTests
 ### 启动服务
 
 - YOLO 图像分析：`mvn -pl vision-mind-yolo-app spring-boot:run`
-- 人脸特征服务：`mvn -pl vision-mind-ffe-app spring-boot:run`
-- 行人重识别：`mvn -pl vision-mind-reid-app spring-boot:run`
+- OCR 服务：`mvn -pl vision-mind-ocr-app spring-boot:run`
+- 人脸特征提取：`mvn -pl vision-mind-ffe-app spring-boot:run`
+- 行人再识别：`mvn -pl vision-mind-reid-app spring-boot:run`
 - 文本图像检索：`mvn -pl vision-mind-tbir-app spring-boot:run`
-- LLM 对话网关：`mvn -pl vision-mind-llm-core spring-boot:run`
+- LLM 对话服务：`mvn -pl vision-mind-llm-core spring-boot:run`
 
 所有服务默认以 `/api` 作为上下文路径，可在各模块的 `application.properties` 中调整端口与路径。
 
@@ -91,6 +96,21 @@ mvn clean install -DskipTests
 - `vision-mind-ffe-app`、`vision-mind-reid-app` 与 `vision-mind-tbir-app` 暴露 `vector.store.mode` 配置。
 - 取值 `lucene`（默认）时将向量持久化到磁盘，`memory` 使用内置 chroma 向量库运行于内存，`elasticsearch` 可接入外部 ES 集群。
 - 选择 Elasticsearch 模式时会直接写入全维度向量；仅有 Lucene 后端会应用 ReID 投影矩阵。
+
+## OCR 能力
+
+OCR 方案由 `vision-mind-ocr-core`（推理流水线）与 `vision-mind-ocr-app`（REST 封装）构成，基于 PaddleOCR 的 ONNX Runtime 推断并提供后处理增强能力。
+
+- 通过 `detectionLevel` 参数在轻量 (`lite`) 与高精 (`ex`) 模型之间切换，默认使用轻量配置。
+- 使用 `plan` 选择语义重建策略，或直接调用 `/detectWithSR`、`/detectWithLLM` 获取语义/LLM 的文本优化结果。
+- 访问 `/detectI` 与 `/detectWithLLMI` 可获得带多边形标注的 JPEG 叠加图，便于人工校对。
+- 请将 `VISION_MIND_PATH` 指向 OCR ONNX 模型与词典目录，确保轻量与高精引擎均能正确初始化。
+
+```bash
+curl -X POST http://localhost:17006/vision-mind-ocr/api/v1/ocr/detect -H "Content-Type: application/json" -d '{ "imgUrl": "https://example.com/receipt.jpg", "detectionLevel": "lite" }'
+```
+
+返回结构为 `HttpResult<List<OcrDetectionResult>>`，每条记录包含多边形坐标、识别文本与置信度。
 
 ## 接口概览
 
@@ -108,6 +128,16 @@ mvn clean install -DskipTests
 | POST | `/api/v1/img/samI` | FAST-SAM 分割的图像可视化。 | `DetectionRequest` | `image/jpeg` 字节流 |
 | POST | `/api/v1/img/seg` | YOLO 分割输出掩码信息。 | `DetectionRequestWithArea` | `HttpResult<List<SegDetection>>` |
 | POST | `/api/v1/img/segI` | 分割结果的图像可视化。 | `DetectionRequestWithArea` | `image/jpeg` 字节流 |
+
+### vision-mind-ocr-app（光学字符识别）
+
+| 方法 | 路径 | 说明 | 请求体 | 响应 |
+| --- | --- | --- | --- | --- |
+| POST | `/api/v1/ocr/detect` | 使用 PaddleOCR 执行检测与识别，可通过 `detectionLevel` 选择 lite（默认）或 ex 模型。 | `OcrDetectionRequest`（`detectionLevel?`, `plan?`, `imgUrl`） | `HttpResult<List<OcrDetectionResult>>` |
+| POST | `/api/v1/ocr/detectI` | 与基础检测一致，但返回带标注的 JPEG 图像。 | `OcrDetectionRequest`（`detectionLevel?`, `plan?`, `imgUrl`） | `image/jpeg` |
+| POST | `/api/v1/ocr/detectWithSR` | 启用语义重建流程输出整理后的文本。 | `OcrDetectionRequest`（`detectionLevel?`, `plan?`, `imgUrl`） | `HttpResult<String>` |
+| POST | `/api/v1/ocr/detectWithLLM` | 将识别结果交给 LLM 做推理式润色。 | `OcrDetectionRequest`（`detectionLevel?`, `plan?`, `imgUrl`） | `HttpResult<String>` |
+| POST | `/api/v1/ocr/detectWithLLMI` | 返回 LLM 润色后的多边形叠加图。 | `OcrDetectionRequest`（`detectionLevel?`, `plan?`, `imgUrl`） | `image/jpeg` |
 
 ### vision-mind-ffe-app（人脸特征提取）
 
@@ -217,6 +247,34 @@ mvn clean install -DskipTests
 #### /api/v1/img/segI
 1. 控制器将请求转发给服务（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:238）。
 2. `segAreaI` 在原图上绘制分割多边形并返回图像（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:299）。
+
+### vision-mind-ocr-app
+
+#### /api/v1/ocr/detect
+1. 控制器校验请求并记录耗时（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:30）。
+2. `OcrService.detect` 调用共享推理流程获取识别结果（vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:93）。
+3. `runInference` 下载图片、选择轻量/高精引擎、执行 PaddleOCR 并转换为 DTO（vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:115）。
+4. 过滤后的识别项封装进 `HttpResult` 返回（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:36）。
+
+#### /api/v1/ocr/detectI
+1. 控制器复用检测逻辑并初始化响应头（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:47）。
+2. `OcrService.detectI` 生成带多边形标注的图像并编码为 JPEG（vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:107）。
+3. 控制器以 `ResponseEntity` 返回字节流（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:54）。
+
+#### /api/v1/ocr/detectWithSR
+1. 控制器校验请求后委托服务层（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:64）。
+2. `OcrService.detectWithSR` 复用基础推理并调用 `ocrPrompt.semanticReconstruction`（vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:103）。
+3. 语义重建的文本直接返回（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:71）。
+
+#### /api/v1/ocr/detectWithLLM
+1. 控制器记录请求并交给服务层处理（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:78）。
+2. `OcrService.detectWithLLM` 在基础识别后调用 `ocrPrompt.fineTuning`（vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:99）。
+3. LLM 润色文本封装成 `HttpResult` 返回（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:85）。
+
+#### /api/v1/ocr/detectWithLLMI
+1. 控制器构建响应头并调用服务层（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:92）。
+2. `OcrService.detectWithLLMI` 将 LLM 调整结果叠加到原图并输出 JPEG 字节（vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:358）。
+3. 控制器返回图像流给客户端（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:99）。
 
 ### vision-mind-ffe-app
 
@@ -345,5 +403,3 @@ mvn clean install -DskipTests
 - **跨摄像头轨迹关联**：基于现有重识别能力叠加时空约束，实现跨机位的目标身份关联与告警规则。
 - **更丰富的多模态交互**：在 `vision-mind-llm-core` 中加入图像字幕生成、视觉问答（VQA）或提示模板管理，提升图文问答的可用性。
 - **模型管理与监控**：提供统一的模型版本管理、在线热更新与推理性能监控面板，便于在生产环境中运维多种模型。
-
-

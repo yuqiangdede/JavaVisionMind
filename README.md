@@ -92,6 +92,23 @@ Each service uses `/api` as the context root. Default ports can be overridden in
 - Set to `lucene` (default) to persist vectors on disk, `memory` to use the embedded chroma store, or `elasticsearch` to back vectors with an external ES cluster.
 - The Elasticsearch mode shares full-dimension embeddings; only the Lucene backend applies the ReID projection matrix.
 
+## OCR Capability
+
+The OCR stack combines `vision-mind-ocr-core` (engine orchestration) and `vision-mind-ocr-app` (REST facade), wrapping PaddleOCR into ONNX runtimes with optional post-processing.
+
+- Switch between lite and ex detector/recognizer pairs with the `detectionLevel` flag (`lite` by default, `ex` for higher accuracy).
+- Choose the reconstruction strategy via `plan`, or call `/detectWithSR` and `/detectWithLLM` for semantic or LLM-driven text refinement.
+- Request JPEG overlays from `/detectI` or `/detectWithLLMI` to visualise polygons and fine-tuned spans.
+- Ensure `VISION_MIND_PATH` points to the OCR ONNX bundle and dictionary so both engines initialise correctly.
+
+```bash
+curl -X POST http://localhost:17006/vision-mind-ocr/api/v1/ocr/detect \
+  -H "Content-Type: application/json" \
+  -d '{ "imgUrl": "https://example.com/receipt.jpg", "detectionLevel": "lite" }'
+```
+
+The response is wrapped in `HttpResult<List<OcrDetectionResult>>`, where each detection includes polygon coordinates, recognised text, and confidence.
+
 ## API Reference
 
 Below tables outline the primary REST endpoints exposed by each runnable module. `HttpResult<T>` denotes the project-wide response wrapper containing `success`, `message`, and `data` fields.
@@ -116,7 +133,10 @@ Below tables outline the primary REST endpoints exposed by each runnable module.
 | Method | Path | Description | Request Body | Response |
 | --- | --- | --- | --- | --- |
 | POST | `/api/v1/ocr/detect` | Run PaddleOCR text detection/recognition with switchable lite (`det/rec.onnx`) or ex (`det2/rec2.onnx`) models across the full image. | `OcrDetectionRequest` (`detectionLevel?`, `imgUrl`) | `HttpResult<List<OcrDetectionResult>>` |
-| POST | `/api/v1/ocr/detect-image` | Same as above but streams the annotated image. | `OcrDetectionRequest` (`detectionLevel?`, `imgUrl`) | `image/jpeg` bytes |
+| POST | `/api/v1/ocr/detectI` | Same as above but streams the annotated image. | `OcrDetectionRequest` (`detectionLevel?`, `imgUrl`) | `image/jpeg` bytes |
+| POST | `/api/v1/ocr/detectWithSR` | Applies the semantic reconstruction decoder to smooth noisy OCR output. | `OcrDetectionRequest` (`detectionLevel?`, `plan?`, `imgUrl`) | `HttpResult<String>` |
+| POST | `/api/v1/ocr/detectWithLLM` | Feeds detections through the LLM prompt for higher-level reasoning. | `OcrDetectionRequest` (`detectionLevel?`, `plan?`, `imgUrl`) | `HttpResult<String>` |
+| POST | `/api/v1/ocr/detectWithLLMI` | Returns an LLM-refined overlay image with polygon annotations. | `OcrDetectionRequest` (`detectionLevel?`, `plan?`, `imgUrl`) | `image/jpeg` bytes |
 
 ### vision-mind-ffe-app (Face Feature Extraction)
 
@@ -243,7 +263,7 @@ Below tables outline the primary REST endpoints exposed by each runnable module.
 3. `runInference` downloads the image, selects the light/heavy engine, executes PaddleOCR, and applies include/exclude polygons (vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:115).
 4. Area-filtered detections are returned to the controller for wrapping (vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:146).
 
-#### /api/v1/ocr/detect-image
+#### /api/v1/ocr/detectI
 1. Controller invokes the overlay variant and prepares HTTP headers (vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:47).
 2. `detectWithOverlayBytes` reuses `detectWithOverlay` and encodes the annotated image as JPEG (vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:107).
 3. `detectWithOverlay` draws OCR polygons plus include/exclude frames prior to returning (vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:98).
