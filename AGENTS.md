@@ -1,5 +1,6 @@
 # Repository Guidelines
 JavaVisionMind 提供模块化 Spring Boot 服务，贡献时请聚焦受影响模块，并优先复用 `vision-mind-common` 中的工具类，以保障各独立服务的可部署性。
+请使用中文回答问题
 
 ## 项目结构与模块职责
 - 根目录 `pom.xml` 聚合全部子模块，务必在仓库根目录执行 Maven，以避免版本漂移。
@@ -42,6 +43,6 @@ JavaVisionMind 提供模块化 Spring Boot 服务，贡献时请聚焦受影响�
 - PR 描述应覆盖改动范围、测试结果、上线注意事项以及模型或资源更新清单（如新增 ONNX），同时给出部署与回滚策略。
 
 ## 安全与配置提示
-- 环境变量 中 存放 的 API 密钥 建议 通过 操作系统 密钥 管理 工具 维护，严禁 提交 到 Git 历史。
-- 本地 `application.properties` 可以 复制 为 `application-local.properties` 并 追加 差异 配置，在 PR 中 说明 新 引入 的 参数。
-- 提交 前 可 运行 `mvn dependency:tree` 检查 新 引入 的 三方 依赖，避免 未 审核 组件 进入 核心 模块。
+- 环境变量中存放的API密钥建议通过操作系统密钥管理工具维护，严禁提交到Git历史。
+- 本地 `application.properties` 可以复制为 `application-local.properties` 并追加差异配置，在PR中说明新引入的参数。
+- 提交 前 可 运行 `mvn dependency:tree` 检查新引入的三方依赖，避免未审核组件进入核心模块。
