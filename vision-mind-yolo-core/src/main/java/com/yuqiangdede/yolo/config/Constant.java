@@ -22,6 +22,7 @@ public class Constant {
     public static final String YOLO_ONNX_PATH;
     public static final String YOLO_FACE_ONNX_PATH;
     public static final String YOLO_POSE_ONNX_PATH;
+    public static final String YOLO_LP_ONNX_PATH;
     public static final String YOLO_SEG_ONNX_PATH;
     public static final String YOLO_OBB_ONNX_PATH;
     public static final String FAST_SAM_ONNX;
@@ -57,6 +58,7 @@ public class Constant {
             YOLO_ONNX_PATH = envPath + properties.getProperty("yolo.onnx.path");
             YOLO_FACE_ONNX_PATH = envPath + properties.getProperty("yolo.face.onnx.path");
             YOLO_POSE_ONNX_PATH = envPath + properties.getProperty("yolo.pose.onnx.path");
+            YOLO_LP_ONNX_PATH = envPath + properties.getProperty("yolo.lp.onnx.path");
             FAST_SAM_ONNX = envPath + properties.getProperty("yolo.sam.onnx.path");
             YOLO_SEG_ONNX_PATH = envPath + properties.getProperty("yolo.seg.onnx.path");
             YOLO_OBB_ONNX_PATH = envPath + properties.getProperty("yolo.obb.onnx.path");

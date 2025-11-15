@@ -138,6 +138,40 @@ public class ImgAnalysisController {
         }
     }
 
+    @PostMapping(value = "/v1/img/detectLP", produces = "application/json", consumes = "application/json")
+    public HttpResult<List<Box>> detectLicensePlate(@RequestBody DetectionRequestWithArea imgAreaInput) {
+        long startTime = System.currentTimeMillis();
+        if (ObjectUtils.isEmpty(imgAreaInput.getImgUrl())) {
+            return new HttpResult<>(false, "imgurl is null or empty");
+        }
+        try {
+            List<Box> boxs = imgAnalysisService.detectLP(imgAreaInput);
+            log.info("Img DetectLP : Input：{}.Result:{} Cost time：{} ms.", imgAreaInput, JsonUtils.object2Json(boxs), (System.currentTimeMillis() - startTime));
+            return new HttpResult<>(true, boxs);
+        } catch (IOException | OrtException | RuntimeException e) {
+            log.error("detect error", e);
+            return new HttpResult<>(false, e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/v1/img/detectLPI", consumes = "application/json", produces = "image/jpeg")
+    public Object detectLicensePlateI(@RequestBody DetectionRequestWithArea imgAreaInput) {
+        long startTime = System.currentTimeMillis();
+        BufferedImage image;
+        try {
+            image = imgAnalysisService.detectLPI(imgAreaInput);
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            ImageIO.write(image, "jpg", byteArrayOutputStream);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.IMAGE_JPEG);
+            log.info("Img DetectLPI : Input：{}. Cost time：{} ms.", imgAreaInput, (System.currentTimeMillis() - startTime));
+            return new ResponseEntity<>(byteArrayOutputStream.toByteArray(), headers, HttpStatus.OK);
+        } catch (IOException | OrtException | RuntimeException e) {
+            log.error("detect error", e);
+            return new HttpResult<>(false, e.getMessage());
+        }
+    }
+
     /**
      * 指定区域姿态检测
      *

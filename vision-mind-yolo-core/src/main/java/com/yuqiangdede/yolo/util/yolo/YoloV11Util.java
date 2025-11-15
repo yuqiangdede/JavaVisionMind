@@ -17,11 +17,13 @@ public class YoloV11Util extends YoloUtil {
 
     static final Model yolomodel;
     static final Model yoloFaceModel;
+    static final Model yoloLpModel;
 
     static {
         try {
             yolomodel = load(Constant.YOLO_ONNX_PATH);
             yoloFaceModel = load(Constant.YOLO_FACE_ONNX_PATH);
+            yoloLpModel = load(Constant.YOLO_LP_ONNX_PATH);
         } catch (OrtException e) {
             throw new RuntimeException(e);
         }
@@ -154,6 +156,10 @@ public class YoloV11Util extends YoloUtil {
 
     public static YoloDetectionResult predictorFace(Mat mat, Float conf) {
         return predictor(mat, yoloFaceModel, conf);
+    }
+
+    public static YoloDetectionResult predictorLicensePlate(Mat mat, Float conf) {
+        return predictor(mat, yoloLpModel, conf);
     }
 
     /**

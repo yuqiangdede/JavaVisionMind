@@ -276,6 +276,72 @@ public class ImgAnalysisService {
         return boxes;
     }
 
+    public List<Box> detectLP(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
+        Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
+
+        List<Box> boxs = analysisLicensePlate(mat, imgAreaInput.getThreshold());
+        Set<Box> result = new LinkedHashSet<>();
+
+        if (imgAreaInput.getDetectionFrames() == null || imgAreaInput.getDetectionFrames().isEmpty()) {
+            result.addAll(boxs);
+        } else {
+            for (Box box : boxs) {
+                for (ArrayList<Point> detectionFrame : imgAreaInput.getDetectionFrames()) {
+                    double detectRatio = GeometryUtils.calcOverlap(box, detectionFrame);
+                    if (detectRatio > Constant.DETECT_RATIO) {
+                        result.add(box);
+                        break;
+                    }
+                }
+            }
+        }
+
+
+        if (imgAreaInput.getBlockingFrames() == null || imgAreaInput.getBlockingFrames().isEmpty()) {
+            return new ArrayList<>(result);
+        } else {
+            Set<Box> toRemove = new HashSet<>();
+            for (Box box : boxs) {
+                for (ArrayList<Point> blockingFrame : imgAreaInput.getBlockingFrames()) {
+                    double blockRatio = GeometryUtils.calcOverlap(box, blockingFrame);
+                    if (blockRatio > Constant.BLOCK_RATIO) {
+                        toRemove.add(box);
+                        break;
+                    }
+                }
+            }
+            result.removeAll(toRemove);
+        }
+
+        return new ArrayList<>(result);
+    }
+
+    public BufferedImage detectLPI(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
+        BufferedImage image = ImageUtil.urlToImage(imgAreaInput.getImgUrl());
+
+        List<Box> boxs = this.detectLP(imgAreaInput);
+
+        ImageUtil.drawImageWithBox(image, boxs);
+        ImageUtil.drawImageWithFrames(image, imgAreaInput.getDetectionFrames(), Color.BLUE);
+        ImageUtil.drawImageWithFrames(image, imgAreaInput.getBlockingFrames(), Color.DARK_GRAY);
+        return image;
+    }
+
+    private List<Box> analysisLicensePlate(Mat mat, Float conf) {
+        YoloDetectionResult detection = YoloV11Util.predictorLicensePlate(mat, conf);
+
+        List<List<Float>> bs = detection.boxes();
+        Map<Integer, String> classNames = detection.classNames();
+
+        List<Box> boxes = new ArrayList<>();
+        for (List<Float> bx : bs) {
+            Box box = new Box(bx.get(0), bx.get(1), bx.get(2), bx.get(3), bx.get(4), bx.get(5), classNames);
+            boxes.add(box);
+        }
+
+        return boxes;
+    }
+
     public List<Box> sam(DetectionRequest imgAreaInput) throws IOException, OrtException {
         Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
         return YoloFastSAMUtil.predictor(mat);
