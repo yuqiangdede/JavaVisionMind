@@ -15,6 +15,7 @@
   - [vision-mind-ocr-app（光学字符识别）](#vision-mind-ocr-app光学字符识别)
   - [vision-mind-ffe-app（人脸特征提取）](#vision-mind-ffe-app人脸特征提取)
   - [vision-mind-reid-app（行人重识别）](#vision-mind-reid-app行人重识别)
+  - [vision-mind-lpr-app 车牌识别](#vision-mind-lpr-app-车牌识别)
   - [vision-mind-tbir-app（文本图像检索）](#vision-mind-tbir-app文本图像检索)
   - [vision-mind-llm-core（语言服务）](#vision-mind-llm-core语言服务)
 - [资源下载](#资源下载)
@@ -35,6 +36,7 @@ JavaVisionMind 是一组相互独立的 Spring Boot 服务，覆盖目标检测�
 | `vision-mind-ocr-app` | OCR REST 包装层，可输出结构化文本或标注图像。 |
 | `vision-mind-ffe-app` | 包含检测、对齐、特征提取、相似度检索与索引维护的人脸服务。 |
 | `vision-mind-reid-app` | 行人重识别流程，支持 Lucene、内存与 Elasticsearch 向量检索。 |
+| `vision-mind-lpr-app` | 车牌检测+识别服务，基于 YOLO 车牌框和 ONNX LPRNet 解码，可选 OCR 文本兜底。 |
 | `vision-mind-tbir-app` | 基于 CLIP 向量的图像检索服务，兼容 Lucene、内存与 Elasticsearch 存储。 |
 | `vision-mind-llm-core` | 封装 OpenAI/Ollama 等语言模型接口，提供统一调用。 |
 | `vision-mind-common` | 公用的 DTO、数学工具、图像/向量辅助方法。 |
@@ -86,6 +88,7 @@ mvn clean install -DskipTests
 - OCR 服务：`mvn -pl vision-mind-ocr-app spring-boot:run`
 - 人脸特征提取：`mvn -pl vision-mind-ffe-app spring-boot:run`
 - 行人再识别：`mvn -pl vision-mind-reid-app spring-boot:run`
+- 车牌识别`mvn -pl vision-mind-lpr-app spring-boot:run`
 - 文本图像检索：`mvn -pl vision-mind-tbir-app spring-boot:run`
 - LLM 对话服务：`mvn -pl vision-mind-llm-core spring-boot:run`
 
@@ -163,6 +166,18 @@ curl -X POST http://localhost:17006/vision-mind-ocr/api/v1/ocr/detect -H "Conten
 | POST | `/api/v1/reid/search` | 通过图像检索图库。 | JSON `{ "imgUrl": "...", "cameraId?": "...", "topN": ..., "threshold": ... }` | `HttpResult<List<Human>>` |
 | POST | `/api/v1/reid/searchOrStore` | 先检索；未命中则插入。 | JSON `{ "imgUrl": "...", "threshold": ... }` | `HttpResult<Human>` |
 | POST | `/api/v1/reid/associateStore` | 总是存储探测图像，并关联命中的对象。 | JSON `{ "imgUrl": "...", "threshold": ... }` | `HttpResult<Human>` |
+
+
+### vision-mind-lpr-app 车牌识别
+
+默认基础路径：`http://localhost:17007/vision-mind-lpr`。`PlateRecognitionResult` 返回车牌框 `Box` 和解码出的 `plate` 文本。通过 `lpr.model.path` 指向 `lprnet.onnx`，若为相对路径则基于 `VISION_MIND_PATH` 解析。
+
+| 方法 | 路径 | 说明 | 请求体 | 响应 |
+| --- | --- | --- | --- | --- |
+| POST | `/api/v1/lpr` | YOLO 车牌检测 + LPRNet 解码车牌字符串。 | `DetectionRequestWithArea`（`imgUrl`, `threshold?`, `types?`, `detectionFrames?`, `blockingFrames?`） | `HttpResult<List<PlateRecognitionResult>>` |
+| POST | `/api/v1/lprI` | 同上，返回标注后的 JPEG。 | `DetectionRequestWithArea` | `image/jpeg` 字节流 |
+| POST | `/api/v1/lprOcr` | 在检测框内用 PaddleOCR 识别文本，替代 LPRNet 解码。 | `DetectionRequestWithArea` | `HttpResult<List<PlateRecognitionResult>>` |
+| POST | `/api/v1/lprOcrI` | OCR 流程并返回标注图。 | `DetectionRequestWithArea` | `image/jpeg` 字节流 |
 
 ### vision-mind-tbir-app（文本图像检索）
 
@@ -340,6 +355,20 @@ curl -X POST http://localhost:17006/vision-mind-ocr/api/v1/ocr/detect -H "Conten
 #### /api/v1/reid/associateStore
 1. 控制器校验请求（vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/controller/ReidController.java:142）。
 2. `associateStore` 先检索匹配，再无条件保存新向量，并与命中对象建立关联（vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/service/ReidService.java:138）。
+
+
+### vision-mind-lpr-app
+
+#### /api/v1/lpr
+1. 控制器校验 `imgUrl` 后转到服务层（vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/controller/LprController.java:34）。
+2. `LprService.analyze` 下载图片，调用 `ImgAnalysisService.detectLP` 返回车牌框并按模型输入尺寸做归一化裁剪（vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:40）。
+3. 每个车牌裁剪交给 `LprOnnxRecognizer.recognize` 解码文本（vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:54；vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprOnnxRecognizer.java:69）。
+4. `overlay` 为 `/v1/lprI` 绘制框和文本（vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:84）。
+
+#### /api/v1/lprOcr
+1. 控制器校验请求并转发到 `analyzeWithOcr`（vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/controller/LprController.java:71）。
+2. `analyzeWithOcr` 运行车牌检测，调用 `OcrService.detect`，按 IoU/中心点选择最佳 OCR 文本（vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:62；vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:160）。
+3. `overlay` 复用同一渲染逻辑给 `/v1/lprOcrI`（vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:84）。
 
 ### vision-mind-tbir-app
 

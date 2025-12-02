@@ -14,6 +14,7 @@
   - [vision-mind-ocr-app](#vision-mind-ocr-app-optical-character-recognition)
   - [vision-mind-ffe-app](#vision-mind-ffe-app-face-feature-extraction)
   - [vision-mind-reid-app](#vision-mind-reid-app-person-re-identification)
+  - [vision-mind-lpr-app](#vision-mind-lpr-app-license-plate-recognition)
   - [vision-mind-tbir-app](#vision-mind-tbir-app-text-based-image-retrieval)
   - [vision-mind-llm-core](#vision-mind-llm-core-language-services)
 - [Resources](#resources)
@@ -35,6 +36,7 @@ JavaVisionMind is a collection of independent Spring Boot services that cover ob
 | `vision-mind-ocr-app` | REST wrapper that surfaces OCR results as JSON or annotated images. |
 | `vision-mind-ffe-app` | Face feature extraction service including detection, alignment, similarity search, and index maintenance. |
 | `vision-mind-reid-app` | Person re-identification workflows backed by Lucene for vector retrieval. |
+| `vision-mind-lpr-app` | License plate detection and recognition that combines YOLO plate boxes with an ONNX LPRNet decoder plus an optional OCR fallback. |
 | `vision-mind-tbir-app` | Text-Based Image Retrieval service built on CLIP embeddings plus Lucene vector search. |
 | `vision-mind-llm-core` | Wrapper around OpenAI/Ollama style chat endpoints that powers multimodal prompts. |
 | `vision-mind-common` | Shared DTOs, math helpers, and image/vector utilities. |
@@ -81,6 +83,7 @@ mvn clean install -DskipTests
 - OCR service: `mvn -pl vision-mind-ocr-app spring-boot:run`
 - Face feature service: `mvn -pl vision-mind-ffe-app spring-boot:run`
 - Person re-identification: `mvn -pl vision-mind-reid-app spring-boot:run`
+- License plate recognition: `mvn -pl vision-mind-lpr-app spring-boot:run`
 - Text-based image retrieval: `mvn -pl vision-mind-tbir-app spring-boot:run`
 - LLM chat facade: `mvn -pl vision-mind-llm-core spring-boot:run`
 
@@ -162,6 +165,17 @@ Below tables outline the primary REST endpoints exposed by each runnable module.
 | POST | `/api/v1/reid/search` | Search the gallery by image. | JSON map `{ "imgUrl", "cameraId?", "topN", "threshold" }` | `HttpResult<List<Human>>` |
 | POST | `/api/v1/reid/searchOrStore` | Single-cover workflow: search first, otherwise insert. | JSON map `{ "imgUrl", "threshold" }` | `HttpResult<Human>` |
 | POST | `/api/v1/reid/associateStore` | Multi-cover workflow: always store the probe and link to the match. | JSON map `{ "imgUrl", "threshold" }` | `HttpResult<Human>` |
+
+### vision-mind-lpr-app (License Plate Recognition)
+
+Default base path: `http://localhost:17007/vision-mind-lpr`. `PlateRecognitionResult` contains the detected `Box` and decoded `plate` text. Configure `lpr.model.path` (relative to `VISION_MIND_PATH` when not absolute) to point at `lprnet.onnx`.
+
+| Method | Path | Description | Request Body | Response |
+| --- | --- | --- | --- | --- |
+| POST | `/api/v1/lpr` | Detect license plates and decode text with the ONNX LPRNet model. | `DetectionRequestWithArea` (`imgUrl`, `threshold?`, `types?`, `detectionFrames?`, `blockingFrames?`) | `HttpResult<List<PlateRecognitionResult>>` |
+| POST | `/api/v1/lprI` | Same as above but returns the annotated image. | `DetectionRequestWithArea` | `image/jpeg` bytes |
+| POST | `/api/v1/lprOcr` | Use PaddleOCR text within each detected plate instead of the LPRNet decoder. | `DetectionRequestWithArea` | `HttpResult<List<PlateRecognitionResult>>` |
+| POST | `/api/v1/lprOcrI` | OCR-based recognition with visualization. | `DetectionRequestWithArea` | `image/jpeg` bytes |
 
 ### vision-mind-tbir-app (Text-Based Image Retrieval)
 
@@ -332,6 +346,19 @@ Below tables outline the primary REST endpoints exposed by each runnable module.
 #### /api/v1/reid/associateStore
 1. Controller validates request (vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/controller/ReidController.java:142).
 2. associateStore searches for an existing match and always persists the new embedding, linking it to the matched human if available (vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/service/ReidService.java:138).
+
+### vision-mind-lpr-app
+
+#### /api/v1/lpr
+1. Controller validates imgUrl and delegates to the service (vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/controller/LprController.java:34).
+2. LprService.analyze downloads the image, runs YOLO license-plate detection via ImgAnalysisService.detectLP, and normalizes each plate crop (vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:40).
+3. Each normalized plate is decoded by LprOnnxRecognizer.recognize to return plate text (vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:54; vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprOnnxRecognizer.java:69).
+4. overlay renders bounding boxes and labels for the `/v1/lprI` endpoint (vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:84).
+
+#### /api/v1/lprOcr
+1. Controller validates payload and routes to analyzeWithOcr (vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/controller/LprController.java:71).
+2. analyzeWithOcr runs license-plate detection, calls OcrService.detect, and selects the best OCR text per box using IoU/centroid heuristics (vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:62; vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:160).
+3. overlay reuses the same renderer for `/v1/lprOcrI` (vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:84).
 
 ### vision-mind-tbir-app
 
