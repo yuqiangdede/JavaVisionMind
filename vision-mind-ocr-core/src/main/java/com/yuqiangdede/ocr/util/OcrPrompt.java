@@ -3,8 +3,8 @@ package com.yuqiangdede.ocr.util;
 import com.yuqiangdede.common.util.JsonUtils;
 import com.yuqiangdede.llm.service.LLMService;
 import com.yuqiangdede.ocr.dto.output.OcrDetectionResult;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 
 @Component
 @Slf4j
-@RequiredArgsConstructor
 public class OcrPrompt {
 
     private final LLMService lLMService;
@@ -23,10 +22,21 @@ public class OcrPrompt {
     private static final Pattern THOUGHT_TAG_PATTERN = Pattern.compile("(?is)</?(?:think|thinking)>");
     private static final Pattern CODE_FENCE_PATTERN = Pattern.compile("(?s)```(?:json)?\\s*(.*?)```");
 
+    public OcrPrompt(@Autowired(required = false) LLMService lLMService) {
+        this.lLMService = lLMService;
+    }
+
+    private void ensureLlmAvailable() {
+        if (lLMService == null) {
+            throw new IllegalStateException("LLMService 未配置，无法执行 OCR 高阶语义能力，请启用 vision-mind-llm-core 或避免调用该接口");
+        }
+    }
+
     /**
      * 语义重建模式，考虑是否需要拆分或合并 OCR 的检测结果。
      */
     public String semanticReconstruction(List<OcrDetectionResult> detections) throws IOException {
+        ensureLlmAvailable();
         String detectionString = detections.stream()
                 .map(OcrDetectionResult::getText)
                 .map(s -> s == null ? "" : s
@@ -94,6 +104,7 @@ public class OcrPrompt {
     }
 
     public String fineTuning(List<OcrDetectionResult> detections) throws IOException {
+        ensureLlmAvailable();
         String detectionJson = JsonUtils.object2Json(detections);
         String queryRequest = "请润色以下 OCR 识别文本\n" +
                 "任务：请仅针对每个 text 字段进行纠错或补全，使文本更加通顺自然。输出 JSON，结构与输入完全一致。\n" +

@@ -43,6 +43,7 @@
         <module>vision-mind-ocr-app</module> <!-- 17006-->
         <module>vision-mind-ocr-core</module>
         <module>vision-mind-test-sth</module>
+        <module>vision-mind-lpr-app</module> <!--17007 -->
     </modules>
     <dependencyManagement>
         <dependencies>
