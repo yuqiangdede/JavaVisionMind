@@ -7,9 +7,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 
 @SpringBootApplication(scanBasePackages = {"com.yuqiangdede.lpr", "com.yuqiangdede.yolo", "com.yuqiangdede.ocr"})
 @EnableConfigurationProperties(LprProperties.class)
-public class VisionMindLprApplication {
+public class LprApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(VisionMindLprApplication.class, args);
+        SpringApplication.run(LprApplication.class, args);
     }
 }
