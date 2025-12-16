@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
 import java.io.IOException;
 
 @RestController
@@ -23,11 +24,13 @@ public class ChatController {
     @PostMapping("/translate")
     public HttpResult<String> translate(@RequestBody Message msg) {
         try {
-            String chatResponse = lLMService.chat("You are a translator who cherishes words like gold." +
-                    "Translate the following Chinese text to English: " + msg.getMessage() + "." +
-                    "Directly return the translated English without any additional description." +
-                    "For example, input：Translate the following Chinese text to English: 红色盒子." +
-                    "output：red box.");
+            String chatResponse = lLMService.chat("You are a translator who treats words like gold: accurate, concise, natural.\n" +
+                    "Translate the following Chinese text to English: " + msg.getMessage() + ".\n" +
+                    "Return ONLY the translated English. No explanations, no quotes, no extra punctuation.\n" +
+                    "If the input is a fragment, translate as a fragment.\n" +
+                    "Example:\n" +
+                    "Input: Translate the following Chinese text to English: 红色盒子\n" +
+                    "Output: red box");
             log.info("translate response={}", chatResponse);
             return new HttpResult<>(true, chatResponse);
         } catch (IOException e) {
@@ -47,6 +50,7 @@ public class ChatController {
             return new HttpResult<>(false, e.getMessage());
         }
     }
+
     @PostMapping("/chatWithImg")
     public HttpResult<String> chatWithImg(@RequestBody Message msg) {
         try {
