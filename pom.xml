@@ -44,6 +44,7 @@
         <module>vision-mind-ocr-core</module>
         <module>vision-mind-test-sth</module>
         <module>vision-mind-lpr-app</module> <!--17007 -->
+        <module>vision-mind-tbir-cn-app</module> <!-- 17009-->
     </modules>
     <dependencyManagement>
         <dependencies>

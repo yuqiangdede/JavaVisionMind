@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>自动查询并展示图片（可输入）</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .form { margin-bottom: 20px; }
+        .form input { margin-right: 10px; padding: 5px; }
+        #queryInput { width: 400px; }
+        #topNInput { width: 80px; }
+        .form button { padding: 6px 12px; }
+        .container { display: flex; flex-wrap: wrap; }
+        .item { margin: 10px; text-align: center; position: relative; }
+        .item img { width: 300px; height: auto; border: 1px solid #ccc; padding: 5px; cursor: pointer; }
+        .item canvas { position: absolute; top: 5px; left: 5px; pointer-events: none; }
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        #overlay > div { position: relative; }
+        #overlayImage { max-width: 90vw; max-height: 90vh; display: block; }
+        #overlayCanvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+    </style>
+</head>
+<body>
+<h1>搜索图片展示</h1>
+<div class="form">
+    <input type="text" id="queryInput" placeholder="请输入搜索内容，比如 White bag" value="White bag">
+    <input type="number" id="topNInput" placeholder="返回数量" value="5" min="1">
+    <button onclick="fetchAndDisplay()">查询</button>
+</div>
+
+<div id="container" class="container">等待查询...</div>
+
+<!-- 大图展示层 -->
+<div id="overlay">
+    <div>
+        <img id="overlayImage" alt="放大图片">
+        <canvas id="overlayCanvas"></canvas>
+    </div>
+</div>
+
+<script>
+    async function fetchAndDisplay() {
+        const query = document.getElementById('queryInput').value.trim();
+        const topN = parseInt(document.getElementById('topNInput').value.trim(), 10) || 10;
+        if (!query) { alert('请输入查询内容'); return; }
+        const container = document.getElementById('container');
+        container.innerHTML = '加载中...';
+        try {
+            const response = await fetch('http://127.0.0.1:17003/dsmsds-tbir/api/v1/tbir/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, groupId: "1", threshold: 0.1, topN })
+            });
+            const result = await response.json();
+            container.innerHTML = '';
+            if (result.code === "0" && result.data && result.data.results) {
+                if (result.data.results.length === 0) {
+                    container.innerText = '没有搜索到结果。';
+                    return;
+                }
+                result.data.results.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'item';
+                    const img = document.createElement('img');
+                    img.src = item.imageUrl;
+                    img.alt = 'Image';
+                    const canvas = document.createElement('canvas');
+                    div.appendChild(img);
+                    div.appendChild(canvas);
+                    const scoreDiv = document.createElement('div');
+                    scoreDiv.innerText = '得分: ' + item.score.toFixed(4);
+                    div.appendChild(scoreDiv);
+                    document.getElementById('container').appendChild(div);
+
+                    img.onload = function() {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = 'red';
+                        const scaleX = img.width / img.naturalWidth;
+                        const scaleY = img.height / img.naturalHeight;
+                        item.matchedBoxes && item.matchedBoxes.forEach(box => {
+                            const x = box.x1 * scaleX;
+                            const y = box.y1 * scaleY;
+                            const w = (box.x2 - box.x1) * scaleX;
+                            const h = (box.y2 - box.y1) * scaleY;
+                            ctx.strokeRect(x, y, w, h);
+                        });
+                    };
+
+                    img.onclick = function() {
+                        const overlay = document.getElementById('overlay');
+                        const overlayImg = document.getElementById('overlayImage');
+                        const overlayCanvas = document.getElementById('overlayCanvas');
+                        overlay.style.display = 'flex';
+                        overlayImg.src = item.imageUrl;
+                        overlayImg.onload = function() {
+                            overlayCanvas.width = overlayImg.width;
+                            overlayCanvas.height = overlayImg.height;
+                            const ctx = overlayCanvas.getContext('2d');
+                            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                            ctx.lineWidth = 4;
+                            ctx.strokeStyle = 'lime';
+                            const scaleX = overlayImg.width / overlayImg.naturalWidth;
+                            const scaleY = overlayImg.height / overlayImg.naturalHeight;
+                            item.matchedBoxes && item.matchedBoxes.forEach(box => {
+                                const x = box.x1 * scaleX;
+                                const y = box.y1 * scaleY;
+                                const w = (box.x2 - box.x1) * scaleX;
+                                const h = (box.y2 - box.y1) * scaleY;
+                                ctx.strokeRect(x, y, w, h);
+                            });
+                        };
+                    };
+                });
+            } else {
+                container.innerText = '查询失败，接口返回异常。';
+            }
+        } catch (error) {
+            console.error('请求失败', error);
+            container.innerText = '加载失败，请检查服务端是否启动或跨域设置。';
+        }
+    }
+    document.getElementById('overlay').addEventListener('click', function() {
+        this.style.display = 'none';
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>自动查询并展示图片（图片上传）</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .form { margin-bottom: 20px; }
+        .form input { margin-right: 10px; padding: 5px; }
+        #imgInput { width: 260px; }
+        #topNInput { width: 80px; }
+        .form button { padding: 6px 12px; }
+        .container { display: flex; flex-wrap: wrap; }
+        .item { margin: 10px; text-align: center; position: relative; }
+        .item img { width: 300px; height: auto; border: 1px solid #ccc; padding: 5px; cursor: pointer; }
+        .item canvas { position: absolute; top: 5px; left: 5px; pointer-events: none; }
+        #uploaded { margin: 20px 0 10px 0; }
+        #uploaded .item { border: 2px dashed #1976d2; background: #f0f8ff; }
+        #uploaded label { color: #1976d2; font-weight: bold; }
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        #overlay > div { position: relative; }
+        #overlayImage { max-width: 90vw; max-height: 90vh; display: block; }
+        #overlayCanvas { position: absolute; top: 0; left: 0; pointer-events: none; }
+    </style>
+</head>
+<body>
+<h1>图片检索演示（图片上传）</h1>
+<form id="imgSearchForm" class="form">
+    <input type="file" id="imgInput" accept="image/*">
+    <input type="number" id="topNInput" placeholder="返回数量" value="2" min="1">
+    <button type="submit">图片检索</button>
+</form>
+
+<div id="uploaded"></div>
+<div id="container" class="container">等待查询...</div>
+
+<!-- 大图展示层 -->
+<div id="overlay">
+    <div>
+        <img id="overlayImage" alt="放大图片">
+        <canvas id="overlayCanvas"></canvas>
+    </div>
+</div>
+
+<script>
+    let uploadedImgURL = null;
+    document.getElementById('imgInput').onchange = function() {
+        // 预览上传图片
+        const file = this.files[0];
+        if (file) {
+            if (uploadedImgURL) { URL.revokeObjectURL(uploadedImgURL); }
+            uploadedImgURL = URL.createObjectURL(file);
+            const uploaded = document.getElementById('uploaded');
+            uploaded.innerHTML = '';
+            const div = document.createElement('div');
+            div.className = 'item';
+            const label = document.createElement('label');
+            label.innerText = '已上传图片（原图）';
+            div.appendChild(label);
+            const img = document.createElement('img');
+            img.src = uploadedImgURL;
+            img.alt = 'Uploaded';
+            div.appendChild(img);
+            uploaded.appendChild(div);
+
+            img.onclick = function() {
+                // 显示原图大图
+                const overlay = document.getElementById('overlay');
+                const overlayImg = document.getElementById('overlayImage');
+                const overlayCanvas = document.getElementById('overlayCanvas');
+                overlay.style.display = 'flex';
+                overlayImg.src = img.src;
+                overlayImg.onload = function() {
+                    overlayCanvas.width = overlayImg.width;
+                    overlayCanvas.height = overlayImg.height;
+                    const ctx = overlayCanvas.getContext('2d');
+                    ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                }
+            };
+        } else {
+            document.getElementById('uploaded').innerHTML = '';
+            if (uploadedImgURL) { URL.revokeObjectURL(uploadedImgURL); uploadedImgURL = null; }
+        }
+    };
+
+    document.getElementById('imgSearchForm').onsubmit = async function(e) {
+        e.preventDefault();
+        const fileInput = document.getElementById('imgInput');
+        const topN = document.getElementById('topNInput').value || 2;
+        if (!fileInput.files[0]) {
+            alert('请选择图片');
+            return;
+        }
+        const formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+        formData.append('topN', topN);
+
+        const container = document.getElementById('container');
+        container.innerHTML = '加载中...';
+
+        try {
+            const resp = await fetch('http://127.0.0.1:17003/dsmsds-tbir/api/v1/tbir/imgSearch', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await resp.json();
+            container.innerHTML = '';
+            if (result.code === "0" && result.data && result.data.results) {
+                if (result.data.results.length === 0) {
+                    container.innerText = '没有搜索到结果。';
+                    return;
+                }
+                result.data.results.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'item';
+                    const img = document.createElement('img');
+                    img.src = item.imageUrl;
+                    img.alt = 'Image';
+                    const canvas = document.createElement('canvas');
+                    div.appendChild(img);
+                    div.appendChild(canvas);
+                    const scoreDiv = document.createElement('div');
+                    scoreDiv.innerText = '得分: ' + (item.score != null ? item.score.toFixed(4) : '--');
+                    div.appendChild(scoreDiv);
+                    container.appendChild(div);
+
+                    img.onload = function() {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = 'red';
+                        const scaleX = img.width / img.naturalWidth;
+                        const scaleY = img.height / img.naturalHeight;
+                        item.matchedBoxes && item.matchedBoxes.forEach(box => {
+                            const x = box.x1 * scaleX;
+                            const y = box.y1 * scaleY;
+                            const w = (box.x2 - box.x1) * scaleX;
+                            const h = (box.y2 - box.y1) * scaleY;
+                            ctx.strokeRect(x, y, w, h);
+                        });
+                    };
+
+                    img.onclick = function() {
+                        const overlay = document.getElementById('overlay');
+                        const overlayImg = document.getElementById('overlayImage');
+                        const overlayCanvas = document.getElementById('overlayCanvas');
+                        overlay.style.display = 'flex';
+                        overlayImg.src = item.imageUrl;
+                        overlayImg.onload = function() {
+                            overlayCanvas.width = overlayImg.width;
+                            overlayCanvas.height = overlayImg.height;
+                            const ctx = overlayCanvas.getContext('2d');
+                            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+                            ctx.lineWidth = 4;
+                            ctx.strokeStyle = 'lime';
+                            const scaleX = overlayImg.width / overlayImg.naturalWidth;
+                            const scaleY = overlayImg.height / overlayImg.naturalHeight;
+                            item.matchedBoxes && item.matchedBoxes.forEach(box => {
+                                const x = box.x1 * scaleX;
+                                const y = box.y1 * scaleY;
+                                const w = (box.x2 - box.x1) * scaleX;
+                                const h = (box.y2 - box.y1) * scaleY;
+                                ctx.strokeRect(x, y, w, h);
+                            });
+                        };
+                    };
+                });
+            } else {
+                container.innerText = '查询失败，接口返回异常。';
+            }
+        } catch (error) {
+            console.error('请求失败', error);
+            container.innerText = '加载失败，请检查服务端是否启动或跨域设置。';
+        }
+    };
+
+    document.getElementById('overlay').addEventListener('click', function() {
+        this.style.display = 'none';
+    });
+</script>
+</body>
+</html>
