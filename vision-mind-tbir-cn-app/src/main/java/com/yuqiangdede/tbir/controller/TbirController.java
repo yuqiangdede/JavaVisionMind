@@ -30,7 +30,7 @@ import com.yuqiangdede.tbir.dto.input.SearchImageRequest;
 import com.yuqiangdede.tbir.dto.input.SearchRequest;
 import com.yuqiangdede.tbir.dto.input.SimilarityImageImageRequest;
 import com.yuqiangdede.tbir.dto.input.SimilarityTextImageRequest;
-import com.yuqiangdede.tbir.dto.output.HttpResult;
+import com.yuqiangdede.common.dto.output.HttpResult;
 import com.yuqiangdede.tbir.dto.output.ImageSaveResult;
 import com.yuqiangdede.tbir.dto.output.SearchResult;
 import com.yuqiangdede.tbir.dto.output.SimilarityResult;

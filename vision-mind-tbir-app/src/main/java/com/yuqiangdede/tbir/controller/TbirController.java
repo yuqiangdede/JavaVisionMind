@@ -26,7 +26,7 @@ import com.yuqiangdede.tbir.dto.input.DeleteImageRequest;
 import com.yuqiangdede.tbir.dto.input.SaveImageRequest;
 import com.yuqiangdede.tbir.dto.input.SearchImageRequest;
 import com.yuqiangdede.tbir.dto.input.SearchRequest;
-import com.yuqiangdede.tbir.dto.output.HttpResult;
+import com.yuqiangdede.common.dto.output.HttpResult;
 import com.yuqiangdede.tbir.dto.output.ImageSaveResult;
 import com.yuqiangdede.tbir.dto.output.SearchResult;
 import com.yuqiangdede.tbir.service.TbirService;
