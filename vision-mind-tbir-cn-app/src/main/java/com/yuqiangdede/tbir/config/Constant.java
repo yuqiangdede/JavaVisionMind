@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.Set;
@@ -165,7 +167,11 @@ public class Constant {
         if (isAbsolutePath(trimmed)) {
             return trimmed;
         }
-        return envPath + trimmed;
+        if (envPath == null || envPath.trim().isEmpty()) {
+            return Paths.get(trimmed).normalize().toString();
+        }
+        Path resolved = Paths.get(envPath).resolve(trimmed).normalize();
+        return resolved.toString();
     }
 
     private static boolean isAbsolutePath(String path) {
