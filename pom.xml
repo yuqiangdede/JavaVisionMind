@@ -33,6 +33,7 @@
     </properties>
 
     <modules>
+        <module>vision-mind-test-sth</module>
         <module>vision-mind-common</module>
         <module>vision-mind-yolo-app</module> <!-- 17001-->
         <module>vision-mind-yolo-core</module>
@@ -42,7 +43,6 @@
         <module>vision-mind-llm-core</module> <!-- 17005-->
         <module>vision-mind-ocr-app</module> <!-- 17006-->
         <module>vision-mind-ocr-core</module>
-        <module>vision-mind-test-sth</module>
         <module>vision-mind-lpr-app</module> <!--17007 -->
         <module>vision-mind-tbir-cn-app</module> <!-- 17009-->
     </modules>
