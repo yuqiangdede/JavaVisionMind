@@ -38,6 +38,7 @@ JavaVisionMind is a collection of independent Spring Boot services that cover ob
 | `vision-mind-reid-app` | Person re-identification workflows backed by Lucene for vector retrieval. |
 | `vision-mind-lpr-app` | License plate detection and recognition that combines YOLO plate boxes with an ONNX LPRNet decoder plus an optional OCR fallback. |
 | `vision-mind-tbir-app` | Text-Based Image Retrieval service built on CLIP embeddings plus Lucene vector search. |
+| `vision-mind-tbir-cn-app` | Chinese Text-Based Image Retrieval service (CN tokenizer + CLIP embeddings) backed by Lucene / memory / Elasticsearch vector storage. |
 | `vision-mind-llm-core` | Wrapper around OpenAI/Ollama style chat endpoints that powers multimodal prompts. |
 | `vision-mind-common` | Shared DTOs, math helpers, and image/vector utilities. |
 | `vision-mind-test-sth` | Scratchpad used for integration experiments and manual verification. |
@@ -85,13 +86,14 @@ mvn clean install -DskipTests
 - Person re-identification: `mvn -pl vision-mind-reid-app spring-boot:run`
 - License plate recognition: `mvn -pl vision-mind-lpr-app spring-boot:run`
 - Text-based image retrieval: `mvn -pl vision-mind-tbir-app spring-boot:run`
+- Chinese text-based image retrieval: `mvn -pl vision-mind-tbir-cn-app spring-boot:run`
 - LLM chat facade: `mvn -pl vision-mind-llm-core spring-boot:run`
 
 Each service uses `/api` as the context root. Default ports can be overridden in the respective `application.properties`.
 
 ### Vector storage toggle
 
-- `vision-mind-ffe-app`, `vision-mind-reid-app`, and `vision-mind-tbir-app` expose a `vector.store.mode` switch.
+- `vision-mind-ffe-app`, `vision-mind-reid-app`, `vision-mind-tbir-app`, and `vision-mind-tbir-cn-app` expose a `vector.store.mode` switch.
 - Set to `lucene` (default) to persist vectors on disk, `memory` to use the embedded chroma store, or `elasticsearch` to back vectors with an external ES cluster.
 - The Elasticsearch mode shares full-dimension embeddings; only the Lucene backend applies the ReID projection matrix.
 

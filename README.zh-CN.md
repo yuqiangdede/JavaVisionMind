@@ -38,6 +38,7 @@ JavaVisionMind 是一组相互独立的 Spring Boot 服务，覆盖目标检测�
 | `vision-mind-reid-app` | 行人重识别流程，支持 Lucene、内存与 Elasticsearch 向量检索。 |
 | `vision-mind-lpr-app` | 车牌检测+识别服务，基于 YOLO 车牌框和 ONNX LPRNet 解码，可选 OCR 文本兜底。 |
 | `vision-mind-tbir-app` | 基于 CLIP 向量的图像检索服务，兼容 Lucene、内存与 Elasticsearch 存储。 |
+| `vision-mind-tbir-cn-app` | 中文文本图像检索服务（中文分词 + CLIP 向量），支持 Lucene / 内存 / Elasticsearch 向量存储。 |
 | `vision-mind-llm-core` | 封装 OpenAI/Ollama 等语言模型接口，提供统一调用。 |
 | `vision-mind-common` | 公用的 DTO、数学工具、图像/向量辅助方法。 |
 | `vision-mind-test-sth` | 用于集成实验与手工校验的临时沙箱。 |
@@ -90,13 +91,14 @@ mvn clean install -DskipTests
 - 行人再识别：`mvn -pl vision-mind-reid-app spring-boot:run`
 - 车牌识别`mvn -pl vision-mind-lpr-app spring-boot:run`
 - 文本图像检索：`mvn -pl vision-mind-tbir-app spring-boot:run`
+- 中文文本图像检索：`mvn -pl vision-mind-tbir-cn-app spring-boot:run`
 - LLM 对话服务：`mvn -pl vision-mind-llm-core spring-boot:run`
 
 所有服务默认以 `/api` 作为上下文路径，可在各模块的 `application.properties` 中调整端口与路径。
 
 ### 向量存储开关
 
-- `vision-mind-ffe-app`、`vision-mind-reid-app` 与 `vision-mind-tbir-app` 暴露 `vector.store.mode` 配置。
+- `vision-mind-ffe-app`、`vision-mind-reid-app`、`vision-mind-tbir-app` 与 `vision-mind-tbir-cn-app` 暴露 `vector.store.mode` 配置。
 - 取值 `lucene`（默认）时将向量持久化到磁盘，`memory` 使用内置 chroma 向量库运行于内存，`elasticsearch` 可接入外部 ES 集群。
 - 选择 Elasticsearch 模式时会直接写入全维度向量；仅有 Lucene 后端会应用 ReID 投影矩阵。
 
