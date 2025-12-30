@@ -2,7 +2,6 @@ package com.yuqiangdede.ffe.core.utils;
 
 import java.util.List;
 import java.util.ArrayList;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Size;
@@ -39,7 +38,7 @@ public class CropUtil {
             ends.add(new Point(0, faceBox.height()));
             endM = Converters.vector_Point2f_to_Mat(ends);
             perspectiveTransform = Imgproc.getPerspectiveTransform(startM, endM);
-            Mat outputMat = new Mat((int)faceBox.height() , (int)faceBox.width(), CvType.CV_8UC4);
+            Mat outputMat = new Mat();
             Imgproc.warpPerspective(image, outputMat, perspectiveTransform, new Size((int)faceBox.width(), (int)faceBox.height()), Imgproc.INTER_CUBIC);
             return outputMat;
         }finally {

@@ -9,9 +9,9 @@ import com.yuqiangdede.ffe.core.domain.ExtParam;
 import com.yuqiangdede.ffe.core.domain.FaceImage;
 import com.yuqiangdede.ffe.core.domain.FaceInfo;
 import com.yuqiangdede.ffe.core.domain.ImageMat;
+import com.yuqiangdede.ffe.core.models.Simple106pFaceAlignment;
 import com.yuqiangdede.ffe.core.utils.CropUtil;
 import com.yuqiangdede.ffe.core.utils.MaskUtil;
-import org.opencv.core.Mat;
 import com.yuqiangdede.ffe.core.models.InsightCoordFaceKeyPoint;
 
 /**
@@ -64,22 +64,21 @@ public class FaceFeatureExtractorImpl implements FaceFeatureExtractor {
         }
         //处理数据
         for(FaceInfo faceInfo : faceInfos) {
-            Mat cropFace = null;
             ImageMat cropImageMat = null;
             ImageMat alignmentImage = null;
             try {
                 //通过旋转角度获取正脸坐标，并进行图像裁剪
                 FaceInfo.FaceBox rotateFaceBox = faceInfo.rotateFaceBox();
-                cropFace = CropUtil.crop(image.toCvMat(), rotateFaceBox);
-                cropImageMat = ImageMat.fromCVMat(cropFace);
+                cropImageMat = ImageMat.fromCVMat(CropUtil.crop(image.toCvMat(), rotateFaceBox));
                 //人脸属性检测
                 FaceInfo.Attribute attribute = this.faceAttribute.inference(cropImageMat, params);
                 faceInfo.attribute = attribute;
+                cropImageMat.release();
+                cropImageMat = null;
                 //进行缩放人脸区域，并裁剪图片
                 float scaling = extParam.getScaling() <= 0 ? defScaling : extParam.getScaling();
                 FaceInfo.FaceBox box = rotateFaceBox.scaling(scaling);
-                cropFace = CropUtil.crop(image.toCvMat(), box);
-                cropImageMat = ImageMat.fromCVMat(cropFace);
+                cropImageMat = ImageMat.fromCVMat(CropUtil.crop(image.toCvMat(), box));
                 //人脸标记关键点
                 FaceInfo.Points corpPoints = this.faceKeyPoint.inference(cropImageMat, params);
                 //还原原始图片中的关键点
@@ -90,9 +89,11 @@ public class FaceFeatureExtractorImpl implements FaceFeatureExtractor {
                 alignmentImage = this.faceAlignment.inference(cropImageMat, corpPoints, params);
                 //判断是否需要遮罩人脸以外的区域
                 if(extParam.isMask()){
-                    if(faceKeyPoint instanceof InsightCoordFaceKeyPoint){
-                        FaceInfo.Points alignmentPoints = this.faceKeyPoint.inference(alignmentImage, params);
-                        alignmentImage = MaskUtil.maskFor106InsightCoordModel(alignmentImage, alignmentPoints, true);
+                    if(faceKeyPoint instanceof InsightCoordFaceKeyPoint && faceAlignment instanceof Simple106pFaceAlignment){
+                        alignmentImage = MaskUtil.maskFor106InsightCoordModel(
+                                alignmentImage,
+                                Simple106pFaceAlignment.templatePoints(),
+                                true);
                     }
                 }
                 //人脸特征提取
@@ -106,9 +107,6 @@ public class FaceFeatureExtractorImpl implements FaceFeatureExtractor {
                 }
                 if(null != cropImageMat){
                     cropImageMat.release();
-                }
-                if(null != cropFace){
-                    cropFace.release();
                 }
             }
 

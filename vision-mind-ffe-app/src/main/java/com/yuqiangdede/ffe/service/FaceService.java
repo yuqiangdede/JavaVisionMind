@@ -130,12 +130,25 @@ public class FaceService {
                 faceInfos.add(faceInfo);
             }
         }
-        if (!faceInfos.isEmpty()) {
-            // 执行搜索
-            return FfeVectorStoreUtil.searchTop(faceInfos.get(0).getEmbedding().getEmbeds(), input.getGroupId(), input.getConfidenceThreshold(), 1);
-        } else {
+        if (faceInfos.isEmpty()) {
             throw new RuntimeException("no face found in image");
         }
+
+        FaceInfo4Search best = null;
+        for (FaceInfo faceInfo : faceInfos) {
+            List<FaceInfo4Search> matches = FfeVectorStoreUtil.searchTop(
+                    faceInfo.getEmbedding().getEmbeds(),
+                    input.getGroupId(),
+                    input.getConfidenceThreshold(),
+                    1);
+            if (!matches.isEmpty()) {
+                FaceInfo4Search candidate = matches.get(0);
+                if (best == null || candidate.getConfidence() > best.getConfidence()) {
+                    best = candidate;
+                }
+            }
+        }
+        return best == null ? List.of() : List.of(best);
 
     }
 
@@ -183,12 +196,28 @@ public class FaceService {
      */
     public double calculateSimilarity(Input4Compare input) throws IOException {
         Mat mat = ImageUtil.urlToMat(input.getImgUrl());
-        float[] embeds = getFaceInfos(mat).getFaceInfos().get(0).getEmbedding().getEmbeds();
+        List<FaceInfo> faces1 = getFaceInfos(mat).getFaceInfos();
 
         Mat mat2 = ImageUtil.urlToMat(input.getImgUrl2());
-        float[] embeds2 = getFaceInfos(mat2).getFaceInfos().get(0).getEmbedding().getEmbeds();
+        List<FaceInfo> faces2 = getFaceInfos(mat2).getFaceInfos();
 
-        return VectorUtil.calculateCosineSimilarity(VectorUtil.normalizeVector(embeds), VectorUtil.normalizeVector(embeds2));
+        if (faces1.isEmpty() || faces2.isEmpty()) {
+            throw new RuntimeException("no face found in image");
+        }
+
+        double bestSimilarity = -1.0;
+        for (FaceInfo face1 : faces1) {
+            float[] normalized1 = VectorUtil.normalizeVector(face1.getEmbedding().getEmbeds());
+            for (FaceInfo face2 : faces2) {
+                double similarity = VectorUtil.calculateCosineSimilarity(
+                        normalized1,
+                        VectorUtil.normalizeVector(face2.getEmbedding().getEmbeds()));
+                if (similarity > bestSimilarity) {
+                    bestSimilarity = similarity;
+                }
+            }
+        }
+        return bestSimilarity;
 
     }
 

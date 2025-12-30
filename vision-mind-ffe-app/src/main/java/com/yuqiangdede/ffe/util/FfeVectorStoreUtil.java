@@ -370,7 +370,7 @@ public final class FfeVectorStoreUtil {
         Map<String, Object> params = new HashMap<>();
         params.put("query_vector", floatArrayToList(normalized));
         Script script = new Script(ScriptType.INLINE, "painless",
-                "double cosine = cosineSimilarity(params.query_vector, '" + VECTOR_FIELD + "'); return (cosine + 1.0) / 2.0;",
+                "double cosine = cosineSimilarity(params.query_vector, '" + VECTOR_FIELD + "'); return cosine + 1.0;",
                 params);
         QueryBuilder baseQuery;
         if (groupId != null) {
@@ -382,23 +382,24 @@ public final class FfeVectorStoreUtil {
         ScriptScoreFunctionBuilder scriptFunction = new ScriptScoreFunctionBuilder(script);
         FunctionScoreQueryBuilder query = QueryBuilders.functionScoreQuery(baseQuery, scriptFunction);
         sourceBuilder.query(query);
-        if (confThreshold > 0) {
-            sourceBuilder.minScore(confThreshold);
+        float shiftedThreshold = confThreshold > 0 ? confThreshold + 1.0f : 0f;
+        if (shiftedThreshold > 0) {
+            sourceBuilder.minScore(shiftedThreshold);
         }
         SearchRequest request = new SearchRequest(esConfig.getIndex());
         request.source(sourceBuilder);
         SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
         List<FaceInfo4Search> results = new ArrayList<>();
         for (SearchHit hit : response.getHits().getHits()) {
-            float score = hit.getScore();
-            if (score < confThreshold) {
+            float cosine = hit.getScore() - 1.0f;
+            if (confThreshold > 0 && cosine < confThreshold) {
                 continue;
             }
             Map<String, Object> source = hit.getSourceAsMap();
             String hitId = (String) source.getOrDefault("id", hit.getId());
             Object imgUrlObj = source.get("imgUrl");
             String imgUrl = imgUrlObj instanceof String ? (String) imgUrlObj : null;
-            results.add(new FaceInfo4Search(hitId, imgUrl, score));
+            results.add(new FaceInfo4Search(hitId, imgUrl, cosine));
         }
         return results;
     }

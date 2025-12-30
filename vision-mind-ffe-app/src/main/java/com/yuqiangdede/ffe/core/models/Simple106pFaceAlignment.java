@@ -126,6 +126,14 @@ public class Simple106pFaceAlignment implements FaceAlignment {
             {x_offset + 77.7338,   y_offset + 23.3563},
             {x_offset + 86.0268,   y_offset + 23.3427}};
 
+    public static FaceInfo.Points templatePoints() {
+        FaceInfo.Points points = FaceInfo.Points.build();
+        for (double[] point : dst_points) {
+            points.add(FaceInfo.Point.build((float) point[0], (float) point[1]));
+        }
+        return points;
+    }
+
     @Override
     public ImageMat inference(ImageMat imageMat, FaceInfo.Points imagePoint, Map<String, Object> params) {
         ImageMat alignmentImageMat = null;
