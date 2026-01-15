@@ -34,9 +34,19 @@ public class Constant {
     public static final float DETECT_RATIO;
     public static final float BLOCK_RATIO;
     public static final float NMS_THRESHOLD;
+    public static final boolean YOLO_NMS_ENABLED;
+    public static final boolean YOLO_FACE_NMS_ENABLED;
+    public static final boolean YOLO_LP_NMS_ENABLED;
+    public static final boolean YOLO_POSE_NMS_ENABLED;
+    public static final boolean YOLO_SEG_NMS_ENABLED;
+    public static final boolean YOLO_OBB_NMS_ENABLED;
+    public static final boolean YOLO_SAM_NMS_ENABLED;
     public static final Boolean USE_GPU;
 
+
     public static List<Integer> YOLO_TYPES = new ArrayList<>();
+    public static List<Integer> YOLO_OBB_TYPES = new ArrayList<>();
+
 
     static {
         Properties properties = new Properties();
@@ -63,21 +73,52 @@ public class Constant {
             YOLO_SEG_ONNX_PATH = envPath + properties.getProperty("yolo.seg.onnx.path");
             YOLO_OBB_ONNX_PATH = envPath + properties.getProperty("yolo.obb.onnx.path");
 
+            String yoloSamModelName = properties.getProperty("yolo.sam.onnx.path");
+
             FRAME_INTERVAL = Integer.parseInt(properties.getProperty("frame.interval"));
+
             CONF_THRESHOLD = Float.parseFloat(properties.getProperty("yolo.conf.Threshold"));
             POSE_CONF_THRESHOLD = Float.parseFloat(properties.getProperty("yolo.pose.conf.Threshold"));
             NMS_THRESHOLD = Float.parseFloat(properties.getProperty("yolo.nms.Threshold"));
+            YOLO_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.onnx.nms.enabled"));
+            YOLO_FACE_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.face.onnx.nms.enabled"));
+            YOLO_LP_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.lp.onnx.nms.enabled"));
+            YOLO_POSE_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.pose.onnx.nms.enabled"));
+            YOLO_SEG_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.seg.onnx.nms.enabled"));
+            YOLO_OBB_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.obb.onnx.nms.enabled"));
+            YOLO_SAM_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.sam.onnx.nms.enabled"));
             SAM_CONF = Float.parseFloat(properties.getProperty("sam.nms.Threshold"));
             DETECT_RATIO = Float.parseFloat(properties.getProperty("detect.ratio"));
             BLOCK_RATIO = Float.parseFloat(properties.getProperty("block.ratio"));
             USE_GPU = Boolean.valueOf(properties.getProperty("use.gpu"));
 
+            log.info("NMS enable flags: yolo={}, face={}, lp={}, pose={}, seg={}, obb={}, sam={}",
+                    YOLO_NMS_ENABLED, YOLO_FACE_NMS_ENABLED, YOLO_LP_NMS_ENABLED, YOLO_POSE_NMS_ENABLED,
+                    YOLO_SEG_NMS_ENABLED, YOLO_OBB_NMS_ENABLED, YOLO_SAM_NMS_ENABLED);
+            log.info("YOLO model names: detect={}, pose={}, seg={}, obb={}, face={}, lp={}, sam={}",
+                    properties.getProperty("yolo.onnx.path"),
+                    properties.getProperty("yolo.pose.onnx.path"),
+                    properties.getProperty("yolo.seg.onnx.path"),
+                    properties.getProperty("yolo.obb.onnx.path"),
+                    properties.getProperty("yolo.face.onnx.path"),
+                    properties.getProperty("yolo.lp.onnx.path"),
+                    yoloSamModelName);
+ 
             String types = properties.getProperty("yolo.types");
+
             if (types != null) {
                 for (String type : types.split(",")) {
                     YOLO_TYPES.add(Integer.parseInt(type.trim()));
                 }
             }
+
+            String obbTypes = properties.getProperty("yolo.obb.types");
+            if (obbTypes != null) {
+                for (String type : obbTypes.split(",")) {
+                    YOLO_OBB_TYPES.add(Integer.parseInt(type.trim()));
+                }
+            }
+
 
         } catch (IOException e) {
             throw new RuntimeException("Failed to read configuration file", e);
@@ -105,3 +146,4 @@ public class Constant {
         }
     }
 }
+

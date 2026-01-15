@@ -1,4 +1,4 @@
-package com.yuqiangdede.yolo.util.yolo;
+package com.yuqiangdede.yolo.dto.output;
 
 import java.util.List;
 

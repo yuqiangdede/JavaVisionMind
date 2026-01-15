@@ -18,7 +18,9 @@ public class YoloFastSAMUtil {
 
     static {
         env = OrtEnvironment.getEnvironment();
+        log.info("fast sam nms enabled: {}", Constant.YOLO_SAM_NMS_ENABLED);
     }
+
 
 
     public static List<Box> predictor(Mat mat) throws OrtException {
@@ -100,7 +102,15 @@ public class YoloFastSAMUtil {
         }
 
         // NMS
-        List<Integer> keep = nms(boxesXYXY, scores); // 执行非极大值抑制，获取保留的索引
+        List<Integer> keep = new ArrayList<>();
+        if (Constant.YOLO_SAM_NMS_ENABLED) {
+            keep = nms(boxesXYXY, scores); // 执行非极大值抑制，获取保留的索引
+        } else {
+            for (int i = 0; i < boxesXYXY.size(); i++) {
+                keep.add(i);
+            }
+        }
+
 
         // gather kept results
         List<float[]> finalBoxes = new ArrayList<>(); // 存储最终的边界框

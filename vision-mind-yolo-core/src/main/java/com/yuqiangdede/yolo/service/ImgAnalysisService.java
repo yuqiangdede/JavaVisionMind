@@ -10,14 +10,19 @@ import com.yuqiangdede.common.util.GeometryUtils;
 import com.yuqiangdede.common.util.ImageUtil;
 
 
+import com.yuqiangdede.yolo.dto.output.ObbDetection;
 import com.yuqiangdede.yolo.dto.output.SegDetection;
 import com.yuqiangdede.yolo.util.yolo.YoloFastSAMUtil;
-import com.yuqiangdede.yolo.util.yolo.YoloDetectionResult;
-import com.yuqiangdede.yolo.util.yolo.YoloPoseDetectionResult;
-import com.yuqiangdede.yolo.util.yolo.YoloV11PoseUtil;
-import com.yuqiangdede.yolo.util.yolo.YoloV11SegUtil;
-import com.yuqiangdede.yolo.util.yolo.YoloV11Util;
+import com.yuqiangdede.yolo.dto.output.YoloDetectionResult;
+import com.yuqiangdede.yolo.dto.output.YoloPoseDetectionResult;
+import com.yuqiangdede.yolo.util.yolo.YoloFaceLpUtil;
+import com.yuqiangdede.yolo.util.yolo.YoloV26DetUtil;
+import com.yuqiangdede.yolo.util.yolo.YoloV26ObbUtil;
+import com.yuqiangdede.yolo.util.yolo.YoloV26PoseUtil;
+import com.yuqiangdede.yolo.util.yolo.YoloV26SegUtil;
 import com.yuqiangdede.yolo.config.Constant;
+
+
 import lombok.extern.slf4j.Slf4j;
 import org.opencv.core.Mat;
 import org.springframework.stereotype.Service;
@@ -119,7 +124,8 @@ public class ImgAnalysisService {
     }
 
     private List<Box> analysis(Mat mat, Float conf, String types) {
-        YoloDetectionResult detection = YoloV11Util.predictor(mat, conf);
+        YoloDetectionResult detection = YoloV26DetUtil.predictor(mat, conf);
+
         List<List<Float>> bs = detection.boxes();
         Map<Integer, String> classNames = detection.classNames();
 
@@ -196,7 +202,8 @@ public class ImgAnalysisService {
     }
 
     private List<BoxWithKeypoints> analysisPose(Mat mat, Float conf) {
-        YoloPoseDetectionResult detection = YoloV11PoseUtil.predictor(mat, conf);
+        YoloPoseDetectionResult detection = YoloV26PoseUtil.predictor(mat, conf);
+
         List<List<Float>> bs = detection.boxes();
 
         List<BoxWithKeypoints> boxes = new ArrayList<>();
@@ -262,9 +269,10 @@ public class ImgAnalysisService {
     }
 
     private List<Box> analysisFace(Mat mat, Float conf) {
-        YoloDetectionResult detection = YoloV11Util.predictorFace(mat, conf);
+        YoloDetectionResult detection = YoloFaceLpUtil.predictorFace(mat, conf);
 
         List<List<Float>> bs = detection.boxes();
+
         Map<Integer, String> classNames = detection.classNames();
 
         List<Box> boxes = new ArrayList<>();
@@ -328,9 +336,10 @@ public class ImgAnalysisService {
     }
 
     private List<Box> analysisLicensePlate(Mat mat, Float conf) {
-        YoloDetectionResult detection = YoloV11Util.predictorLicensePlate(mat, conf);
+        YoloDetectionResult detection = YoloFaceLpUtil.predictorLicensePlate(mat, conf);
 
         List<List<Float>> bs = detection.boxes();
+
         Map<Integer, String> classNames = detection.classNames();
 
         List<Box> boxes = new ArrayList<>();
@@ -357,10 +366,61 @@ public class ImgAnalysisService {
         return image;
     }
 
-    public List<SegDetection> segArea(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
-
-        return YoloV11SegUtil.predictor(ImageUtil.urlToMat(imgAreaInput.getImgUrl()), imgAreaInput.getThreshold());
+    public List<ObbDetection> obbArea(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
+        Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
+        List<ObbDetection> detections = YoloV26ObbUtil.predictor(mat, imgAreaInput.getThreshold());
+        return filterObbTypes(detections, imgAreaInput.getTypes());
     }
+
+    public BufferedImage obbAreaI(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
+        BufferedImage image = ImageUtil.urlToImage(imgAreaInput.getImgUrl());
+        List<ObbDetection> detections = obbArea(imgAreaInput);
+        ArrayList<ArrayList<Point>> frames = new ArrayList<>();
+        List<String> labels = new ArrayList<>();
+        for (ObbDetection detection : detections) {
+            if (detection.getPoints() == null || detection.getPoints().isEmpty()) {
+                continue;
+            }
+            frames.add(new ArrayList<>(detection.getPoints()));
+            String label = String.format("%s%s",
+                    detection.getClassName() != null ? detection.getClassName() : "",
+                    detection.getScore() > 0 ? String.format(" %.2f", detection.getScore()) : "");
+            labels.add(label);
+        }
+        ImageUtil.drawImageWithFramesAndLabels(image, frames, labels, Color.BLUE);
+        return image;
+    }
+ 
+    public List<SegDetection> segArea(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
+        Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
+        return YoloV26SegUtil.predictor(mat, imgAreaInput.getThreshold());
+    }
+
+    private List<ObbDetection> filterObbTypes(List<ObbDetection> detections, String types) {
+        if (detections == null || detections.isEmpty()) {
+            return detections;
+        }
+        List<Integer> typeList;
+        if (types == null || types.isEmpty()) {
+            typeList = Constant.YOLO_OBB_TYPES;
+        } else {
+            typeList = Arrays.stream(types.split(","))
+                    .map(Integer::parseInt)
+                    .collect(Collectors.toList());
+        }
+        if (typeList == null || typeList.isEmpty()) {
+            return detections;
+        }
+        List<ObbDetection> filtered = new ArrayList<>();
+        for (ObbDetection detection : detections) {
+            if (typeList.contains(detection.getClassId())) {
+                filtered.add(detection);
+            }
+        }
+        return filtered;
+    }
+
+
 
     public BufferedImage segAreaI(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
         List<SegDetection> segs = segArea(imgAreaInput);

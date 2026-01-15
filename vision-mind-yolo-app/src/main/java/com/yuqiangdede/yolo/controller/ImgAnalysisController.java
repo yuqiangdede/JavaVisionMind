@@ -7,8 +7,10 @@ import com.yuqiangdede.common.dto.output.Box;
 import com.yuqiangdede.common.dto.output.BoxWithKeypoints;
 import com.yuqiangdede.common.dto.output.HttpResult;
 import com.yuqiangdede.common.util.JsonUtils;
+import com.yuqiangdede.yolo.dto.output.ObbDetection;
 import com.yuqiangdede.yolo.dto.output.SegDetection;
 import com.yuqiangdede.yolo.service.ImgAnalysisService;
+
 import ai.onnxruntime.OrtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -269,8 +271,43 @@ public class ImgAnalysisController {
         }
     }
 
+    @PostMapping(value = "/v1/img/obb", produces = "application/json", consumes = "application/json")
+    public HttpResult<List<ObbDetection>> obbArea(@RequestBody DetectionRequestWithArea imgAreaInput) {
+        long start_time = System.currentTimeMillis();
+        if (ObjectUtils.isEmpty(imgAreaInput.getImgUrl())) {
+            return new HttpResult<>(false, "imgurl is null or empty");
+        }
+        try {
+            List<ObbDetection> obbs = imgAnalysisService.obbArea(imgAreaInput);
+            log.info("Img ObbArea : Input：{}.Result:{}.Cost time：{} ms.", imgAreaInput, JsonUtils.object2Json(obbs), (System.currentTimeMillis() - start_time));
+            return new HttpResult<>(true, obbs);
+        } catch (IOException | OrtException | RuntimeException e) {
+            log.error("obb detect error", e);
+            return new HttpResult<>(false, e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "/v1/img/obbI", consumes = "application/json", produces = "image/jpeg")
+    public Object obbAreaI(@RequestBody DetectionRequestWithArea imgAreaInput) {
+        long start_time = System.currentTimeMillis();
+        BufferedImage image;
+        try {
+            image = imgAnalysisService.obbAreaI(imgAreaInput);
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            ImageIO.write(image, "jpg", byteArrayOutputStream);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.IMAGE_JPEG);
+            log.info("Img ObbAreaI : Input：{}.Cost time：{} ms.", imgAreaInput, (System.currentTimeMillis() - start_time));
+            return new ResponseEntity<>(byteArrayOutputStream.toByteArray(), headers, HttpStatus.OK);
+        } catch (IOException | OrtException | RuntimeException e) {
+            log.error("obb detect error", e);
+            return new HttpResult<>(false, e.getMessage());
+        }
+    }
+ 
     @PostMapping(value = "/v1/img/segI", consumes = "application/json", produces = "image/jpeg")
     public Object segAreaI(@RequestBody DetectionRequestWithArea imgAreaInput) {
+
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(imgAreaInput.getImgUrl())) {
             return new HttpResult<>(false, "imgurl is null or empty");

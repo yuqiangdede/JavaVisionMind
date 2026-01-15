@@ -207,6 +207,108 @@ public class ImageUtil {
         g2d.dispose();
     }
 
+    public static void drawImageWithFramesAndLabels(BufferedImage image, ArrayList<ArrayList<Point>> frames, List<String> labels, Color color) {
+        if (frames == null || frames.isEmpty()) {
+            return;
+        }
+
+        Graphics2D g2d = image.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+        int imgW = image.getWidth();
+        int imgH = image.getHeight();
+        int fontSize = Math.max(12, imgW / 100);
+        Font font = new Font("Arial", Font.BOLD, fontSize);
+        g2d.setFont(font);
+        FontMetrics fm = g2d.getFontMetrics();
+        float strokeWidth = Math.max(2f, fontSize / 4f);
+        g2d.setStroke(new BasicStroke(strokeWidth));
+        g2d.setColor(color);
+
+        List<Rectangle> occupied = new ArrayList<>();
+
+        for (int i = 0; i < frames.size(); i++) {
+            ArrayList<Point> frame = frames.get(i);
+            if (frame == null || frame.size() <= 1) {
+                continue;
+            }
+
+            int nPoints = frame.size();
+            int[] xPoints = new int[nPoints];
+            int[] yPoints = new int[nPoints];
+            float minX = Float.MAX_VALUE;
+            float minY = Float.MAX_VALUE;
+            float maxX = Float.MIN_VALUE;
+            float maxY = Float.MIN_VALUE;
+
+            for (int idx = 0; idx < nPoints; idx++) {
+                float x = frame.get(idx).getX();
+                float y = frame.get(idx).getY();
+                xPoints[idx] = Math.round(x);
+                yPoints[idx] = Math.round(y);
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+            }
+
+            g2d.drawPolygon(xPoints, yPoints, nPoints);
+
+            if (labels == null || labels.size() <= i) {
+                continue;
+            }
+            String label = labels.get(i);
+            if (label == null || label.isEmpty()) {
+                continue;
+            }
+
+            int textW = fm.stringWidth(label);
+            int textH = fm.getHeight();
+
+            Point[] candidates = new Point[]{
+                    new Point(minX, (minY - textH)),
+                    new Point((maxX - textW), (minY - textH)),
+                    new Point(minX, maxY),
+                    new Point((maxX - textW), maxY)
+            };
+
+            Rectangle labelRect = null;
+            for (Point p : candidates) {
+                Rectangle r = new Rectangle(p.getX().intValue(), p.getY().intValue(), textW, textH);
+                if (r.x < 0 || r.y < 0 || r.x + r.width > imgW || r.y + r.height > imgH) {
+                    continue;
+                }
+                boolean conflict = false;
+                for (Rectangle o : occupied) {
+                    if (o.intersects(r)) {
+                        conflict = true;
+                        break;
+                    }
+                }
+                if (!conflict) {
+                    labelRect = r;
+                    break;
+                }
+            }
+
+            if (labelRect == null) {
+                int lx = Math.max(0, Math.min(Math.round(minX), imgW - textW));
+                int ly = Math.max(textH, Math.min(Math.round(minY), imgH - textH));
+                labelRect = new Rectangle(lx, ly - fm.getAscent(), textW, textH);
+            }
+            occupied.add(labelRect);
+
+            g2d.setColor(new Color(0, 0, 0, 128));
+            g2d.fillRect(labelRect.x, labelRect.y, labelRect.width, labelRect.height);
+            g2d.setColor(Color.WHITE);
+            g2d.drawString(label, labelRect.x, labelRect.y + fm.getAscent());
+            g2d.setColor(color);
+        }
+        g2d.dispose();
+    }
+
+
     public static void drawImageWithBox(BufferedImage image, List<? extends Box> boxes) {
         Graphics2D g2d = image.createGraphics();
         // 1. 抗锯齿

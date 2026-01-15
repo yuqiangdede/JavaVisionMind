@@ -14,7 +14,7 @@ import java.util.*;
 
 
 @Slf4j
-public class YoloUtil {
+public class YoloBaseUtil {
 
     private static final OrtEnvironment environment;
 
@@ -57,7 +57,7 @@ public class YoloUtil {
      * @param path 模型路径
      * @return 模型实体
      */
-    static Model load(String path) throws OrtException {
+    static Model load(String path, boolean nmsEnabled) throws OrtException {
         try (OrtSession.SessionOptions options = new OrtSession.SessionOptions()) {
             OrtSession session = environment.createSession(path, options);
             OnnxModelMetadata metadata = session.getMetadata();
@@ -66,16 +66,23 @@ public class YoloUtil {
             String nameClass = metadata.getCustomMetadata().get("names");
 
             Map<Integer, String> names = stringToMap(nameClass);
-            long count = 1;//1 模型每次处理一张图片
-            long channels = nodeInfo.getShape()[1];//3 模型通道数
-            long netHeight = 640;//640 模型高
-            long netWidth = 640;//640 模型宽
+            long count = 1;
+            long channels = nodeInfo.getShape()[1];
+            long netHeight = nodeInfo.getShape()[2];
+            long netWidth = nodeInfo.getShape()[3];
+            if (netHeight <= 0 || netWidth <= 0) {
+                log.warn("Invalid model input size detected. Falling back to 640x640. netHeight={}, netWidth={}", netHeight, netWidth);
+                netHeight = 640;
+                netWidth = 640;
+            }
             float confThreshold = Constant.CONF_THRESHOLD;
             float nmsThreshold = Constant.NMS_THRESHOLD;
 
-            return new Model(environment, session, names, count, channels, netHeight, netWidth, confThreshold, nmsThreshold);
+            log.info("load yolo model: path={}, nmsEnabled={}", path, nmsEnabled);
+            return new Model(environment, session, names, count, channels, netHeight, netWidth, confThreshold, nmsThreshold, nmsEnabled);
         }
     }
+
 
 
     static class Model {
@@ -94,8 +101,9 @@ public class YoloUtil {
          * nms算法的阈值，两个框相交面积，大于这个阈值的就删除掉
          */
         public float nmsThreshold;
+        public boolean nmsEnabled;
 
-        public Model(OrtEnvironment env, OrtSession session, Map<Integer, String> names, long count, long channels, long netHeight, long netWidth, float confThreshold, float nmsThreshold) {
+        public Model(OrtEnvironment env, OrtSession session, Map<Integer, String> names, long count, long channels, long netHeight, long netWidth, float confThreshold, float nmsThreshold, boolean nmsEnabled) {
             this.env = env;
             this.session = session;
             this.names = names;
@@ -105,7 +113,9 @@ public class YoloUtil {
             this.netWidth = netWidth;
             this.confThreshold = confThreshold;
             this.nmsThreshold = nmsThreshold;
+            this.nmsEnabled = nmsEnabled;
         }
+
 
 
     }
