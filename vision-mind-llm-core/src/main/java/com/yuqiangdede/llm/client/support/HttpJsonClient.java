@@ -63,7 +63,7 @@ public final class HttpJsonClient {
 
         if (responseStream == null) {
             connection.disconnect();
-            throw new IOException("未能从 " + url + " 读取到响应内容");
+            throw new IOException("Failed to read response from " + url);
         }
 
         String responseBody;
@@ -79,7 +79,8 @@ public final class HttpJsonClient {
         }
 
         if (status < HttpURLConnection.HTTP_OK || status >= HttpURLConnection.HTTP_MULT_CHOICE) {
-            throw new IOException(String.format("调用 %s 失败，HTTP 状态码：%d，响应：%s", url, status, responseBody));
+            throw new IOException(String.format("Request to %s failed, HTTP status: %d, response: %s", url, status,
+                    responseBody));
         }
 
         return responseBody;

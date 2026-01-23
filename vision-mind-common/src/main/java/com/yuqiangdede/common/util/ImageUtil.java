@@ -49,27 +49,29 @@ public class ImageUtil {
      * @throws IOException 如果无法从URL读取图片，则抛出IOException异常
      */
     public static BufferedImage urlToImage(String urlStr) throws IOException {
-        URL url = URI.create(urlStr).toURL();
+        try {
+            URL url = URI.create(urlStr).toURL();
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
 
-        // 使用默认的 HttpsURLConnection
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestMethod("GET");
-
-        // 尝试通过url的Content-Type来获取图片格式
-        String contentType = connection.getHeaderField("Content-Type");
-        if (contentType == null) {
-            throw new IOException("Img Url Has Sth. Wrong.");
-        }
-
-        // 下载图片流
-        try (InputStream in = connection.getInputStream()) {
-            BufferedImage bufferedImage = ImageIO.read(in);
-            if (bufferedImage == null) {
-                throw new IOException("Unsupported image format or corrupted image data.");
+            String contentType = connection.getHeaderField("Content-Type");
+            if (contentType == null) {
+                throw new IOException(buildImgUrlError(urlStr, "Content-Type missing"));
             }
-            return bufferedImage;
-        } finally {
-            connection.disconnect(); // 确保连接被关闭
+
+            try (InputStream in = connection.getInputStream()) {
+                BufferedImage bufferedImage = ImageIO.read(in);
+                if (bufferedImage == null) {
+                    throw new IOException(buildImgUrlError(urlStr, "Unsupported image format or corrupted image data"));
+                }
+                return bufferedImage;
+            } finally {
+                connection.disconnect();
+            }
+        } catch (IOException e) {
+            throw new IOException(buildImgUrlError(urlStr, e.getMessage()), e);
+        } catch (RuntimeException e) {
+            throw new IOException(buildImgUrlError(urlStr, e.getMessage()), e);
         }
     }
 
@@ -168,6 +170,11 @@ public class ImageUtil {
         }
 
         return "Unknown or Other Type";
+    }
+
+    private static String buildImgUrlError(String urlStr, String reason) {
+        String detail = reason == null || reason.isBlank() ? "unknown" : reason;
+        return "imgUrl download failed or image could not be parsed, url=" + urlStr + ", reason=" + detail;
     }
 
     /**
@@ -396,6 +403,101 @@ public class ImageUtil {
         }
 
         g2d.dispose();
+    }
+
+    public static void drawImageWithBoxStackedLabels(BufferedImage image, List<? extends Box> boxes) {
+        Graphics2D g2d = image.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+        int imgW = image.getWidth();
+        int imgH = image.getHeight();
+        int fontSize = Math.max(12, imgW / 100);
+        Font font = new Font("Arial", Font.BOLD, fontSize);
+        g2d.setFont(font);
+        FontMetrics fm = g2d.getFontMetrics();
+        float strokeWidth = Math.max(2f, fontSize / 4f);
+
+        List<Rectangle> occupied = new ArrayList<>();
+
+        for (Box box : boxes) {
+            if (box == null) {
+                continue;
+            }
+            float x1 = box.getX1();
+            float y1 = box.getY1();
+            float x2 = box.getX2();
+            float y2 = box.getY2();
+
+            String label = String.format("%s%s",
+                    box.getTypeName() != null ? box.getTypeName() : "",
+                    box.getConf() > 0 ? String.format(" %.2f", box.getConf()) : ""
+            );
+            int textW = fm.stringWidth(label);
+            int textH = fm.getHeight();
+
+            Point[] candidates = new Point[]{
+                    new Point(x1, (y1 - textH)),
+                    new Point((x2 - textW), (y1 - textH)),
+                    new Point(x1, y2),
+                    new Point((x2 - textW), y2)
+            };
+
+            Rectangle labelRect = null;
+            for (Point p : candidates) {
+                int rx = Math.max(0, Math.min(p.getX().intValue(), imgW - textW));
+                int ry = Math.max(0, Math.min(p.getY().intValue(), imgH - textH));
+                Rectangle r = new Rectangle(rx, ry, textW, textH);
+                r = stackDown(r, occupied, imgH);
+                if (!intersectsAny(r, occupied)) {
+                    labelRect = r;
+                    break;
+                }
+            }
+            if (labelRect == null) {
+                int lx = Math.max(0, Math.min((int) x1, imgW - textW));
+                int ly = Math.max(0, Math.min((int) (y1 - textH), imgH - textH));
+                labelRect = stackDown(new Rectangle(lx, ly, textW, textH), occupied, imgH);
+            }
+            occupied.add(labelRect);
+
+            Color boxColor = box.getTypeName() == null ? BLUE : getColorFromString(box.getTypeName());
+            g2d.setStroke(new BasicStroke(strokeWidth));
+            g2d.setColor(boxColor);
+            g2d.draw(new Rectangle2D.Float(x1, y1, x2 - x1, y2 - y1));
+
+            g2d.setColor(new Color(0, 0, 0, 128));
+            g2d.fillRect(labelRect.x, labelRect.y, labelRect.width, labelRect.height);
+            g2d.setColor(Color.WHITE);
+            g2d.drawString(label, labelRect.x, labelRect.y + fm.getAscent());
+        }
+
+        g2d.dispose();
+    }
+
+    private static Rectangle stackDown(Rectangle rect, List<Rectangle> occupied, int imgH) {
+        Rectangle r = new Rectangle(rect);
+        boolean conflict;
+        do {
+            conflict = intersectsAny(r, occupied);
+            if (conflict) {
+                r.y += r.height + 2;
+                if (r.y + r.height > imgH) {
+                    r.y = Math.max(0, imgH - r.height);
+                    break;
+                }
+            }
+        } while (conflict);
+        return r;
+    }
+
+    private static boolean intersectsAny(Rectangle rect, List<Rectangle> occupied) {
+        for (Rectangle o : occupied) {
+            if (o.intersects(rect)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

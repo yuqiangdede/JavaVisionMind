@@ -44,7 +44,7 @@ public final class OllamaClient {
         JsonNode root = MAPPER.readTree(responseJson);
         JsonNode responseNode = root.get(RESPONSE_FIELD);
         if (responseNode == null || responseNode.isNull()) {
-            throw new IOException("Ollama 响应缺少 response 字段");
+            throw new IOException("Ollama response is missing response field");
         }
         return responseNode.asText().trim();
     }
@@ -64,7 +64,7 @@ public final class OllamaClient {
         JsonNode root = MAPPER.readTree(responseJson);
         JsonNode responseNode = root.get(RESPONSE_FIELD);
         if (responseNode == null || responseNode.isNull()) {
-            throw new IOException("Ollama 响应缺少 response 字段");
+            throw new IOException("Ollama response is missing response field");
         }
         return responseNode.asText().trim();
     }

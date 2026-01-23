@@ -67,7 +67,7 @@ public class MatUtil {
      */
     public static Mat concat(Mat m1, Mat m2) {
         if (m1.type() != m2.type()) {
-            throw new RuntimeException("concat:两个图像数据的类型不同！");
+            throw new RuntimeException("concat: Mat types do not match");
         }
         double w = m1.size().width + m2.size().width;
         double h = Math.max(m1.size().height, m2.size().height);

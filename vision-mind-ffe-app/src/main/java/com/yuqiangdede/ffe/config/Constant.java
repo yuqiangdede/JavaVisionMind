@@ -58,7 +58,7 @@ public class Constant {
             ES_API_KEY = trimToNull(properties.getProperty("es.api-key"));
             ES_FACE_INDEX = getOrDefault(properties, "es.index.face", "vision_mind_face");
         } catch (IOException e) {
-            throw new RuntimeException("读取配置文件失败", e);
+            throw new RuntimeException("Failed to read configuration file", e);
         }
     }
 

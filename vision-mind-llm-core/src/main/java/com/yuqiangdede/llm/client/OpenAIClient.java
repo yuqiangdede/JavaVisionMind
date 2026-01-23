@@ -51,7 +51,7 @@ public final class OpenAIClient {
 
         JsonNode contentNode = root.path("choices").path(0).path("message").path("content");
         if (contentNode.isMissingNode() || contentNode.isNull()) {
-            throw new IOException("OpenAI 响应缺少 message.content 字段");
+            throw new IOException("OpenAI response is missing message.content");
         }
         return contentNode.asText().trim();
     }
@@ -77,14 +77,14 @@ public final class OpenAIClient {
         Objects.requireNonNull(openaiModel, "openaiModel");
 
         if (!StringUtils.hasText(textPrompt) && !StringUtils.hasText(imageUrl)) {
-            throw new IllegalArgumentException("图文对话需要提供文本或图片信息");
+            throw new IllegalArgumentException("Either textPrompt or imageUrl must be provided");
         }
 
         String responseJson = sendMultimodalPrompt(openaiBaseUrl, openaiKey, openaiModel, systemPrompt, textPrompt, imageUrl, timeoutMs);
         JsonNode root = MAPPER.readTree(responseJson);
         JsonNode contentNode = root.path("choices").path(0).path("message").path("content");
         if (contentNode.isMissingNode() || contentNode.isNull()) {
-            throw new IOException("OpenAI 响应缺少 message.content 字段");
+            throw new IOException("OpenAI response is missing message.content");
         }
         return contentNode.asText().trim();
     }

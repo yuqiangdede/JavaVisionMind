@@ -22,7 +22,7 @@ public class LLMService {
     public String chat(String message) throws IOException {
 
         if (!StringUtils.hasText(message)) {
-            throw new IllegalArgumentException("对话内容不能为空");
+            throw new IllegalArgumentException("Message must not be empty");
         }
 
         int timeoutMs = config.getHttpTimeoutMs();
@@ -51,12 +51,12 @@ public class LLMService {
             );
         }
 
-        throw new IllegalStateException("未配置 OpenAI 或 Ollama，无法对话");
+        throw new IllegalStateException("OpenAI or Ollama is not configured");
     }
 
     public String chatWithImg(String message, String imageUrl, String systemPrompt) throws IOException {
         if (!StringUtils.hasText(message) && !StringUtils.hasText(imageUrl)) {
-            throw new IllegalArgumentException("图文对话需要提供文本或图片");
+            throw new IllegalArgumentException("Either text or imageUrl must be provided for multimodal chat");
         }
 
         int timeoutMs = config.getHttpTimeoutMs();
@@ -90,7 +90,7 @@ public class LLMService {
             );
         }
 
-        throw new IllegalStateException("未配置支持图像输入的大模型服务，无法处理图文对话");
+        throw new IllegalStateException("No multimodal model service is configured");
     }
 
     private boolean isConfigured(String value) {

@@ -26,13 +26,13 @@ public class RandomProjectionUtils {
             return matrix;
 
         } catch (IOException e) {
-            throw new RuntimeException("加载 projectionMatrix.bin 失败", e);
+            throw new RuntimeException("Failed to load projectionMatrix.bin", e);
         }
     }
 
     public static float[] transform(float[] input) {
         if (input.length != INPUT_DIM) {
-            throw new IllegalArgumentException("输入向量维度必须为 2048");
+            throw new IllegalArgumentException("Input vector dimension must be 2048");
         }
 
         float[] output = new float[TARGET_DIM];

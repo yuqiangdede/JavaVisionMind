@@ -28,7 +28,7 @@ public class OcrPrompt {
 
     private void ensureLlmAvailable() {
         if (lLMService == null) {
-            throw new IllegalStateException("LLMService 未配置，无法执行 OCR 高阶语义能力，请启用 vision-mind-llm-core 或避免调用该接口");
+            throw new IllegalStateException("LLMService is not configured. Enable vision-mind-llm-core or avoid this API.");
         }
     }
 

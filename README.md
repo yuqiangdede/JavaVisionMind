@@ -132,6 +132,23 @@ Below tables outline the primary REST endpoints exposed by each runnable module.
 | POST | `/api/v1/img/samI` | FAST-SAM segmentation visualization. | `DetectionRequest` | `image/jpeg` bytes |
 | POST | `/api/v1/img/seg` | YOLO segmentation output with masks. | `DetectionRequestWithArea` | `HttpResult<List<SegDetection>>` |
 | POST | `/api/v1/img/segI` | Segmentation visualization. | `DetectionRequestWithArea` | `image/jpeg` bytes |
+| POST | `/api/v1/yoloe/detectText` | YOLOE fixed-class detection (`yoloe-26s-seg.onnx`). | `TextPromptRequestWithArea` (`imgUrl`, `threshold?`, `detectionFrames?`, `blockingFrames?`) | `HttpResult<List<Box>>` |
+| POST | `/api/v1/yoloe/detectTextI` | YOLOE fixed-class detection visualization. | `TextPromptRequestWithArea` | `image/jpeg` bytes |
+| POST | `/api/v1/yoloe/detectFree` | YOLOE prompt-free segmentation (`yoloe-26s-seg-pf.onnx`). | `DetectionRequest` (`imgUrl`, `threshold?`) | `HttpResult<List<SegDetection>>` |
+| POST | `/api/v1/yoloe/detectFreeI` | YOLOE prompt-free segmentation visualization. | `DetectionRequest` | `image/jpeg` bytes |
+
+> **Note**: `detectText/detectTextI` cannot expand classes at request time. Class names must be fixed when exporting the ONNX model. Re-export the model to change classes.
+
+```python
+from ultralytics import YOLOE
+
+pt = YOLOE("yoloe-26s-seg.pt")
+names = ["person", "hoops"]
+pt.set_classes(names, pt.get_text_pe(names))
+
+onnx_path = pt.export(format="onnx")
+print("exported:", onnx_path)
+```
 
 ### vision-mind-ocr-app (Optical Character Recognition)
 

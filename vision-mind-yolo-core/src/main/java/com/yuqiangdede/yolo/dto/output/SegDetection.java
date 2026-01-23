@@ -22,6 +22,7 @@ public class SegDetection {
     public Rect box;
     public float score;
     public int classId;
+    public String className;
     @JsonIgnore
     public Mat mask;
     public List<List<Point>> points = new ArrayList<>(); // 一个实例可能有多个轮廓，一个轮廓又有多个点

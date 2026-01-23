@@ -4,7 +4,9 @@ import ai.onnxruntime.OrtException;
 import com.yuqiangdede.common.dto.Point;
 import com.yuqiangdede.yolo.dto.input.DetectionRequest;
 import com.yuqiangdede.yolo.dto.input.DetectionRequestWithArea;
+import com.yuqiangdede.yolo.dto.input.TextPromptRequestWithArea;
 import com.yuqiangdede.common.dto.output.Box;
+
 import com.yuqiangdede.common.dto.output.BoxWithKeypoints;
 import com.yuqiangdede.common.util.GeometryUtils;
 import com.yuqiangdede.common.util.ImageUtil;
@@ -17,6 +19,7 @@ import com.yuqiangdede.yolo.dto.output.YoloDetectionResult;
 import com.yuqiangdede.yolo.dto.output.YoloPoseDetectionResult;
 import com.yuqiangdede.yolo.util.yolo.YoloFaceLpUtil;
 import com.yuqiangdede.yolo.util.yolo.YoloV26DetUtil;
+import com.yuqiangdede.yolo.util.yolo.YoloV26DetectTextUtil;
 import com.yuqiangdede.yolo.util.yolo.YoloV26ObbUtil;
 import com.yuqiangdede.yolo.util.yolo.YoloV26PoseUtil;
 import com.yuqiangdede.yolo.util.yolo.YoloV26SegUtil;
@@ -123,6 +126,57 @@ public class ImgAnalysisService {
         return image;
     }
 
+    public List<Box> detectTextArea(TextPromptRequestWithArea imgAreaInput) throws IOException, OrtException {
+        Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
+
+        List<Box> boxs = analysisText(mat, imgAreaInput.getThreshold());
+        Set<Box> result = new LinkedHashSet<>();
+
+        if (imgAreaInput.getDetectionFrames() == null || imgAreaInput.getDetectionFrames().isEmpty()) {
+            result.addAll(boxs);
+        } else {
+            for (Box box : boxs) {
+                for (ArrayList<Point> detectionFrame : imgAreaInput.getDetectionFrames()) {
+                    double detectRatio = GeometryUtils.calcOverlap(box, detectionFrame);
+                    if (detectRatio > Constant.DETECT_RATIO) {
+                        result.add(box);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (imgAreaInput.getBlockingFrames() == null || imgAreaInput.getBlockingFrames().isEmpty()) {
+            return new ArrayList<>(result);
+        } else {
+            Set<Box> toRemove = new HashSet<>();
+            for (Box box : boxs) {
+                for (ArrayList<Point> blockingFrame : imgAreaInput.getBlockingFrames()) {
+                    double blockRatio = GeometryUtils.calcOverlap(box, blockingFrame);
+                    if (blockRatio > Constant.BLOCK_RATIO) {
+                        toRemove.add(box);
+                        break;
+                    }
+                }
+            }
+            result.removeAll(toRemove);
+        }
+
+        return new ArrayList<>(result);
+    }
+
+    public BufferedImage detectTextAreaI(TextPromptRequestWithArea imgAreaInput) throws IOException, OrtException {
+        BufferedImage image = ImageUtil.urlToImage(imgAreaInput.getImgUrl());
+
+        List<Box> boxs = this.detectTextArea(imgAreaInput);
+
+        ImageUtil.drawImageWithBox(image, boxs);
+        ImageUtil.drawImageWithFrames(image, imgAreaInput.getDetectionFrames(), Color.BLUE);
+        ImageUtil.drawImageWithFrames(image, imgAreaInput.getBlockingFrames(), Color.DARK_GRAY);
+        return image;
+    }
+
+
     private List<Box> analysis(Mat mat, Float conf, String types) {
         YoloDetectionResult detection = YoloV26DetUtil.predictor(mat, conf);
 
@@ -150,6 +204,19 @@ public class ImgAnalysisService {
         return boxes;
     }
 
+    private List<Box> analysisText(Mat mat, Float conf) {
+        YoloDetectionResult detection = YoloV26DetectTextUtil.predictor(mat, conf);
+
+        List<List<Float>> bs = detection.boxes();
+        Map<Integer, String> classNames = detection.classNames();
+
+        List<Box> boxes = new ArrayList<>();
+        for (List<Float> bx : bs) {
+            boxes.add(new Box(bx.get(0), bx.get(1), bx.get(2), bx.get(3), bx.get(4), bx.get(5), classNames));
+        }
+
+        return boxes;
+    }
 
     public List<BoxWithKeypoints> poseArea(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
         Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
@@ -394,6 +461,42 @@ public class ImgAnalysisService {
     public List<SegDetection> segArea(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
         Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
         return YoloV26SegUtil.predictor(mat, imgAreaInput.getThreshold());
+    }
+
+    public List<SegDetection> detectFree(DetectionRequest imgInput) throws IOException, OrtException {
+        Mat mat = ImageUtil.urlToMat(imgInput.getImgUrl());
+        float threshold = imgInput.getThreshold() == null ? Constant.CONF_THRESHOLD : imgInput.getThreshold();
+        List<SegDetection> segs = YoloV26SegUtil.predictorFree(mat, threshold);
+        List<SegDetection> filtered = new ArrayList<>();
+        for (SegDetection seg : segs) {
+            if (seg == null || seg.getPoints() == null || seg.getPoints().isEmpty()) {
+                continue;
+            }
+            filtered.add(seg);
+        }
+        return filtered;
+    }
+
+    public BufferedImage detectFreeI(DetectionRequest imgInput) throws IOException, OrtException {
+        List<SegDetection> segs = detectFree(imgInput);
+        BufferedImage img = ImageUtil.urlToImage(imgInput.getImgUrl());
+        List<Box> boxes = new ArrayList<>();
+        for (SegDetection seg : segs) {
+            if (seg == null || seg.getBox() == null) {
+                continue;
+            }
+            float x1 = seg.getBox().x;
+            float y1 = seg.getBox().y;
+            float x2 = seg.getBox().x + seg.getBox().width;
+            float y2 = seg.getBox().y + seg.getBox().height;
+            Box box = new Box(x1, y1, x2, y2);
+            box.setConf(seg.getScore());
+            box.setType(seg.getClassId());
+            box.setTypeName(seg.getClassName());
+            boxes.add(box);
+        }
+        ImageUtil.drawImageWithBoxStackedLabels(img, boxes);
+        return img;
     }
 
     private List<ObbDetection> filterObbTypes(List<ObbDetection> detections, String types) {

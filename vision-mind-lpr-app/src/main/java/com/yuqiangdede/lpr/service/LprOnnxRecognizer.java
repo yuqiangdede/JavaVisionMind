@@ -51,7 +51,7 @@ public class LprOnnxRecognizer {
     public void initialize() throws IOException {
         Path modelPath = resolveModelPath(properties.getModelPath());
         if (!Files.exists(modelPath)) {
-            throw new IOException("无法找到车牌识别模型: " + modelPath);
+            throw new IOException("License plate recognition model not found: " + modelPath);
         }
         try {
             this.environment = OrtEnvironment.getEnvironment();
@@ -62,7 +62,7 @@ public class LprOnnxRecognizer {
             detectOutputLayout();
             log.info("LPR 模型加载成功: {}", modelPath);
         } catch (OrtException e) {
-            throw new IllegalStateException("加载 LPR 模型失败: " + modelPath, e);
+            throw new IllegalStateException("Failed to load LPR model: " + modelPath, e);
         }
     }
 
@@ -83,11 +83,11 @@ public class LprOnnxRecognizer {
     private void detectOutputLayout() throws OrtException {
         Map<String, NodeInfo> outputInfo = session.getOutputInfo();
         if (outputInfo.isEmpty()) {
-            throw new IllegalStateException("LPR 模型未定义输出节点");
+            throw new IllegalStateException("LPR model output node is not defined");
         }
         NodeInfo nodeInfo = outputInfo.values().iterator().next();
         if (!(nodeInfo.getInfo() instanceof TensorInfo tensorInfo)) {
-            throw new IllegalStateException("LPR 模型输出不是张量");
+            throw new IllegalStateException("LPR model output is not a tensor");
         }
         long[] shape = tensorInfo.getShape();
         if (shape.length != 3) {
@@ -138,7 +138,7 @@ public class LprOnnxRecognizer {
         OnnxTensor tensor = (OnnxTensor) result.get(0);
         long[] shape = tensor.getInfo().getShape();
         if (shape.length != 3) {
-            throw new IllegalStateException("LPR 输出维度异常: " + java.util.Arrays.toString(shape));
+            throw new IllegalStateException("Unexpected LPR output shape: " + java.util.Arrays.toString(shape));
         }
         float[][][] raw = (float[][][]) tensor.getValue();
         int dim1 = (int) shape[1];
@@ -150,7 +150,8 @@ public class LprOnnxRecognizer {
             return raw[0];
         } else {
             throw new IllegalStateException(
-                    String.format(Locale.ROOT, "输出维度(%d,%d) 与字典大小 %d 不匹配", dim1, dim2, alphabet.size())
+                    String.format(Locale.ROOT, "Output shape (%d,%d) does not match alphabet size %d", dim1, dim2,
+                            alphabet.size())
             );
         }
     }

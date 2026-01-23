@@ -25,7 +25,13 @@ public class Constant {
     public static final String YOLO_LP_ONNX_PATH;
     public static final String YOLO_SEG_ONNX_PATH;
     public static final String YOLO_OBB_ONNX_PATH;
+    public static final String YOLO_TEXT_ONNX_PATH;
+    public static final String YOLO_TEXT_FREE_ONNX_PATH;
+    public static final String YOLO_TEXT_ENCODER_ONNX_PATH;
+    public static final String YOLO_TEXT_TOKENIZER_PATH;
+    public static final float YOLO_TEXT_PROMPT_SCALE;
     public static final String FAST_SAM_ONNX;
+
 
     // Detection configuration
     public static final Integer FRAME_INTERVAL;
@@ -40,6 +46,7 @@ public class Constant {
     public static final boolean YOLO_POSE_NMS_ENABLED;
     public static final boolean YOLO_SEG_NMS_ENABLED;
     public static final boolean YOLO_OBB_NMS_ENABLED;
+    public static final boolean YOLO_TEXT_NMS_ENABLED;
     public static final boolean YOLO_SAM_NMS_ENABLED;
     public static final Boolean USE_GPU;
 
@@ -72,8 +79,14 @@ public class Constant {
             FAST_SAM_ONNX = envPath + properties.getProperty("yolo.sam.onnx.path");
             YOLO_SEG_ONNX_PATH = envPath + properties.getProperty("yolo.seg.onnx.path");
             YOLO_OBB_ONNX_PATH = envPath + properties.getProperty("yolo.obb.onnx.path");
+            YOLO_TEXT_ONNX_PATH = envPath + properties.getProperty("yolo.text.onnx.path");
+            YOLO_TEXT_FREE_ONNX_PATH = envPath + properties.getProperty("yolo.text.free.onnx.path");
+            YOLO_TEXT_ENCODER_ONNX_PATH = envPath + properties.getProperty("yolo.text.encoder.onnx.path");
+            YOLO_TEXT_TOKENIZER_PATH = envPath + properties.getProperty("yolo.text.tokenizer.path");
+            YOLO_TEXT_PROMPT_SCALE = Float.parseFloat(properties.getProperty("yolo.text.prompt.scale"));
 
             String yoloSamModelName = properties.getProperty("yolo.sam.onnx.path");
+
 
             FRAME_INTERVAL = Integer.parseInt(properties.getProperty("frame.interval"));
 
@@ -86,20 +99,22 @@ public class Constant {
             YOLO_POSE_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.pose.onnx.nms.enabled"));
             YOLO_SEG_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.seg.onnx.nms.enabled"));
             YOLO_OBB_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.obb.onnx.nms.enabled"));
+            YOLO_TEXT_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.text.onnx.nms.enabled"));
             YOLO_SAM_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.sam.onnx.nms.enabled"));
             SAM_CONF = Float.parseFloat(properties.getProperty("sam.nms.Threshold"));
             DETECT_RATIO = Float.parseFloat(properties.getProperty("detect.ratio"));
             BLOCK_RATIO = Float.parseFloat(properties.getProperty("block.ratio"));
             USE_GPU = Boolean.valueOf(properties.getProperty("use.gpu"));
 
-            log.info("NMS enable flags: yolo={}, face={}, lp={}, pose={}, seg={}, obb={}, sam={}",
+            log.info("NMS enable flags: yolo={}, face={}, lp={}, pose={}, seg={}, obb={}, text={}, sam={}",
                     YOLO_NMS_ENABLED, YOLO_FACE_NMS_ENABLED, YOLO_LP_NMS_ENABLED, YOLO_POSE_NMS_ENABLED,
-                    YOLO_SEG_NMS_ENABLED, YOLO_OBB_NMS_ENABLED, YOLO_SAM_NMS_ENABLED);
-            log.info("YOLO model names: detect={}, pose={}, seg={}, obb={}, face={}, lp={}, sam={}",
+                    YOLO_SEG_NMS_ENABLED, YOLO_OBB_NMS_ENABLED, YOLO_TEXT_NMS_ENABLED, YOLO_SAM_NMS_ENABLED);
+            log.info("YOLO model names: detect={}, pose={}, seg={}, obb={}, text={}, face={}, lp={}, sam={}",
                     properties.getProperty("yolo.onnx.path"),
                     properties.getProperty("yolo.pose.onnx.path"),
                     properties.getProperty("yolo.seg.onnx.path"),
                     properties.getProperty("yolo.obb.onnx.path"),
+                    properties.getProperty("yolo.text.onnx.path"),
                     properties.getProperty("yolo.face.onnx.path"),
                     properties.getProperty("yolo.lp.onnx.path"),
                     yoloSamModelName);
@@ -146,4 +161,3 @@ public class Constant {
         }
     }
 }
-

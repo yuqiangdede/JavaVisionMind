@@ -33,7 +33,7 @@ public class Constant {
             MATRIX_PATH = envPath + properties.getProperty("matrix.path");
 
         } catch (IOException e) {
-            throw new RuntimeException("读取配置文件失败");
+            throw new RuntimeException("Failed to read configuration file");
         } finally {
             if (input != null) {
                 try {

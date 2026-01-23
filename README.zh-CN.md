@@ -133,6 +133,23 @@ curl -X POST http://localhost:17006/vision-mind-ocr/api/v1/ocr/detect -H "Conten
 | POST | `/api/v1/img/samI` | FAST-SAM 分割的图像可视化。 | `DetectionRequest` | `image/jpeg` 字节流 |
 | POST | `/api/v1/img/seg` | YOLO 分割输出掩码信息。 | `DetectionRequestWithArea` | `HttpResult<List<SegDetection>>` |
 | POST | `/api/v1/img/segI` | 分割结果的图像可视化。 | `DetectionRequestWithArea` | `image/jpeg` 字节流 |
+| POST | `/api/v1/yoloe/detectText` | YOLOE 固定类型检测（`yoloe-26s-seg.onnx`）。 | `TextPromptRequestWithArea`（字段：`imgUrl`, `threshold?`, `detectionFrames?`, `blockingFrames?`） | `HttpResult<List<Box>>` |
+| POST | `/api/v1/yoloe/detectTextI` | YOLOE 固定类型检测可视化。 | `TextPromptRequestWithArea` | `image/jpeg` 字节流 |
+| POST | `/api/v1/yoloe/detectFree` | YOLOE prompt-free 分割（`yoloe-26s-seg-pf.onnx`）。 | `DetectionRequest`（字段：`imgUrl`, `threshold?`） | `HttpResult<List<SegDetection>>` |
+| POST | `/api/v1/yoloe/detectFreeI` | YOLOE prompt-free 分割可视化。 | `DetectionRequest` | `image/jpeg` 字节流 |
+
+> **说明**：`detectText/detectTextI` 的类型无法在请求中动态扩展，必须在导出 ONNX 时固定类别。若需新增类型，请重新导出模型。
+
+```python
+from ultralytics import YOLOE
+
+pt = YOLOE("yoloe-26s-seg.pt")
+names = ["person", "hoops"]
+pt.set_classes(names, pt.get_text_pe(names))
+
+onnx_path = pt.export(format="onnx")
+print("exported:", onnx_path)
+```
 
 ### vision-mind-ocr-app（光学字符识别）
 

@@ -21,50 +21,65 @@ import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class YoloV26SegUtil {
 
     private static final float NMS_THRESHOLD = 0.45f;
     private static final float MASK_THRESHOLD = 0.5f;
 
-    static final Model yolomodel;
     private static final OrtEnvironment environment;
+    private static volatile Model yoloSegModel;
+    private static volatile Model yoloTextSegModel;
 
     static {
         try {
             environment = OrtEnvironment.getEnvironment();
-            yolomodel = load();
+            yoloSegModel = load(Constant.YOLO_SEG_ONNX_PATH);
         } catch (OrtException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static Model load() throws OrtException {
-        OrtSession session = environment.createSession(Constant.YOLO_SEG_ONNX_PATH, new OrtSession.SessionOptions());
+    private static Model load(String modelPath) throws OrtException {
+        OrtSession session = environment.createSession(modelPath, new OrtSession.SessionOptions());
         Map<String, NodeInfo> infoMap = session.getInputInfo();
         TensorInfo nodeInfo = (TensorInfo) infoMap.get("images").getInfo();
         long netHeight = nodeInfo.getShape()[2];
         long netWidth = nodeInfo.getShape()[3];
-        return new Model(environment, session, netHeight, netWidth);
+        String nameClass = session.getMetadata().getCustomMetadata().get("names");
+        Map<Integer, String> names = parseNames(nameClass);
+        return new Model(environment, session, netHeight, netWidth, names);
     }
 
     public static List<SegDetection> predictor(Mat src, float threshold) throws OrtException {
-        try (OnnxTensor tensor = transferTensor(src)) {
-            try (OrtSession.Result result = yolomodel.session.run(Collections.singletonMap("images", tensor))) {
+        return predictor(src, threshold, getSegModel());
+    }
+
+    public static List<SegDetection> predictorFree(Mat src, float threshold) throws OrtException {
+        return predictor(src, threshold, getTextSegModel());
+    }
+
+    private static List<SegDetection> predictor(Mat src, float threshold, Model model) throws OrtException {
+        try (OnnxTensor tensor = transferTensor(src, model)) {
+            try (OrtSession.Result result = model.session.run(Collections.singletonMap("images", tensor))) {
                 OnnxValue output0 = result.get("output0")
                         .orElseThrow(() -> new RuntimeException("Missing 'output0' in model outputs."));
                 OnnxValue output1 = result.get("output1")
                         .orElseThrow(() -> new RuntimeException("Missing 'output1' in model outputs."));
                 float[][] detections = ((float[][][]) output0.getValue())[0];
                 float[][][] protos = ((float[][][][]) output1.getValue())[0];
-                return processOutputs(detections, protos, src, threshold);
+                return processOutputs(detections, protos, src, threshold, model);
             }
         }
     }
 
-    private static List<SegDetection> processOutputs(float[][] detections, float[][][] protos, Mat image, float threshold) {
+    private static List<SegDetection> processOutputs(float[][] detections, float[][][] protos, Mat image, float threshold,
+                                                     Model model) {
         int maskProtoChannels = protos.length;
         int maskProtoHeight = protos[0].length;
         int maskProtoWidth = protos[0][0].length;
@@ -86,8 +101,8 @@ public class YoloV26SegUtil {
         List<Integer> classIds = new ArrayList<>();
         List<Mat> maskCoeffsList = new ArrayList<>();
 
-        float scaleX = (float) image.cols() / yolomodel.netWidth;
-        float scaleY = (float) image.rows() / yolomodel.netHeight;
+        float scaleX = (float) image.cols() / model.netWidth;
+        float scaleY = (float) image.rows() / model.netHeight;
 
         for (float[] row : detections) {
             float score = row[4];
@@ -153,7 +168,10 @@ public class YoloV26SegUtil {
             Rect box = boxes.get(idx);
             Mat maskCoeffs = maskCoeffsList.get(idx);
             Mat finalMask = generateMask(maskCoeffs, protosMat, box, image.size(), maskProtoHeight, maskProtoWidth);
-            finalDetections.add(new SegDetection(box, scores.get(idx), classIds.get(idx), finalMask));
+            int classId = classIds.get(idx);
+            SegDetection detection = new SegDetection(box, scores.get(idx), classId, finalMask);
+            detection.setClassName(model.names.get(classId));
+            finalDetections.add(detection);
         }
 
         return finalDetections;
@@ -218,18 +236,18 @@ public class YoloV26SegUtil {
         return intersectionArea / unionArea;
     }
 
-    private static OnnxTensor transferTensor(Mat src) throws OrtException {
+    private static OnnxTensor transferTensor(Mat src, Model model) throws OrtException {
         Mat dst = new Mat();
-        Imgproc.resize(src, dst, new Size(yolomodel.netWidth, yolomodel.netHeight));
+        Imgproc.resize(src, dst, new Size(model.netWidth, model.netHeight));
         Imgproc.cvtColor(dst, dst, Imgproc.COLOR_BGR2RGB);
         dst.convertTo(dst, CvType.CV_32FC3, 1. / 255);
 
-        float[] whc = new float[(int) (3 * yolomodel.netWidth * yolomodel.netHeight)];
+        float[] whc = new float[(int) (3 * model.netWidth * model.netHeight)];
         dst.get(0, 0, whc);
         float[] chw = whc2cwh(whc);
 
-        return OnnxTensor.createTensor(yolomodel.env, FloatBuffer.wrap(chw),
-                new long[]{1, 3, yolomodel.netHeight, yolomodel.netWidth});
+        return OnnxTensor.createTensor(model.env, FloatBuffer.wrap(chw),
+                new long[]{1, 3, model.netHeight, model.netWidth});
     }
 
     private static float[] whc2cwh(float[] src) {
@@ -249,12 +267,47 @@ public class YoloV26SegUtil {
         public OrtSession session;
         public long netHeight;
         public long netWidth;
+        public Map<Integer, String> names;
 
-        public Model(OrtEnvironment env, OrtSession session, long netHeight, long netWidth) {
+        public Model(OrtEnvironment env, OrtSession session, long netHeight, long netWidth, Map<Integer, String> names) {
             this.env = env;
             this.session = session;
             this.netHeight = netHeight;
             this.netWidth = netWidth;
+            this.names = names;
         }
+    }
+
+    private static Model getSegModel() {
+        return yoloSegModel;
+    }
+
+    private static Model getTextSegModel() {
+        if (yoloTextSegModel != null) {
+            return yoloTextSegModel;
+        }
+        synchronized (YoloV26SegUtil.class) {
+            if (yoloTextSegModel == null) {
+                try {
+                    yoloTextSegModel = load(Constant.YOLO_TEXT_FREE_ONNX_PATH);
+                } catch (OrtException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        return yoloTextSegModel;
+    }
+
+    private static Map<Integer, String> parseNames(String nameClass) {
+        if (nameClass == null || nameClass.isBlank()) {
+            return Collections.emptyMap();
+        }
+        Map<Integer, String> names = new HashMap<>();
+        Pattern pattern = Pattern.compile("(\\d+)\\s*:\\s*'([^']*)'");
+        Matcher matcher = pattern.matcher(nameClass);
+        while (matcher.find()) {
+            names.put(Integer.parseInt(matcher.group(1)), matcher.group(2));
+        }
+        return names;
     }
 }
