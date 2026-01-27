@@ -19,8 +19,6 @@ import java.util.Map;
 public class YoloV26DetUtil extends YoloBaseUtil {
 
     private static volatile Model yolomodel;
-    private static volatile Model yoloFaceModel;
-    private static volatile Model yoloLpModel;
 
     private static Model getYoloModel() {
         if (yolomodel == null) {
@@ -37,46 +35,9 @@ public class YoloV26DetUtil extends YoloBaseUtil {
         return yolomodel;
     }
 
-    private static Model getYoloFaceModel() {
-        if (yoloFaceModel == null) {
-            synchronized (YoloV26DetUtil.class) {
-                if (yoloFaceModel == null) {
-                    try {
-                        yoloFaceModel = load(Constant.YOLO_FACE_ONNX_PATH, Constant.YOLO_FACE_NMS_ENABLED);
-                    } catch (OrtException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-        }
-        return yoloFaceModel;
-    }
-
-    private static Model getYoloLpModel() {
-        if (yoloLpModel == null) {
-            synchronized (YoloV26DetUtil.class) {
-                if (yoloLpModel == null) {
-                    try {
-                        yoloLpModel = load(Constant.YOLO_LP_ONNX_PATH, Constant.YOLO_LP_NMS_ENABLED);
-                    } catch (OrtException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-        }
-        return yoloLpModel;
-    }
 
     public static YoloDetectionResult predictor(Mat mat, Float conf) {
         return predictor(mat, getYoloModel(), conf);
-    }
-
-    public static YoloDetectionResult predictorFace(Mat mat, Float conf) {
-        return predictor(mat, getYoloFaceModel(), conf);
-    }
-
-    public static YoloDetectionResult predictorLicensePlate(Mat mat, Float conf) {
-        return predictor(mat, getYoloLpModel(), conf);
     }
 
     private static YoloDetectionResult predictor(Mat src, Model model, Float conf) {
