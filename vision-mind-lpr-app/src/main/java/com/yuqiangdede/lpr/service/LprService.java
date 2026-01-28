@@ -93,7 +93,9 @@ public class LprService {
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g.setStroke(new BasicStroke(2f));
             g.setFont(new Font("SansSerif", Font.BOLD, 20));
-            for (PlateRecognitionResult result : analysis.results()) {
+            List<PlateRecognitionResult> results = analysis.results();
+            for (int i = 0; i < results.size(); i++) {
+                PlateRecognitionResult result = results.get(i);
                 Box box = result.getBox();
                 int x1 = Math.round(Math.min(box.getX1(), box.getX2()));
                 int y1 = Math.round(Math.min(box.getY1(), box.getY2()));
@@ -102,22 +104,96 @@ public class LprService {
 
                 g.setColor(new Color(255, 215, 0));
                 g.drawRect(x1, y1, Math.max(1, x2 - x1), Math.max(1, y2 - y1));
-                if (result.getPlate() != null && !result.getPlate().isBlank()) {
-                    String text = result.getPlate();
-                    int textWidth = g.getFontMetrics().stringWidth(text) + 12;
-                    int textHeight = g.getFontMetrics().getHeight();
-                    int bgX = x1 + 2;
-                    int bgY = Math.max(0, y1 - textHeight - 6);
-                    g.setColor(new Color(30, 60, 200));
-                    g.fillRect(bgX, bgY, textWidth, textHeight + 4);
-                    g.setColor(Color.WHITE);
-                    g.drawString(text, bgX + 6, bgY + textHeight - 6);
+                String text = result.getPlate() == null ? "" : result.getPlate();
+                BufferedImage platePreview = resolvePlatePreview(analysis, i, box);
+                if (!text.isBlank() || platePreview != null) {
+                    drawPlateLabel(g, canvas.getWidth(), canvas.getHeight(), x1, y1, x2, y2, text, platePreview);
                 }
             }
         } finally {
             g.dispose();
         }
         return canvas;
+    }
+
+    private BufferedImage resolvePlatePreview(AnalysisResult analysis, int index, Box box) {
+        List<BufferedImage> normalizedPlates = analysis.normalizedPlates();
+        if (normalizedPlates != null && normalizedPlates.size() == analysis.results().size() && index < normalizedPlates.size()) {
+            BufferedImage candidate = normalizedPlates.get(index);
+            if (candidate != null) {
+                return candidate;
+            }
+        }
+        BufferedImage original = analysis.original();
+        if (original == null) {
+            return null;
+        }
+        return normalizePlate(original, box).orElse(null);
+    }
+
+    private void drawPlateLabel(Graphics2D g, int imageWidth, int imageHeight, int x1, int y1, int x2, int y2, String text,
+                                BufferedImage platePreview) {
+        int padding = 6;
+        int gap = 6;
+        int textWidth = g.getFontMetrics().stringWidth(text);
+        int textHeight = g.getFontMetrics().getHeight();
+        int thumbWidth = 0;
+        int thumbHeight = 0;
+        if (platePreview != null) {
+            int targetHeight = Math.max(18, Math.min(32, textHeight + 2));
+            double ratio = (double) platePreview.getWidth() / Math.max(1, platePreview.getHeight());
+            int targetWidth = (int) Math.round(targetHeight * ratio);
+            int maxWidth = 120;
+            if (targetWidth > maxWidth) {
+                targetWidth = maxWidth;
+                targetHeight = Math.max(12, (int) Math.round(targetWidth / ratio));
+            }
+            thumbWidth = Math.max(1, targetWidth);
+            thumbHeight = Math.max(1, targetHeight);
+        }
+
+        int labelHeight = Math.max(textHeight + 6, thumbHeight + 6);
+        int labelWidth = padding * 2 + textWidth;
+        if (thumbWidth > 0) {
+            labelWidth += thumbWidth + gap;
+        }
+
+        int labelX;
+        int labelY;
+        if (x2 + 4 + labelWidth <= imageWidth) {
+            labelX = x2 + 4;
+            labelY = y1;
+        } else {
+            labelX = x1 + 2;
+            labelY = y1 - labelHeight - 6;
+            if (labelY < 0) {
+                labelY = y2 + 4;
+            }
+        }
+        if (labelX + labelWidth > imageWidth) {
+            labelX = Math.max(0, imageWidth - labelWidth - 2);
+        }
+        if (labelY + labelHeight > imageHeight) {
+            labelY = Math.max(0, imageHeight - labelHeight - 2);
+        }
+
+        g.setColor(new Color(30, 60, 200));
+        g.fillRect(labelX, labelY, labelWidth, labelHeight);
+
+        int cursorX = labelX + padding;
+        if (platePreview != null && thumbWidth > 0) {
+            int imgY = labelY + (labelHeight - thumbHeight) / 2;
+            g.drawImage(platePreview, cursorX, imgY, thumbWidth, thumbHeight, null);
+            g.setColor(Color.WHITE);
+            g.drawRect(cursorX, imgY, thumbWidth, thumbHeight);
+            cursorX += thumbWidth + gap;
+        }
+
+        if (!text.isBlank()) {
+            g.setColor(Color.WHITE);
+            int textY = labelY + (labelHeight - g.getFontMetrics().getHeight()) / 2 + g.getFontMetrics().getAscent();
+            g.drawString(text, cursorX, textY);
+        }
     }
 
     private Optional<BufferedImage> normalizePlate(BufferedImage image, Box box) {

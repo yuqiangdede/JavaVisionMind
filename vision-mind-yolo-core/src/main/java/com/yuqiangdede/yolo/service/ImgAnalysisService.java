@@ -35,6 +35,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 
@@ -79,40 +80,8 @@ public class ImgAnalysisService {
         Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
 
         List<Box> boxs = analysis(mat, imgAreaInput.getThreshold(), imgAreaInput.getTypes());
-        Set<Box> result = new LinkedHashSet<>();
-
-        if (imgAreaInput.getDetectionFrames() == null || imgAreaInput.getDetectionFrames().isEmpty()) {
-            result.addAll(boxs);
-        } else {
-            for (Box box : boxs) {
-                for (ArrayList<Point> detectionFrame : imgAreaInput.getDetectionFrames()) {
-                    double detectRatio = GeometryUtils.calcOverlap(box, detectionFrame);
-                    if (detectRatio > Constant.DETECT_RATIO) {
-                        result.add(box);
-                        break;
-                    }
-                }
-            }
-        }
-
-
-        if (imgAreaInput.getBlockingFrames() == null || imgAreaInput.getBlockingFrames().isEmpty()) {
-            return new ArrayList<>(result);
-        } else {
-            Set<Box> toRemove = new HashSet<>();
-            for (Box box : boxs) {
-                for (ArrayList<Point> blockingFrame : imgAreaInput.getBlockingFrames()) {
-                    double blockRatio = GeometryUtils.calcOverlap(box, blockingFrame);
-                    if (blockRatio > Constant.BLOCK_RATIO) {
-                        toRemove.add(box);
-                        break;
-                    }
-                }
-            }
-            result.removeAll(toRemove);
-        }
-
-        return new ArrayList<>(result);
+        return filterByFrames(boxs, imgAreaInput.getDetectionFrames(), imgAreaInput.getBlockingFrames(),
+                GeometryUtils::calcOverlap);
     }
 
     public BufferedImage detectAreaI(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
@@ -130,39 +99,8 @@ public class ImgAnalysisService {
         Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
 
         List<Box> boxs = analysisText(mat, imgAreaInput.getThreshold());
-        Set<Box> result = new LinkedHashSet<>();
-
-        if (imgAreaInput.getDetectionFrames() == null || imgAreaInput.getDetectionFrames().isEmpty()) {
-            result.addAll(boxs);
-        } else {
-            for (Box box : boxs) {
-                for (ArrayList<Point> detectionFrame : imgAreaInput.getDetectionFrames()) {
-                    double detectRatio = GeometryUtils.calcOverlap(box, detectionFrame);
-                    if (detectRatio > Constant.DETECT_RATIO) {
-                        result.add(box);
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (imgAreaInput.getBlockingFrames() == null || imgAreaInput.getBlockingFrames().isEmpty()) {
-            return new ArrayList<>(result);
-        } else {
-            Set<Box> toRemove = new HashSet<>();
-            for (Box box : boxs) {
-                for (ArrayList<Point> blockingFrame : imgAreaInput.getBlockingFrames()) {
-                    double blockRatio = GeometryUtils.calcOverlap(box, blockingFrame);
-                    if (blockRatio > Constant.BLOCK_RATIO) {
-                        toRemove.add(box);
-                        break;
-                    }
-                }
-            }
-            result.removeAll(toRemove);
-        }
-
-        return new ArrayList<>(result);
+        return filterByFrames(boxs, imgAreaInput.getDetectionFrames(), imgAreaInput.getBlockingFrames(),
+                GeometryUtils::calcOverlap);
     }
 
     public BufferedImage detectTextAreaI(TextPromptRequestWithArea imgAreaInput) throws IOException, OrtException {
@@ -182,22 +120,13 @@ public class ImgAnalysisService {
 
         List<List<Float>> bs = detection.boxes();
         Map<Integer, String> classNames = detection.classNames();
+        List<Integer> typeList = parseTypes(types, Constant.YOLO_TYPES);
 
         List<Box> boxes = new ArrayList<>();
         for (List<Float> bx : bs) {
             Box box = new Box(bx.get(0), bx.get(1), bx.get(2), bx.get(3), bx.get(4), bx.get(5), classNames);
-            if (types == null || types.isEmpty()) {
-                if (Constant.YOLO_TYPES.contains(box.getType())) {
-                    boxes.add(box);
-                }
-            } else {
-                List<Integer> typeList = Arrays.stream(types.split(","))
-                        .map(Integer::parseInt)
-                        .collect(Collectors.toList());
-
-                if (typeList.contains(box.getType())) {
-                    boxes.add(box);
-                }
+            if (typeList.contains(box.getType())) {
+                boxes.add(box);
             }
         }
 
@@ -206,55 +135,15 @@ public class ImgAnalysisService {
 
     private List<Box> analysisText(Mat mat, Float conf) {
         YoloDetectionResult detection = YoloV26DetectTextUtil.predictor(mat, conf);
-
-        List<List<Float>> bs = detection.boxes();
-        Map<Integer, String> classNames = detection.classNames();
-
-        List<Box> boxes = new ArrayList<>();
-        for (List<Float> bx : bs) {
-            boxes.add(new Box(bx.get(0), bx.get(1), bx.get(2), bx.get(3), bx.get(4), bx.get(5), classNames));
-        }
-
-        return boxes;
+        return buildBoxes(detection.boxes(), detection.classNames());
     }
 
     public List<BoxWithKeypoints> poseArea(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
         Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
 
         List<BoxWithKeypoints> boxs = analysisPose(mat, imgAreaInput.getThreshold());
-        Set<BoxWithKeypoints> result = new LinkedHashSet<>();
-
-        if (imgAreaInput.getDetectionFrames() == null || imgAreaInput.getDetectionFrames().isEmpty()) {
-            result.addAll(boxs);
-        } else {
-            for (BoxWithKeypoints box : boxs) {
-                for (ArrayList<Point> detectionFrame : imgAreaInput.getDetectionFrames()) {
-                    double detectRatio = GeometryUtils.calcOverlap(box, detectionFrame);
-                    if (detectRatio > Constant.DETECT_RATIO) {
-                        result.add(box);
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (imgAreaInput.getBlockingFrames() == null || imgAreaInput.getBlockingFrames().isEmpty()) {
-            return new ArrayList<>(result);
-        } else {
-            Set<BoxWithKeypoints> toRemove = new HashSet<>();
-            for (BoxWithKeypoints box : boxs) {
-                for (ArrayList<Point> blockingFrame : imgAreaInput.getBlockingFrames()) {
-                    double blockRatio = GeometryUtils.calcOverlap(box, blockingFrame);
-                    if (blockRatio > Constant.BLOCK_RATIO) {
-                        toRemove.add(box);
-                        break;
-                    }
-                }
-            }
-            result.removeAll(toRemove);
-        }
-
-        return new ArrayList<>(result);
+        return filterByFrames(boxs, imgAreaInput.getDetectionFrames(), imgAreaInput.getBlockingFrames(),
+                GeometryUtils::calcOverlap);
     }
 
     public BufferedImage poseAreaI(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
@@ -288,40 +177,8 @@ public class ImgAnalysisService {
         Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
 
         List<Box> boxs = analysisFace(mat, imgAreaInput.getThreshold());
-        Set<Box> result = new LinkedHashSet<>();
-
-        if (imgAreaInput.getDetectionFrames() == null || imgAreaInput.getDetectionFrames().isEmpty()) {
-            result.addAll(boxs);
-        } else {
-            for (Box box : boxs) {
-                for (ArrayList<Point> detectionFrame : imgAreaInput.getDetectionFrames()) {
-                    double detectRatio = GeometryUtils.calcOverlap(box, detectionFrame);
-                    if (detectRatio > Constant.DETECT_RATIO) {
-                        result.add(box);
-                        break;
-                    }
-                }
-            }
-        }
-
-
-        if (imgAreaInput.getBlockingFrames() == null || imgAreaInput.getBlockingFrames().isEmpty()) {
-            return new ArrayList<>(result);
-        } else {
-            Set<Box> toRemove = new HashSet<>();
-            for (Box box : boxs) {
-                for (ArrayList<Point> blockingFrame : imgAreaInput.getBlockingFrames()) {
-                    double blockRatio = GeometryUtils.calcOverlap(box, blockingFrame);
-                    if (blockRatio > Constant.BLOCK_RATIO) {
-                        toRemove.add(box);
-                        break;
-                    }
-                }
-            }
-            result.removeAll(toRemove);
-        }
-
-        return new ArrayList<>(result);
+        return filterByFrames(boxs, imgAreaInput.getDetectionFrames(), imgAreaInput.getBlockingFrames(),
+                GeometryUtils::calcOverlap);
     }
 
     public BufferedImage detectFaceI(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
@@ -337,58 +194,15 @@ public class ImgAnalysisService {
 
     private List<Box> analysisFace(Mat mat, Float conf) {
         YoloDetectionResult detection = YoloFaceLpUtil.predictorFace(mat, conf);
-
-        List<List<Float>> bs = detection.boxes();
-
-        Map<Integer, String> classNames = detection.classNames();
-
-        List<Box> boxes = new ArrayList<>();
-        for (List<Float> bx : bs) {
-            Box box = new Box(bx.get(0), bx.get(1), bx.get(2), bx.get(3), bx.get(4), bx.get(5), classNames);
-            boxes.add(box);
-        }
-
-        return boxes;
+        return buildBoxes(detection.boxes(), detection.classNames());
     }
 
     public List<Box> detectLP(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
         Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
 
         List<Box> boxs = analysisLicensePlate(mat, imgAreaInput.getThreshold());
-        Set<Box> result = new LinkedHashSet<>();
-
-        if (imgAreaInput.getDetectionFrames() == null || imgAreaInput.getDetectionFrames().isEmpty()) {
-            result.addAll(boxs);
-        } else {
-            for (Box box : boxs) {
-                for (ArrayList<Point> detectionFrame : imgAreaInput.getDetectionFrames()) {
-                    double detectRatio = GeometryUtils.calcOverlap(box, detectionFrame);
-                    if (detectRatio > Constant.DETECT_RATIO) {
-                        result.add(box);
-                        break;
-                    }
-                }
-            }
-        }
-
-
-        if (imgAreaInput.getBlockingFrames() == null || imgAreaInput.getBlockingFrames().isEmpty()) {
-            return new ArrayList<>(result);
-        } else {
-            Set<Box> toRemove = new HashSet<>();
-            for (Box box : boxs) {
-                for (ArrayList<Point> blockingFrame : imgAreaInput.getBlockingFrames()) {
-                    double blockRatio = GeometryUtils.calcOverlap(box, blockingFrame);
-                    if (blockRatio > Constant.BLOCK_RATIO) {
-                        toRemove.add(box);
-                        break;
-                    }
-                }
-            }
-            result.removeAll(toRemove);
-        }
-
-        return new ArrayList<>(result);
+        return filterByFrames(boxs, imgAreaInput.getDetectionFrames(), imgAreaInput.getBlockingFrames(),
+                GeometryUtils::calcOverlap);
     }
 
     public BufferedImage detectLPI(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
@@ -404,18 +218,7 @@ public class ImgAnalysisService {
 
     private List<Box> analysisLicensePlate(Mat mat, Float conf) {
         YoloDetectionResult detection = YoloFaceLpUtil.predictorLicensePlate(mat, conf);
-
-        List<List<Float>> bs = detection.boxes();
-
-        Map<Integer, String> classNames = detection.classNames();
-
-        List<Box> boxes = new ArrayList<>();
-        for (List<Float> bx : bs) {
-            Box box = new Box(bx.get(0), bx.get(1), bx.get(2), bx.get(3), bx.get(4), bx.get(5), classNames);
-            boxes.add(box);
-        }
-
-        return boxes;
+        return buildBoxes(detection.boxes(), detection.classNames());
     }
 
     public List<Box> sam(DetectionRequest imgAreaInput) throws IOException, OrtException {
@@ -425,7 +228,6 @@ public class ImgAnalysisService {
 
     public BufferedImage samI(DetectionRequest imgAreaInput) throws IOException, OrtException {
         BufferedImage image = ImageUtil.urlToImage(imgAreaInput.getImgUrl());
-
 
         List<Box> boxs = this.sam(imgAreaInput);
 
@@ -523,7 +325,63 @@ public class ImgAnalysisService {
         return filtered;
     }
 
+    private List<Box> buildBoxes(List<List<Float>> bs, Map<Integer, String> classNames) {
+        List<Box> boxes = new ArrayList<>();
+        for (List<Float> bx : bs) {
+            boxes.add(new Box(bx.get(0), bx.get(1), bx.get(2), bx.get(3), bx.get(4), bx.get(5), classNames));
+        }
+        return boxes;
+    }
 
+    private List<Integer> parseTypes(String types, List<Integer> defaultTypes) {
+        if (types == null || types.isEmpty()) {
+            return defaultTypes;
+        }
+        return Arrays.stream(types.split(","))
+                .map(Integer::parseInt)
+                .collect(Collectors.toList());
+    }
+
+    private boolean isEmptyFrames(List<? extends List<Point>> frames) {
+        return frames == null || frames.isEmpty();
+    }
+
+    private <T> List<T> filterByFrames(List<T> boxes,
+                                       List<ArrayList<Point>> detectionFrames,
+                                       List<ArrayList<Point>> blockingFrames,
+                                       BiFunction<T, ArrayList<Point>, Double> overlapFn) {
+        Set<T> result = new LinkedHashSet<>();
+        if (isEmptyFrames(detectionFrames)) {
+            result.addAll(boxes);
+        } else {
+            for (T box : boxes) {
+                for (ArrayList<Point> detectionFrame : detectionFrames) {
+                    double detectRatio = overlapFn.apply(box, detectionFrame);
+                    if (detectRatio > Constant.DETECT_RATIO) {
+                        result.add(box);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (isEmptyFrames(blockingFrames)) {
+            return new ArrayList<>(result);
+        }
+
+        Set<T> toRemove = new HashSet<>();
+        for (T box : result) {
+            for (ArrayList<Point> blockingFrame : blockingFrames) {
+                double blockRatio = overlapFn.apply(box, blockingFrame);
+                if (blockRatio > Constant.BLOCK_RATIO) {
+                    toRemove.add(box);
+                    break;
+                }
+            }
+        }
+        result.removeAll(toRemove);
+        return new ArrayList<>(result);
+    }
 
     public BufferedImage segAreaI(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
         List<SegDetection> segs = segArea(imgAreaInput);

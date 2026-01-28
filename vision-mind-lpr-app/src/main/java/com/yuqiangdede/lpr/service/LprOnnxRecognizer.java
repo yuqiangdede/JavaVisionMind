@@ -35,6 +35,7 @@ public class LprOnnxRecognizer {
     private final LprProperties properties;
     private final List<String> alphabet;
     private final int blankIndex;
+    private final int provinceCount;
 
     private OrtEnvironment environment;
     private OrtSession session;
@@ -43,10 +44,15 @@ public class LprOnnxRecognizer {
 
     public LprOnnxRecognizer(LprProperties properties) {
         this.properties = properties;
-        this.alphabet = defaultAlphabet();
+        List<String> provinces = defaultProvinceSymbols();
+        this.alphabet = defaultAlphabet(provinces);
+        this.provinceCount = provinces.size();
         this.blankIndex = this.alphabet.size() - 1;
     }
 
+    /**
+     * 初始化 ONNX 环境与会话，并加载车牌识别模型。
+     */
     @PostConstruct
     public void initialize() throws IOException {
         Path modelPath = resolveModelPath(properties.getModelPath());
@@ -66,6 +72,13 @@ public class LprOnnxRecognizer {
         }
     }
 
+
+    /**
+     * 使用 ONNX 模型识别输入图像中的车牌文字。
+     *
+     * @param image 输入图像（不可为 null）
+     * @return 识别结果；失败时返回空字符串
+     */
     public String recognize(BufferedImage image) {
         Objects.requireNonNull(image, "image must not be null");
         float[] chw = preprocess(image);
@@ -80,6 +93,9 @@ public class LprOnnxRecognizer {
         }
     }
 
+    /**
+     * 根据输出张量形状推断模型输出布局（序列长度位置）。
+     */
     private void detectOutputLayout() throws OrtException {
         Map<String, NodeInfo> outputInfo = session.getOutputInfo();
         if (outputInfo.isEmpty()) {
@@ -105,6 +121,9 @@ public class LprOnnxRecognizer {
         }
     }
 
+    /**
+     * 将输入图像缩放并转换为 CHW 浮点数组（灰度化 + 轻微对比度拉伸，再归一化到近似 [-1, 1]）。
+     */
     private float[] preprocess(BufferedImage source) {
         BufferedImage canvas = new BufferedImage(
                 properties.getModelInputWidth(),
@@ -119,21 +138,30 @@ public class LprOnnxRecognizer {
         byte[] data = ((DataBufferByte) canvas.getRaster().getDataBuffer()).getData();
         int planeSize = canvas.getWidth() * canvas.getHeight();
         float[] chw = new float[planeSize * 3];
+        float contrast = 1.10f;
         for (int i = 0; i < planeSize; i++) {
             int base = i * 3;
-            float b = (data[base] & 0xFF) - 127.5f;
-            float g = (data[base + 1] & 0xFF) - 127.5f;
-            float r = (data[base + 2] & 0xFF) - 127.5f;
-            b *= 0.0078125f;
-            g *= 0.0078125f;
-            r *= 0.0078125f;
-            chw[i] = b;
-            chw[i + planeSize] = g;
-            chw[i + planeSize * 2] = r;
+            int b = data[base] & 0xFF;
+            int g = data[base + 1] & 0xFF;
+            int r = data[base + 2] & 0xFF;
+            int gray = (r * 77 + g * 150 + b * 29) >> 8;
+            float enhanced = (gray - 127.5f) * contrast + 127.5f;
+            if (enhanced < 0f) {
+                enhanced = 0f;
+            } else if (enhanced > 255f) {
+                enhanced = 255f;
+            }
+            float normalized = (enhanced - 127.5f) * 0.0078125f;
+            chw[i] = normalized;
+            chw[i + planeSize] = normalized;
+            chw[i + planeSize * 2] = normalized;
         }
         return chw;
     }
 
+    /**
+     * 从 ONNX 输出中提取 logits，并按 [seq, classes] 排列。
+     */
     private float[][] extractLogits(OrtSession.Result result) throws OrtException {
         OnnxTensor tensor = (OnnxTensor) result.get(0);
         long[] shape = tensor.getInfo().getShape();
@@ -156,6 +184,9 @@ public class LprOnnxRecognizer {
         }
     }
 
+    /**
+     * 转置 logits 维度，得到 [seq, classes]。
+     */
     private float[][] transpose(float[][] logits, int classes, int seq) {
         float[][] transposed = new float[seq][classes];
         for (int c = 0; c < classes; c++) {
@@ -166,25 +197,53 @@ public class LprOnnxRecognizer {
         return transposed;
     }
 
+    /**
+     * CTC 解码：首位限定为省简称，去除 blank 并合并连续重复。
+     */
     private String decode(float[][] logits) {
         StringBuilder builder = new StringBuilder();
         int prevClass = -1;
+        boolean firstEmitted = false;
         int steps = outputSequenceLength > 0 ? Math.min(outputSequenceLength, logits.length) : logits.length;
         for (int t = 0; t < steps; t++) {
             float[] step = logits[t];
-            int current = argMax(step);
+            int current = firstEmitted ? argMax(step) : argMaxProvinceOrBlank(step);
             if (current == blankIndex) {
                 prevClass = current;
                 continue;
             }
             if (current != prevClass && current < alphabet.size()) {
+                if (!firstEmitted && current >= provinceCount) {
+                    prevClass = current;
+                    continue;
+                }
                 builder.append(alphabet.get(current));
+                firstEmitted = true;
             }
             prevClass = current;
         }
         return builder.toString();
     }
 
+    /**
+     * 首位限制：仅允许省简称或 blank。
+     */
+    private int argMaxProvinceOrBlank(float[] values) {
+        int bestIndex = blankIndex;
+        float best = values[blankIndex];
+        int limit = Math.min(provinceCount, values.length);
+        for (int i = 0; i < limit; i++) {
+            if (values[i] > best) {
+                best = values[i];
+                bestIndex = i;
+            }
+        }
+        return bestIndex;
+    }
+
+    /**
+     * 返回数组中最大值的下标。
+     */
     private int argMax(float[] values) {
         int index = 0;
         float max = values[0];
@@ -197,6 +256,9 @@ public class LprOnnxRecognizer {
         return index;
     }
 
+    /**
+     * 解析模型路径：支持相对路径并结合 VISION_MIND_PATH。
+     */
     private Path resolveModelPath(String configured) {
         Path candidate = Paths.get(configured);
         if (!candidate.isAbsolute()) {
@@ -208,14 +270,11 @@ public class LprOnnxRecognizer {
         return candidate.toAbsolutePath().normalize();
     }
 
-    private List<String> defaultAlphabet() {
-        List<String> symbols = new ArrayList<>();
-        Collections.addAll(symbols,
-                "京", "沪", "津", "渝", "冀", "晋", "蒙", "辽", "吉", "黑",
-                "苏", "浙", "皖", "闽", "赣", "鲁", "豫", "鄂", "湘", "粤",
-                "桂", "琼", "川", "贵", "云", "藏", "陕", "甘", "青", "宁",
-                "新"
-        );
+    /**
+     * 构建默认字典（省份简称 + 数字 + 字母 + blank）。
+     */
+    private List<String> defaultAlphabet(List<String> provinces) {
+        List<String> symbols = new ArrayList<>(provinces);
         for (char c = '0'; c <= '9'; c++) {
             symbols.add(String.valueOf(c));
         }
@@ -229,6 +288,23 @@ public class LprOnnxRecognizer {
         return List.copyOf(symbols);
     }
 
+    /**
+     * 构建省份简称字典。
+     */
+    private List<String> defaultProvinceSymbols() {
+        List<String> symbols = new ArrayList<>();
+        Collections.addAll(symbols,
+                "京", "沪", "津", "渝", "冀", "晋", "蒙", "辽", "吉", "黑",
+                "苏", "浙", "皖", "闽", "赣", "鲁", "豫", "鄂", "湘", "粤",
+                "桂", "琼", "川", "贵", "云", "藏", "陕", "甘", "青", "宁",
+                "新"
+        );
+        return List.copyOf(symbols);
+    }
+
+    /**
+     * 关闭 ONNX 会话与环境资源。
+     */
     @PreDestroy
     public void destroy() {
         if (session != null) {
