@@ -107,7 +107,7 @@ mvn clean install -DskipTests
 OCR 方案由 `vision-mind-ocr-core`（推理流水线）与 `vision-mind-ocr-app`（REST 封装）构成，基于 PaddleOCR 的 ONNX Runtime 推断并提供后处理增强能力。
 
 - 通过 `detectionLevel` 参数在轻量 (`lite`) 与高精 (`ex`) 模型之间切换，默认使用轻量配置。
-- 使用 `plan` 选择语义重建策略，或直接调用 `/detectWithSR`、`/detectWithLLM` 获取语义/LLM 的文本优化结果。
+- 直接调用 `/detectWithSR`、`/detectWithLLM` 获取语义/LLM 的文本优化结果。
 - 访问 `/detectI` 与 `/detectWithLLMI` 可获得带多边形标注的 JPEG 叠加图，便于人工校对。
 - 请将 `VISION_MIND_PATH` 指向 OCR ONNX 模型与词典目录，确保轻量与高精引擎均能正确初始化。
 
@@ -155,11 +155,11 @@ print("exported:", onnx_path)
 
 | 方法 | 路径 | 说明 | 请求体 | 响应 |
 | --- | --- | --- | --- | --- |
-| POST | `/api/v1/ocr/detect` | 使用 PaddleOCR 执行检测与识别，可通过 `detectionLevel` 选择 lite（默认）或 ex 模型。 | `OcrDetectionRequest`（`detectionLevel?`, `plan?`, `imgUrl`） | `HttpResult<List<OcrDetectionResult>>` |
-| POST | `/api/v1/ocr/detectI` | 与基础检测一致，但返回带标注的 JPEG 图像。 | `OcrDetectionRequest`（`detectionLevel?`, `plan?`, `imgUrl`） | `image/jpeg` |
-| POST | `/api/v1/ocr/detectWithSR` | 启用语义重建流程输出整理后的文本。 | `OcrDetectionRequest`（`detectionLevel?`, `plan?`, `imgUrl`） | `HttpResult<String>` |
-| POST | `/api/v1/ocr/detectWithLLM` | 将识别结果交给 LLM 做推理式润色。 | `OcrDetectionRequest`（`detectionLevel?`, `plan?`, `imgUrl`） | `HttpResult<String>` |
-| POST | `/api/v1/ocr/detectWithLLMI` | 返回 LLM 润色后的多边形叠加图。 | `OcrDetectionRequest`（`detectionLevel?`, `plan?`, `imgUrl`） | `image/jpeg` |
+| POST | `/api/v1/ocr/detect` | 使用 PaddleOCR 执行检测与识别，可通过 `detectionLevel` 选择 lite（默认）或 ex 模型。 | `OcrDetectionRequest`（`detectionLevel?`, `imgUrl`） | `HttpResult<List<OcrDetectionResult>>` |
+| POST | `/api/v1/ocr/detectI` | 与基础检测一致，但返回带标注的 JPEG 图像。 | `OcrDetectionRequest`（`detectionLevel?`, `imgUrl`） | `image/jpeg` |
+| POST | `/api/v1/ocr/detectWithSR` | 启用语义重建流程输出整理后的文本。 | `OcrDetectionRequest`（`detectionLevel?`, `imgUrl`） | `HttpResult<String>` |
+| POST | `/api/v1/ocr/detectWithLLM` | 将识别结果交给 LLM 做推理式润色。 | `OcrDetectionRequest`（`detectionLevel?`, `imgUrl`） | `HttpResult<String>` |
+| POST | `/api/v1/ocr/detectWithLLMI` | 返回 LLM 润色后的多边形叠加图。 | `OcrDetectionRequest`（`detectionLevel?`, `imgUrl`） | `image/jpeg` |
 
 ### vision-mind-ffe-app（人脸特征提取）
 
