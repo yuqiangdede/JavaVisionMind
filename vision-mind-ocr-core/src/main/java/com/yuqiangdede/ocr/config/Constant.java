@@ -19,8 +19,6 @@ public final class Constant {
     public static final String ORC_CLS_ONNX_PATH;
     public static final String OCR_DICT_PATH;
 
-    public static final double DETECT_RATIO;
-    public static final double BLOCK_RATIO;
     public static final boolean USE_GPU;
 
     static {
@@ -48,8 +46,6 @@ public final class Constant {
             ORC_CLS_ONNX_PATH = envPath + properties.getProperty("orc.cls.onnx.path");
             OCR_DICT_PATH = envPath + properties.getProperty("ocr.dict.path");
 
-            DETECT_RATIO = Double.parseDouble(properties.getProperty("detect.ratio", "0.5"));
-            BLOCK_RATIO = Double.parseDouble(properties.getProperty("block.ratio", "0.5"));
             USE_GPU = Boolean.parseBoolean(properties.getProperty("use.gpu", "false"));
         } catch (IOException e) {
             throw new IllegalStateException("Failed to load OCR configuration", e);
