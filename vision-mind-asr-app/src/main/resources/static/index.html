@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vision Mind ASR</title>
+    <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+<div class="page-shell">
+    <main class="grid">
+        <section class="card">
+            <div class="card-head">
+                <div>
+                    <p class="section-tag">ASR</p>
+                    <h1>音频识别</h1>
+                    <p class="head-copy">上传音频文件，结合 sherpa-onnx 热词与规则纠正输出识别结果。</p>
+                </div>
+                <div class="inline-actions">
+                    <button id="refresh-health" class="ghost">刷新状态</button>
+                    <button id="open-hotwords" class="ghost">编辑热词</button>
+                    <button id="open-rules" class="ghost">编辑近音词</button>
+                </div>
+            </div>
+
+            <div class="stack">
+                <label class="upload-zone">
+                    <input id="audio-file" type="file" accept=".wav,.mp3,.m4a,.webm,.ogg,.aac,.mp4" hidden />
+                    <span>选择音频文件</span>
+                    <small id="file-name">未选择文件</small>
+                </label>
+
+                <label class="field field-inline">
+                    <span>标点恢复</span>
+                    <label class="toggle-line">
+                        <input id="enable-punctuation" type="checkbox" />
+                        <span>启用 sherpa-onnx 标点恢复</span>
+                    </label>
+                </label>
+
+                <div class="inline-actions">
+                    <button id="submit-asr" class="primary">开始识别</button>
+                </div>
+
+                <div class="status-strip">
+                    <div id="health-meta" class="result-meta">等待加载服务状态</div>
+                    <div id="asr-meta" class="result-meta">等待识别</div>
+                </div>
+
+                <div class="result-box">
+                    <label class="field">
+                        <span>原始识别结果（不带标点）</span>
+                        <textarea id="raw-text" readonly placeholder="ASR 原始识别文本，不做标点恢复"></textarea>
+                    </label>
+                    <label class="field">
+                        <span>纠正后结果（可带标点）</span>
+                        <textarea id="phrase-text" readonly placeholder="规则纠正后的文本，启用标点恢复时会补标点"></textarea>
+                    </label>
+                </div>
+
+                <div class="result-box compact">
+                    <label class="field">
+                        <span>音频信息</span>
+                        <pre id="audio-info">-</pre>
+                    </label>
+                    <label class="field">
+                        <span>命中规则</span>
+                        <pre id="rule-info">-</pre>
+                    </label>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<div id="modal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop" data-close="true"></div>
+    <div class="modal-panel">
+        <div class="modal-head">
+            <div>
+                <p id="modal-tag" class="section-tag">配置</p>
+                <h2 id="modal-title">编辑配置</h2>
+            </div>
+            <button id="close-modal" class="ghost">关闭</button>
+        </div>
+        <div id="modal-body" class="modal-body"></div>
+        <div class="inline-actions">
+            <button id="save-modal" class="primary">保存</button>
+        </div>
+        <div id="modal-status" class="result-meta">等待操作</div>
+    </div>
+</div>
+
+<script src="./app.js"></script>
+</body>
+</html>

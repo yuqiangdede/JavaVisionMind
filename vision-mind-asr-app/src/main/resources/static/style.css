@@ -1,0 +1,238 @@
+:root {
+    --bg: #efe7d2;
+    --panel: rgba(255, 250, 241, 0.92);
+    --panel-strong: #fff9ef;
+    --line: rgba(77, 54, 32, 0.16);
+    --text: #2b2118;
+    --muted: #6f6253;
+    --accent: #b65527;
+    --accent-strong: #8f3711;
+    --shadow: 0 24px 80px rgba(53, 31, 15, 0.12);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Microsoft YaHei UI", "PingFang SC", sans-serif;
+    color: var(--text);
+    background:
+        radial-gradient(circle at top left, rgba(182, 85, 39, 0.18), transparent 32%),
+        radial-gradient(circle at right center, rgba(68, 110, 84, 0.15), transparent 26%),
+        linear-gradient(135deg, #f6f0e1, var(--bg));
+    min-height: 100vh;
+}
+
+.page-shell {
+    width: min(1080px, calc(100vw - 32px));
+    margin: 0 auto;
+    padding: 32px 0 48px;
+}
+
+.grid {
+    display: grid;
+    gap: 24px;
+}
+
+.card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(12px);
+    padding: 28px;
+}
+
+.card-head,
+.inline-actions,
+.status-strip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.section-tag {
+    margin: 0 0 8px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-size: 12px;
+    color: var(--accent);
+}
+
+h1,
+h2 {
+    margin: 0;
+}
+
+.head-copy {
+    margin: 10px 0 0;
+    color: var(--muted);
+}
+
+.stack {
+    display: grid;
+    gap: 18px;
+    margin-top: 22px;
+}
+
+.field {
+    display: grid;
+    gap: 8px;
+}
+
+.field-inline {
+    gap: 10px;
+}
+
+.field span {
+    font-weight: 600;
+}
+
+.toggle-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+}
+
+.toggle-line input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+}
+
+textarea,
+pre {
+    width: 100%;
+    min-height: 132px;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: var(--panel-strong);
+    color: var(--text);
+    padding: 14px 16px;
+    font: inherit;
+    resize: vertical;
+}
+
+pre {
+    margin: 0;
+    min-height: 92px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+button {
+    border: none;
+    border-radius: 999px;
+    padding: 12px 18px;
+    font: inherit;
+    cursor: pointer;
+    transition: transform 0.16s ease, opacity 0.16s ease, background 0.16s ease;
+}
+
+button:hover {
+    transform: translateY(-1px);
+}
+
+.primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+    color: #fff;
+}
+
+.ghost {
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--text);
+    border: 1px solid var(--line);
+}
+
+.upload-zone {
+    display: grid;
+    gap: 8px;
+    justify-items: center;
+    padding: 22px;
+    border-radius: 22px;
+    border: 1.5px dashed rgba(182, 85, 39, 0.45);
+    background: rgba(255, 247, 236, 0.95);
+    cursor: pointer;
+}
+
+.upload-zone span {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.upload-zone small,
+.result-meta {
+    color: var(--muted);
+}
+
+.result-box {
+    display: grid;
+    gap: 16px;
+}
+
+.result-box.compact {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(34, 22, 15, 0.34);
+}
+
+.modal-panel {
+    position: relative;
+    z-index: 1;
+    width: min(820px, calc(100vw - 28px));
+    background: var(--panel-strong);
+    border-radius: 28px;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    padding: 24px;
+}
+
+.modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.modal-body {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.config-textarea {
+    min-height: 240px;
+}
+
+@media (max-width: 720px) {
+    .page-shell {
+        width: min(100vw - 20px, 1080px);
+        padding-top: 20px;
+    }
+
+    .card {
+        padding: 20px;
+        border-radius: 22px;
+    }
+}

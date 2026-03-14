@@ -1,0 +1,239 @@
+package com.yuqiangdede.asr.service;
+
+import jakarta.annotation.PostConstruct;
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+@Component
+@Getter
+public class AsrPathResolver {
+
+    private static final Pattern SHERPA_JAVA_VERSIONED_JAR = Pattern.compile("sherpa-onnx-v([0-9.]+)-java(\\d+)\\.jar");
+    private static final Pattern SHERPA_JAVA_JAR_VERSION = Pattern.compile("sherpa-onnx-v([0-9.]+)\\.jar");
+    private static final Pattern SHERPA_JAVA_ANY_JAR = Pattern.compile("sherpa-onnx-v([0-9.]+)(?:-java(\\d+))?\\.jar");
+
+    @Value("${vision-mind.asr.model-dir}")
+    private String modelDirValue;
+
+    @Value("${vision-mind.asr.punctuation-model-dir}")
+    private String punctuationModelDirValue;
+
+    @Value("${vision-mind.asr.config-dir}")
+    private String configDirValue;
+
+    @Value("${vision-mind.asr.upload-dir}")
+    private String uploadDirValue;
+
+    @Value("${vision-mind.asr.hotwords-dir}")
+    private String hotwordsDirValue;
+
+    @Value("${vision-mind.asr.runtime-java-jar}")
+    private String runtimeJavaJarValue;
+
+    @Value("${vision-mind.asr.runtime-native-jar}")
+    private String runtimeNativeJarValue;
+
+    @Value("${vision-mind.asr.runtime-provider:cpu}")
+    private String provider;
+
+    @Value("${vision-mind.asr.num-threads:2}")
+    private int numThreads;
+
+    @Value("${vision-mind.asr.hotwords-score:1.5}")
+    private float hotwordsScore;
+
+    @Value("${vision-mind.asr.decoding-method:modified_beam_search}")
+    private String decodingMethod;
+
+    private Path projectRoot;
+    private Path modelDir;
+    private Path punctuationModelDir;
+    private Path configDir;
+    private Path uploadDir;
+    private Path hotwordsDir;
+    private Path runtimeJavaJar;
+    private Path runtimeNativeJar;
+
+    @PostConstruct
+    public void init() {
+        String envRoot = System.getenv("VISION_MIND_PATH");
+        projectRoot = (envRoot != null && !envRoot.isBlank())
+                ? Paths.get(envRoot).normalize()
+                : Paths.get("").toAbsolutePath().normalize();
+        modelDir = resolve(modelDirValue);
+        punctuationModelDir = resolve(punctuationModelDirValue);
+        configDir = resolve(configDirValue);
+        uploadDir = resolve(uploadDirValue);
+        hotwordsDir = resolve(hotwordsDirValue);
+        runtimeJavaJar = resolveRuntimeJavaJar();
+        runtimeNativeJar = resolveRuntimeNativeJar();
+    }
+
+    public Path resolve(String pathValue) {
+        Path path = Paths.get(pathValue);
+        if (path.isAbsolute()) {
+            return path.normalize();
+        }
+        String normalizedValue = pathValue.replace("\\", "/");
+        if (projectRoot.getFileName() != null
+                && "resource".equalsIgnoreCase(projectRoot.getFileName().toString())
+                && normalizedValue.startsWith("resource/")) {
+            return projectRoot.resolve(normalizedValue.substring("resource/".length())).normalize();
+        }
+
+        Path primary = projectRoot.resolve(path).normalize();
+        if (Files.exists(primary)) {
+            return primary;
+        }
+
+        if (normalizedValue.startsWith("resource/")) {
+            Path projectParent = projectRoot.getParent();
+            if (projectParent != null) {
+                Path fallback = projectParent.resolve(path).normalize();
+                if (Files.exists(fallback)) {
+                    return fallback;
+                }
+            }
+        }
+
+        return primary;
+    }
+
+    public Path hotwordsConfigFile() {
+        return configDir.resolve("hotwords.yaml");
+    }
+
+    public Path phraseRulesConfigFile() {
+        return configDir.resolve("phrase-rules.yaml");
+    }
+
+    public void ensureMutableDirectories() {
+        createDirectory(configDir);
+        createDirectory(uploadDir);
+        createDirectory(hotwordsDir);
+    }
+
+    private Path resolveRuntimeNativeJar() {
+        String configured = runtimeNativeJarValue == null ? "" : runtimeNativeJarValue.trim();
+        if (!configured.isEmpty() && !"auto".equalsIgnoreCase(configured)) {
+            return resolve(configured);
+        }
+
+        String version = extractSherpaVersion(runtimeJavaJar.getFileName().toString());
+        String platformTag = resolveSherpaPlatformTag();
+        String nativeJarName = String.format("sherpa-onnx-native-lib-%s-v%s.jar", platformTag, version);
+        return runtimeJavaJar.getParent().resolve(nativeJarName).normalize();
+    }
+
+    private Path resolveRuntimeJavaJar() {
+        String configured = runtimeJavaJarValue == null ? "" : runtimeJavaJarValue.trim();
+        if (!configured.isEmpty() && !"auto".equalsIgnoreCase(configured)) {
+            return resolve(configured);
+        }
+
+        Path sherpaDir = resolve("resource/lib/sherpa-onnx");
+        int currentJavaFeature = Runtime.version().feature();
+        Path best = null;
+        int bestFeature = Integer.MIN_VALUE;
+        boolean bestIsGeneric = true;
+
+        try (var stream = Files.list(sherpaDir)) {
+            for (Path candidate : stream.filter(Files::isRegularFile).toList()) {
+                Matcher matcher = SHERPA_JAVA_ANY_JAR.matcher(candidate.getFileName().toString());
+                if (!matcher.matches()) {
+                    continue;
+                }
+                String featureGroup = matcher.group(2);
+                boolean genericJar = featureGroup == null || featureGroup.isBlank();
+                int jarFeature = genericJar ? Integer.MIN_VALUE : Integer.parseInt(featureGroup);
+                if (!genericJar && jarFeature > currentJavaFeature) {
+                    continue;
+                }
+
+                if (best == null) {
+                    best = candidate;
+                    bestFeature = jarFeature;
+                    bestIsGeneric = genericJar;
+                    continue;
+                }
+
+                if (bestIsGeneric && !genericJar) {
+                    best = candidate;
+                    bestFeature = jarFeature;
+                    bestIsGeneric = false;
+                    continue;
+                }
+
+                if (bestIsGeneric == genericJar && jarFeature > bestFeature) {
+                    best = candidate;
+                    bestFeature = jarFeature;
+                    bestIsGeneric = genericJar;
+                }
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("扫描 sherpa Java API jar 失败: " + sherpaDir, e);
+        }
+
+        if (best != null) {
+            return best.normalize();
+        }
+
+        throw new IllegalStateException("未找到可用的 sherpa Java API jar。请放入 sherpa-onnx-v<版本>.jar 或 sherpa-onnx-v<版本>-java<版本>.jar");
+    }
+
+    private String extractSherpaVersion(String javaJarName) {
+        Matcher versionedMatcher = SHERPA_JAVA_VERSIONED_JAR.matcher(javaJarName);
+        if (versionedMatcher.matches()) {
+            return versionedMatcher.group(1);
+        }
+        Matcher matcher = SHERPA_JAVA_JAR_VERSION.matcher(javaJarName);
+        if (!matcher.matches()) {
+            throw new IllegalStateException("无法从 sherpa Java jar 文件名解析版本: " + javaJarName);
+        }
+        return matcher.group(1);
+    }
+
+    private String resolveSherpaPlatformTag() {
+        String osName = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+        String archName = System.getProperty("os.arch", "").toLowerCase(Locale.ROOT);
+
+        if (osName.contains("win")) {
+            return "win-x64";
+        }
+        if (osName.contains("linux")) {
+            if (archName.contains("aarch64") || archName.contains("arm64")) {
+                return "linux-aarch64";
+            }
+            if (archName.contains("amd64") || archName.contains("x86_64")) {
+                return "linux-x64";
+            }
+            throw new IllegalStateException("暂不支持的 Linux 架构: " + archName);
+        }
+        if (osName.contains("mac") || osName.contains("darwin")) {
+            if (archName.contains("aarch64") || archName.contains("arm64")) {
+                return "osx-aarch64";
+            }
+            if (archName.contains("amd64") || archName.contains("x86_64")) {
+                return "osx-x64";
+            }
+            throw new IllegalStateException("暂不支持的 macOS 架构: " + archName);
+        }
+        throw new IllegalStateException("暂不支持的操作系统: " + osName);
+    }
+
+    private void createDirectory(Path path) {
+        try {
+            Files.createDirectories(path);
+        } catch (Exception e) {
+            throw new IllegalStateException("创建目录失败: " + path, e);
+        }
+    }
+}
