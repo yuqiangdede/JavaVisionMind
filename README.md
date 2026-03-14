@@ -9,12 +9,14 @@
 - [Repository Layout](#repository-layout)
 - [Environment Setup](#environment-setup)
 - [Quick Start](#quick-start)
+- [Testing](#testing)
 - [API Reference](#api-reference)
   - [vision-mind-yolo-app](#vision-mind-yolo-app-image-analysis)
   - [vision-mind-ocr-app](#vision-mind-ocr-app-optical-character-recognition)
   - [vision-mind-ffe-app](#vision-mind-ffe-app-face-feature-extraction)
   - [vision-mind-reid-app](#vision-mind-reid-app-person-re-identification)
   - [vision-mind-lpr-app](#vision-mind-lpr-app-license-plate-recognition)
+  - [vision-mind-asr-app](#vision-mind-asr-app-audio-speech-recognition)
   - [vision-mind-tbir-app](#vision-mind-tbir-app-text-based-image-retrieval)
   - [vision-mind-llm-core](#vision-mind-llm-core-language-services)
 - [Resources](#resources)
@@ -23,7 +25,7 @@
 
 ## Overview
 
-JavaVisionMind is a collection of independent Spring Boot services that cover object detection, pose estimation, face recognition, person re-identification, text-based image retrieval, and large-language-model interactions. Each capability ships as a separate module so you can deploy only what you need.
+JavaVisionMind is a collection of independent Spring Boot services that cover object detection, pose estimation, face recognition, person re-identification, text-based image retrieval, video frame sampling analysis, and large-language-model interactions. Each capability ships as a separate module so you can deploy only what you need.
 
 
 ## Repository Layout
@@ -37,6 +39,7 @@ JavaVisionMind is a collection of independent Spring Boot services that cover ob
 | `vision-mind-ffe-app` | Face feature extraction service including detection, alignment, similarity search, and index maintenance. |
 | `vision-mind-reid-app` | Person re-identification workflows backed by Lucene for vector retrieval. |
 | `vision-mind-lpr-app` | License plate detection and recognition that combines YOLO plate boxes with an ONNX LPRNet decoder plus an optional OCR fallback. |
+| `vision-mind-asr-app` | Audio speech-recognition service based on sherpa-onnx streaming Zipformer, with hotword management, phrase correction, and optional punctuation restoration. |
 | `vision-mind-tbir-app` | Text-Based Image Retrieval service built on CLIP embeddings plus Lucene vector search. |
 | `vision-mind-tbir-cn-app` | Chinese Text-Based Image Retrieval service (CN tokenizer + CLIP embeddings) backed by Lucene / memory / Elasticsearch vector storage. |
 | `vision-mind-llm-core` | Wrapper around OpenAI/Ollama style chat endpoints that powers multimodal prompts. |
@@ -45,9 +48,10 @@ JavaVisionMind is a collection of independent Spring Boot services that cover ob
 
 ## Environment Setup
 
-1. Install **JDK 17** and **Maven 3.8+**.
-2. Download the required model bundles and OpenCV native runtime. Define the `VISION_MIND_PATH` environment variable so every module can locate weights and `.dll/.so` files:
-3. The model files have been uploaded to Alibaba Cloud Drive at [https://www.alipan.com/s/ChvZFAKXUDp](https://www.alipan.com/s/ChvZFAKXUDp). Extraction code: 7i5y
+1. Install **JDK 21** and **Maven 3.8+**.
+2. Set `JAVA_HOME` to the JDK root directory rather than the `bin` directory.
+3. Download the required model bundles and OpenCV native runtime. Define the `VISION_MIND_PATH` environment variable so every module can locate weights and `.dll/.so` files:
+4. The model files have been uploaded to Alibaba Cloud Drive at [https://www.alipan.com/s/ChvZFAKXUDp](https://www.alipan.com/s/ChvZFAKXUDp). Extraction code: 7i5y
 
    ```bash
    # Windows PowerShell
@@ -67,8 +71,10 @@ JavaVisionMind is a collection of independent Spring Boot services that cover ob
            `-- libopencv_java490.so # Linux
    ```
 
-3. Verify the JVM can load `opencv_java490` for your OS (the services auto-pick `.dll` or `.so`).
-4. Download `resource.7z` from the project release page, extract it to the repository root so that model files sit alongside the modules (for example `resource/yolo/model/yolo.onnx`).
+5. Verify the JVM can load `opencv_java490` for your OS (the services auto-pick `.dll` or `.so`).
+6. Download `resource.7z` from the project release page, extract it to the repository root so that model files sit alongside the modules (for example `resource/yolo/model/yolo.onnx`).
+
+> Tip: add `-Dvision-mind.skip-opencv=true` when you only need controller/service tests and want to skip native OpenCV loading.
 
 ## Quick Start
 
@@ -78,6 +84,16 @@ JavaVisionMind is a collection of independent Spring Boot services that cover ob
 mvn clean install -DskipTests
 ```
 
+### Testing
+
+```bash
+mvn test -Dvision-mind.skip-opencv=true
+```
+
+PowerShell may require `mvn --% test -Dvision-mind.skip-opencv=true` so the JVM property is passed through unchanged.
+
+If you run tests from an IDE or a custom launcher instead of Maven Surefire, add `-Dvision-mind.test-mode=true` or `-Dvision-mind.skip-opencv=true` to keep native OpenCV loading disabled.
+
 ### Run Services
 
 - YOLO API: `mvn -pl vision-mind-yolo-app spring-boot:run`
@@ -85,11 +101,24 @@ mvn clean install -DskipTests
 - Face feature service: `mvn -pl vision-mind-ffe-app spring-boot:run`
 - Person re-identification: `mvn -pl vision-mind-reid-app spring-boot:run`
 - License plate recognition: `mvn -pl vision-mind-lpr-app spring-boot:run`
+- ASR service: `mvn -pl vision-mind-asr-app spring-boot:run`
 - Text-based image retrieval: `mvn -pl vision-mind-tbir-app spring-boot:run`
 - Chinese text-based image retrieval: `mvn -pl vision-mind-tbir-cn-app spring-boot:run`
 - LLM chat facade: `mvn -pl vision-mind-llm-core spring-boot:run`
 
-Each service uses `/api` as the context root. Default ports can be overridden in the respective `application.properties`.
+Controllers are mounted under `/api`, but each runnable module also has its own `server.servlet.context-path`. Default base URLs are:
+
+| Module | Base URL |
+| --- | --- |
+| `vision-mind-yolo-app` | `http://localhost:17001/vision-mind-yolo` |
+| `vision-mind-ffe-app` | `http://localhost:17002/vision-mind-ffe` |
+| `vision-mind-tbir-app` | `http://localhost:17003/vision-mind-tbir` |
+| `vision-mind-reid-app` | `http://localhost:17004/vision-mind-reid` |
+| `vision-mind-llm-core` | `http://localhost:17005/vision-mind-llm` |
+| `vision-mind-ocr-app` | `http://localhost:17006/vision-mind-ocr` |
+| `vision-mind-lpr-app` | `http://localhost:17007/vision-mind-lpr` |
+| `vision-mind-asr-app` | `http://localhost:17008/vision-mind-asr` |
+| `vision-mind-tbir-cn-app` | `http://localhost:17009/vision-mind-tbir-cn` |
 
 ### Vector storage toggle
 
@@ -132,12 +161,15 @@ Below tables outline the primary REST endpoints exposed by each runnable module.
 | POST | `/api/v1/img/samI` | FAST-SAM segmentation visualization. | `DetectionRequest` | `image/jpeg` bytes |
 | POST | `/api/v1/img/seg` | YOLO segmentation output with masks. | `DetectionRequestWithArea` | `HttpResult<List<SegDetection>>` |
 | POST | `/api/v1/img/segI` | Segmentation visualization. | `DetectionRequestWithArea` | `image/jpeg` bytes |
+| POST | `/api/v1/video/detect` | Sample a fixed number of frames from RTSP/HTTP/local video and return detections for analyzed frames only. | `VideoInput` (`rtspUrl`, `frameNum?`, `frameInterval?`, `conf?`, `types?`, `detectionFrames?`, `blockingFrames?`) | `HttpResult<List<VideoFrameDetectionResult>>` |
 | POST | `/api/v1/yoloe/detectText` | YOLOE fixed-class detection (`yoloe-26s-seg.onnx`). | `TextPromptRequestWithArea` (`imgUrl`, `threshold?`, `detectionFrames?`, `blockingFrames?`) | `HttpResult<List<Box>>` |
 | POST | `/api/v1/yoloe/detectTextI` | YOLOE fixed-class detection visualization. | `TextPromptRequestWithArea` | `image/jpeg` bytes |
 | POST | `/api/v1/yoloe/detectFree` | YOLOE prompt-free segmentation (`yoloe-26s-seg-pf.onnx`). | `DetectionRequest` (`imgUrl`, `threshold?`) | `HttpResult<List<SegDetection>>` |
 | POST | `/api/v1/yoloe/detectFreeI` | YOLOE prompt-free segmentation visualization. | `DetectionRequest` | `image/jpeg` bytes |
 
 > **Note**: `detectText/detectTextI` cannot expand classes at request time. Class names must be fixed when exporting the ONNX model. Re-export the model to change classes.
+>
+> `video/detect` uses `frame.interval=5` from `yolo-core.properties` when `frameInterval` is omitted.
 
 ```python
 from ultralytics import YOLOE
@@ -196,6 +228,42 @@ Default base path: `http://localhost:17007/vision-mind-lpr`. `PlateRecognitionRe
 | POST | `/api/v1/lprOcr` | Use PaddleOCR text within each detected plate instead of the LPRNet decoder. | `DetectionRequestWithArea` | `HttpResult<List<PlateRecognitionResult>>` |
 | POST | `/api/v1/lprOcrI` | OCR-based recognition with visualization. | `DetectionRequestWithArea` | `image/jpeg` bytes |
 
+### vision-mind-asr-app (Audio Speech Recognition)
+
+Default base path: `http://localhost:17008/vision-mind-asr`. The module accepts uploaded audio files, decodes them to 16 kHz mono PCM, runs sherpa-onnx ASR, applies local phrase rules, and can optionally restore punctuation.
+
+- ASR model: `resource/asr/model/sherpa-onnx-streaming-zipformer-zh-fp16-2025-06-30`
+- Punctuation model: `resource/asr/model/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8`
+- sherpa Java runtime: place `sherpa-onnx-v*.jar` plus the current-platform native jar under `resource/lib/sherpa-onnx/`
+- Config directory: `resource/asr/config`; `hotwords.yaml` and `phrase-rules.yaml` are created lazily on first save
+- Page entry: `GET /` -> `http://localhost:17008/vision-mind-asr/`
+
+| Method | Path | Description | Request | Response |
+| --- | --- | --- | --- | --- |
+| GET | `/api/v1/asr/health` | Check whether the ASR and punctuation models are ready. | None | `HttpResult<AsrHealthResponse>` |
+| GET | `/api/v1/asr/hotwords` | Read the persisted global hotword list. Missing config files return an empty list. | None | `HttpResult<HotwordConfigResponse>` |
+| POST | `/api/v1/asr/hotwords` | Replace the global hotword list and persist it to YAML. | JSON `{ "baseTerms": ["term1", "term2"] }` | `HttpResult<HotwordConfigResponse>` |
+| GET | `/api/v1/asr/phrase-rules` | Read phrase-correction rules. Missing config files return an empty rule set. | None | `HttpResult<PhraseRuleConfigResponse>` |
+| POST | `/api/v1/asr/phrase-rules` | Replace phrase-correction rules. Each line must follow `wrong1, wrong2 => correct`. | JSON `{ "lines": ["误词1, 误词2 => 正确词"] }` | `HttpResult<PhraseRuleConfigResponse>` |
+| POST | `/api/v1/asr/transcribe` | Upload one audio file and run ASR. | `multipart/form-data`: `file` required, `enablePunctuation` optional boolean | `HttpResult<AsrTranscribeResponse>` |
+
+`AsrTranscribeResponse` fields:
+
+- `rawText`: raw ASR text without punctuation
+- `textAfterPhrase`: text after phrase-rule correction, and after punctuation restoration when enabled
+- `appliedRules`: list of matched correction rules
+- `audioInfo`: decoded audio metadata such as sample rate, channels, duration, and sample count
+- `hotwords`: active global hotwords used for this request
+- `punctuationEnabled`: whether punctuation restoration was enabled for this request
+
+Example request:
+
+```bash
+curl -X POST "http://localhost:17008/vision-mind-asr/api/v1/asr/transcribe" \
+  -F "file=@sample.mp3" \
+  -F "enablePunctuation=true"
+```
+
 ### vision-mind-tbir-app (Text-Based Image Retrieval)
 
 | Method | Path | Description | Request Body | Response |
@@ -225,13 +293,13 @@ Default base path: `http://localhost:17007/vision-mind-lpr`. `PlateRecognitionRe
 ## Resources
 
 - `JavaVisionMind.postman_collection.json` (repository root) provides ready-to-run Postman/Apifox requests for every endpoint.
-- Model configuration lives under each module鈥檚 `src/main/resources/application*.properties` for per-service tuning.
+- Model configuration lives under each module's `src/main/resources/application*.properties` for per-service tuning.
 
 ## Roadmap
 
 - LLaMA deployment support with streaming responses.
 - Alternative in-memory vector backends alongside Lucene.
-- YOLO video-stream processing pipeline resurrection in `vision-mind-yolo-core`.
+- Expand the current synchronous video sampling endpoint into async streaming, tracking, and batch indexing workflows.
 
 
 
@@ -287,6 +355,12 @@ Default base path: `http://localhost:17007/vision-mind-lpr`. `PlateRecognitionRe
 #### /api/v1/img/segI
 1. Controller forwards to the service (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:238).
 2. segAreaI draws segmentation polygons on the original image and returns them (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:299).
+
+#### /api/v1/video/detect
+1. Controller validates `rtspUrl` and wraps synchronous results into `HttpResult` (vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/VideoAnalysisController.java).
+2. `VideoAnalysisService.detect` resolves `frameNum` and `frameInterval`, opens the video source, and iterates through frames up to the requested limit (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/VideoAnalysisService.java).
+3. Only sampled frames are analyzed, and each sampled frame reuses `ImgAnalysisService.detectMat` so include/exclude polygon filtering stays consistent with image detection (vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java).
+4. Each analyzed frame returns `frameIndex`, `timestampMs`, `costMs`, and the filtered detection boxes.
 
 ### vision-mind-ocr-app
 

@@ -1,5 +1,6 @@
 package com.yuqiangdede.ffe.core.base;
 
+import com.yuqiangdede.common.util.RuntimeEnvironment;
 import com.yuqiangdede.ffe.config.Constant;
 import lombok.extern.slf4j.Slf4j;
 
@@ -7,8 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class OpenCVLoader {
 
     static {
-        boolean skipProperty = Boolean.parseBoolean(System.getProperty("vision-mind.skip-opencv", "false"));
-        boolean testEnv = isTestEnvironment();
+        boolean skipProperty = RuntimeEnvironment.isOpenCvSkipEnabled();
+        boolean testEnv = RuntimeEnvironment.isTestEnvironment();
         if (skipProperty || testEnv) {
             log.debug("Skipping OpenCV native load. skipProperty={}, testEnv={}", skipProperty, testEnv);
         } else {
@@ -23,12 +24,4 @@ public abstract class OpenCVLoader {
         }
     }
 
-    private static boolean isTestEnvironment() {
-        try {
-            Class.forName("org.junit.jupiter.api.Test");
-            return true;
-        } catch (ClassNotFoundException ex) {
-            return false;
-        }
-    }
 }

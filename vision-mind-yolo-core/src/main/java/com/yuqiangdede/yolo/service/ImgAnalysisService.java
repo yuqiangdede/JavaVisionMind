@@ -10,6 +10,7 @@ import com.yuqiangdede.common.dto.output.Box;
 import com.yuqiangdede.common.dto.output.BoxWithKeypoints;
 import com.yuqiangdede.common.util.GeometryUtils;
 import com.yuqiangdede.common.util.ImageUtil;
+import com.yuqiangdede.common.util.RuntimeEnvironment;
 
 
 import com.yuqiangdede.yolo.dto.output.ObbDetection;
@@ -44,8 +45,8 @@ import java.util.stream.Collectors;
 public class ImgAnalysisService {
 
     static {
-        boolean skipProperty = Boolean.parseBoolean(System.getProperty("vision-mind.skip-opencv", "false"));
-        boolean testEnv = isTestEnvironment();
+        boolean skipProperty = RuntimeEnvironment.isOpenCvSkipEnabled();
+        boolean testEnv = RuntimeEnvironment.isTestEnvironment();
         boolean skipLoad = skipProperty || testEnv;
         log.info("OpenCV native load check - skipProperty={}, testEnv={}", skipProperty, testEnv);
         if (skipLoad) {
@@ -66,16 +67,6 @@ public class ImgAnalysisService {
         }
     }
 
-    private static boolean isTestEnvironment() {
-        try {
-            Class.forName("org.junit.jupiter.api.Test");
-            return true;
-        } catch (ClassNotFoundException ex) {
-            return false;
-        }
-    }
-
-
     public List<Box> detectArea(DetectionRequestWithArea imgAreaInput) throws IOException, OrtException {
         Mat mat = ImageUtil.urlToMat(imgAreaInput.getImgUrl());
 
@@ -93,6 +84,21 @@ public class ImgAnalysisService {
         ImageUtil.drawImageWithFrames(image, imgAreaInput.getDetectionFrames(), Color.BLUE);
         ImageUtil.drawImageWithFrames(image, imgAreaInput.getBlockingFrames(), Color.DARK_GRAY);
         return image;
+    }
+
+    /**
+     * 对已解码的视频帧进行目标检测（支持区域过滤）。
+     */
+    public List<Box> detectMat(Mat mat,
+                               Float conf,
+                               String types,
+                               List<ArrayList<Point>> detectionFrames,
+                               List<ArrayList<Point>> blockingFrames) {
+        if (mat == null || mat.empty()) {
+            throw new IllegalArgumentException("video frame is null or empty");
+        }
+        List<Box> boxes = analysis(mat, conf, types);
+        return filterByFrames(boxes, detectionFrames, blockingFrames, GeometryUtils::calcOverlap);
     }
 
     public List<Box> detectTextArea(TextPromptRequestWithArea imgAreaInput) throws IOException, OrtException {

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.yuqiangdede.common.dto.Point;
 import com.yuqiangdede.common.util.ImageUtil;
 import com.yuqiangdede.common.util.JsonUtils;
+import com.yuqiangdede.common.util.RuntimeEnvironment;
 import com.yuqiangdede.ocr.config.Constant;
 import com.yuqiangdede.ocr.dto.input.OcrDetectionRequest;
 import com.yuqiangdede.ocr.dto.output.OcrDetectionResult;
@@ -44,8 +45,8 @@ public class OcrService {
 
     static {
         // Load OpenCV's native binaries unless tests or configuration skip it.
-        boolean skipProperty = Boolean.parseBoolean(System.getProperty("vision-mind.skip-opencv", "false"));
-        boolean testEnv = isTestEnvironment();
+        boolean skipProperty = RuntimeEnvironment.isOpenCvSkipEnabled();
+        boolean testEnv = RuntimeEnvironment.isTestEnvironment();
         boolean skipLoad = skipProperty || testEnv;
         log.info("OpenCV native load check - skipProperty={}, testEnv={}", skipProperty, testEnv);
         if (skipLoad) {
@@ -340,15 +341,6 @@ public class OcrService {
             closeable.close();
         } catch (Exception e) {
             log.warn("Failed to close OCR resource", e);
-        }
-    }
-
-    private static boolean isTestEnvironment() {
-        try {
-            Class.forName("org.junit.jupiter.api.Test");
-            return true;
-        } catch (ClassNotFoundException ex) {
-            return false;
         }
     }
 

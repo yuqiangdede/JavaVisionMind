@@ -1,5 +1,6 @@
 package com.yuqiangdede.ocr.config;
 
+import com.yuqiangdede.common.util.RuntimeEnvironment;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -28,9 +29,9 @@ public final class Constant {
             loadProperties(properties, "ocr-core.properties", true);
 
             String envPath = System.getenv("VISION_MIND_PATH");
-            boolean skipNativeConfig = Boolean.parseBoolean(System.getProperty("vision-mind.skip-opencv", "false"));
+            boolean skipNativeConfig = RuntimeEnvironment.shouldSkipNativeLoad();
             if (envPath == null || envPath.isBlank()) {
-                if (!skipNativeConfig && !isTestEnvironment()) {
+                if (!skipNativeConfig) {
                     log.warn("VISION_MIND_PATH is not defined. Native resources will be resolved relative to the current directory.");
                 }
                 envPath = "";
@@ -67,12 +68,4 @@ public final class Constant {
         }
     }
 
-    private static boolean isTestEnvironment() {
-        try {
-            Class.forName("org.junit.jupiter.api.Test");
-            return true;
-        } catch (ClassNotFoundException ex) {
-            return false;
-        }
-    }
 }

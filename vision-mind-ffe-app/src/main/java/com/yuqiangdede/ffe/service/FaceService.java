@@ -1,5 +1,6 @@
 package com.yuqiangdede.ffe.service;
 
+import com.yuqiangdede.common.util.RuntimeEnvironment;
 import com.yuqiangdede.common.util.ImageUtil;
 import com.yuqiangdede.common.util.VectorUtil;
 import com.yuqiangdede.common.vector.ElasticsearchConfig;
@@ -60,17 +61,7 @@ public class FaceService {
     }
 
     private static boolean shouldSkipNativeLoad() {
-        boolean skipProperty = Boolean.parseBoolean(System.getProperty("vision-mind.skip-opencv", "false"));
-        return skipProperty || isTestEnvironment();
-    }
-
-    private static boolean isTestEnvironment() {
-        try {
-            Class.forName("org.junit.jupiter.api.Test");
-            return true;
-        } catch (ClassNotFoundException ex) {
-            return false;
-        }
+        return RuntimeEnvironment.shouldSkipNativeLoad();
     }
 
 

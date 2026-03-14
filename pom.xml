@@ -35,6 +35,7 @@
     <modules>
         <module>vision-mind-test-sth</module>
         <module>vision-mind-common</module>
+        <module>vision-mind-asr-app</module> <!-- 17008-->
         <module>vision-mind-yolo-app</module> <!-- 17001-->
         <module>vision-mind-yolo-core</module>
         <module>vision-mind-ffe-app</module> <!-- 17002-->
@@ -127,6 +128,16 @@
                             <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-XX:+EnableDynamicAgentLoading</argLine>
+                    <systemPropertyVariables>
+                        <vision-mind.test-mode>true</vision-mind.test-mode>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>
