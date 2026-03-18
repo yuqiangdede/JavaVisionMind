@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: tts
+
+server:
+  port: 17010
+  servlet:
+    context-path: /vision-mind-tts
+
+vision-mind:
+  resource:
+    root: ./resource
+    fallback-env: VISION_MIND_PATH
+    validate-on-startup: true
+    manifest: resource/manifest.json
+  native-load:
+    skip-open-cv: ${vision-mind.skip-opencv:false}
+  runtime:
+    profile: default
+  vector-store:
+    mode: memory
+
+tts:
+  model-root: resource/tts/model
+  default-model: sherpa-onnx-vits-zh-ll
+  runtime-java-jar: auto
+  runtime-native-jar: auto
+  runtime-provider: cpu
+  num-threads: 2
+  default-speaker-id: 0
+  max-input-length: 300
+  default-speed: 1.0
+  silence-scale: 0.2
+  vits-length-scale: 1.0
+  vits-noise-scale: 0.667
+  vits-noise-scale-w: 0.8

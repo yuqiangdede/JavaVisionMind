@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: tbir-cn
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: 17009
+  address: 0.0.0.0
+  servlet:
+    context-path: /vision-mind-tbir-cn
+
+vision-mind:
+  resource:
+    root: ./resource
+    fallback-env: VISION_MIND_PATH
+    validate-on-startup: true
+    manifest: resource/manifest.json
+  native-load:
+    skip-open-cv: ${vision-mind.skip-opencv:false}
+  runtime:
+    profile: default
+  vector-store:
+    mode: ${vector.store.mode:memory}
+
+component:
+  path: ..
+img:
+  onnx: ./tbir/model-cn/metaclip2-mt5-m16-img-512.onnx
+text:
+  onnx: ./tbir/model-cn/metaclip2-mt5-m16-text-512.onnx
+clip:
+  tokenizer: ./tbir/clip-tokenizer-cn
+vision:
+  image:
+    size: 224
+    input: pixel_values
+    mean: 0.48145466,0.4578275,0.40821073
+    std: 0.26862954,0.26130258,0.27577711
+  text:
+    input-ids: input_ids
+    attention-mask: attention_mask
+open:
+  detect: true
+detect:
+  types: sam
+filter:
+  box:
+    size: 50,300
+augment:
+  types: original,flipH,rotate15,rotate-15,blur,bright,contrast
+key:
+  expand:
+    num: 5

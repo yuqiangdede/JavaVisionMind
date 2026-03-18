@@ -14,14 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping({"/api", "/api/v1/llm"})
 @Slf4j
 @RequiredArgsConstructor
 public class ChatController {
 
     private final LLMService lLMService;
 
-    @PostMapping("/translate")
+    @PostMapping({"/translate", "/translate/text"})
     public HttpResult<String> translate(@RequestBody Message msg) {
         try {
             String chatResponse = lLMService.chat("You are a translator who treats words like gold: accurate, concise, natural.\n" +
@@ -39,7 +39,7 @@ public class ChatController {
         }
     }
 
-    @PostMapping("/chat")
+    @PostMapping({"/chat", "/chat/text"})
     public HttpResult<String> chat(@RequestBody Message msg) {
         try {
             String chatResponse = lLMService.chat(msg.getMessage());
@@ -51,7 +51,7 @@ public class ChatController {
         }
     }
 
-    @PostMapping("/chatWithImg")
+    @PostMapping({"/chatWithImg", "/chat/image"})
     public HttpResult<String> chatWithImg(@RequestBody Message msg) {
         try {
             String chatResponse = lLMService.chatWithImg(msg.getMessage(), msg.getImageUrl(), msg.getSystem());

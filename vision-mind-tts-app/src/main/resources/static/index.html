@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vision Mind TTS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="page">
+    <section class="hero panel">
+        <div class="eyebrow">Vision Mind TTS</div>
+        <h1>中文多音色离线语音合成</h1>
+        <p>固定使用 `sherpa-onnx-vits-zh-ll`，支持音色切换、语速调节和短文本播报。</p>
+    </section>
+
+    <section class="panel">
+        <div class="field">
+            <span>文本</span>
+            <textarea id="text" rows="6">今天我们把 TTS 服务合并进 JavaVisionMind。</textarea>
+        </div>
+
+        <div class="grid compact">
+            <label class="field">
+                <span>音色</span>
+                <select id="voice"></select>
+            </label>
+            <label class="field">
+                <span>语速</span>
+                <input id="speed" type="number" min="0.1" max="3" step="0.1" value="1.0">
+            </label>
+        </div>
+
+        <div class="actions">
+            <button id="synthesize" type="button">合成语音</button>
+            <button id="refresh" type="button" class="secondary">刷新音色</button>
+        </div>
+
+        <p id="status" class="status">正在加载...</p>
+    </section>
+
+    <section class="panel result">
+        <h2>试听</h2>
+        <audio id="audio" controls></audio>
+    </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

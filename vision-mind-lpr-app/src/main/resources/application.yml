@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: lpr
+
+server:
+  port: 17007
+  servlet:
+    context-path: /vision-mind-lpr
+
+vision-mind:
+  resource:
+    root: ./resource
+    fallback-env: VISION_MIND_PATH
+    validate-on-startup: true
+    manifest: resource/manifest.json
+  native-load:
+    skip-open-cv: ${vision-mind.skip-opencv:false}
+  runtime:
+    profile: default
+  vector-store:
+    mode: memory
+  lpr:
+    model:
+      path: /lpr/model/lprnet.onnx
+      input-width: 94
+      input-height: 24
+
+lpr:
+  model:
+    path: ${vision-mind.lpr.model.path}
+    input-width: ${vision-mind.lpr.model.input-width}
+    input-height: ${vision-mind.lpr.model.input-height}

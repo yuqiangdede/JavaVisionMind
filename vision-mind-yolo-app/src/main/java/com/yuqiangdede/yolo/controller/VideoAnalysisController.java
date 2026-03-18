@@ -25,7 +25,7 @@ public class VideoAnalysisController {
     /**
      * 视频检测（最小可用实现）：按配置帧间隔分析固定数量帧并同步返回结果。
      */
-    @PostMapping(value = "/v1/video/detect", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/video/detect", "/v1/vision/video/detect"}, produces = "application/json", consumes = "application/json")
     public HttpResult<List<VideoFrameDetectionResult>> videoPredictor(@RequestBody VideoInput videoInput) {
         long startTime = System.currentTimeMillis();
         if (videoInput == null || !StringUtils.hasText(videoInput.getRtspUrl())) {

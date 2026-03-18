@@ -16,11 +16,12 @@ import java.awt.image.ComponentSampleModel;
 import java.awt.image.DataBufferByte;
 import java.awt.image.Raster;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -50,23 +51,47 @@ public class ImageUtil {
      */
     public static BufferedImage urlToImage(String urlStr) throws IOException {
         try {
-            URL url = URI.create(urlStr).toURL();
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-
-            String contentType = connection.getHeaderField("Content-Type");
-            if (contentType == null) {
-                throw new IOException(buildImgUrlError(urlStr, "Content-Type missing"));
+            if (urlStr == null || urlStr.isBlank()) {
+                throw new IOException(buildImgUrlError(urlStr, "url is empty"));
             }
 
+            if (urlStr.startsWith("data:image/")) {
+                int commaIndex = urlStr.indexOf(',');
+                if (commaIndex < 0) {
+                    throw new IOException(buildImgUrlError(urlStr, "invalid data-uri"));
+                }
+                String payload = urlStr.substring(commaIndex + 1);
+                byte[] bytes = Base64.getDecoder().decode(payload);
+                BufferedImage bufferedImage = ImageIO.read(new java.io.ByteArrayInputStream(bytes));
+                if (bufferedImage == null) {
+                    throw new IOException(buildImgUrlError(urlStr, "unsupported base64 image payload"));
+                }
+                return bufferedImage;
+            }
+
+            if (!urlStr.startsWith("http://") && !urlStr.startsWith("https://") && !urlStr.startsWith("file:")) {
+                File localFile = new File(urlStr);
+                if (localFile.exists()) {
+                    BufferedImage bufferedImage = ImageIO.read(localFile);
+                    if (bufferedImage == null) {
+                        throw new IOException(buildImgUrlError(urlStr, "unsupported local image format"));
+                    }
+                    return bufferedImage;
+                }
+            }
+
+            URL url = URI.create(urlStr).toURL();
+            URLConnection connection = url.openConnection();
+            String contentType = connection.getContentType();
+            if (contentType == null && (urlStr.startsWith("http://") || urlStr.startsWith("https://"))) {
+                throw new IOException(buildImgUrlError(urlStr, "Content-Type missing"));
+            }
             try (InputStream in = connection.getInputStream()) {
                 BufferedImage bufferedImage = ImageIO.read(in);
                 if (bufferedImage == null) {
                     throw new IOException(buildImgUrlError(urlStr, "Unsupported image format or corrupted image data"));
                 }
                 return bufferedImage;
-            } finally {
-                connection.disconnect();
             }
         } catch (IOException e) {
             throw new IOException(buildImgUrlError(urlStr, e.getMessage()), e);

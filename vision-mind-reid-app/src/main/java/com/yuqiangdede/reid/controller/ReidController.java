@@ -20,7 +20,7 @@ import java.util.Map;
 public class ReidController {
     private final ReidService reidService;
 
-    @PostMapping(value = "/v1/reid/feature/single", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/reid/feature/single", "/v1/reid/infer/single"}, produces = "application/json", consumes = "application/json")
     public HttpResult<Feature> featureSingle(@RequestBody Map<String, String> input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.get("imgUrl"))) {
@@ -36,7 +36,7 @@ public class ReidController {
         }
     }
 
-    @PostMapping(value = "/v1/reid/feature/calculateSimilarity", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/reid/feature/calculateSimilarity", "/v1/reid/search/similarity"}, produces = "application/json", consumes = "application/json")
     public HttpResult<Float> calculateSimilarity(@RequestBody Map<String, String> input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.get("imgUrl1")) || (ObjectUtils.isEmpty(input.get("imgUrl2")))) {
@@ -53,7 +53,7 @@ public class ReidController {
         }
     }
 
-    @PostMapping(value = "/v1/reid/feature/multi", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/reid/feature/multi", "/v1/reid/infer/multi"}, produces = "application/json", consumes = "application/json")
     public HttpResult<List<Feature>> featureMulti(@RequestBody Map<String, String> input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.get("imgUrl"))) {
@@ -69,7 +69,7 @@ public class ReidController {
         }
     }
 
-    @PostMapping(value = "/v1/reid/store/single", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/reid/store/single", "/v1/reid/store"}, produces = "application/json", consumes = "application/json")
     public HttpResult<Feature> storeSingle(@RequestBody Map<String, String> input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.get("imgUrl"))) {
@@ -103,7 +103,7 @@ public class ReidController {
 //    }
 
 
-    @PostMapping(value = "/v1/reid/search", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/reid/search", "/v1/reid/search/image"}, produces = "application/json", consumes = "application/json")
     public HttpResult<List<Human>> search(@RequestBody Map<String, String> input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.get("imgUrl"))) {
@@ -122,7 +122,7 @@ public class ReidController {
     /**
      * 单封面聚类
      */
-    @PostMapping(value = "/v1/reid/searchOrStore", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/reid/searchOrStore", "/v1/reid/index/search-or-store"}, produces = "application/json", consumes = "application/json")
     public HttpResult<Human> searchOrStore(@RequestBody Map<String, String> input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.get("imgUrl"))) {
@@ -139,7 +139,7 @@ public class ReidController {
     }
 
     // associate-and-store 多封面
-    @PostMapping(value = "/v1/reid/associateStore", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/reid/associateStore", "/v1/reid/index/associate-store"}, produces = "application/json", consumes = "application/json")
     public HttpResult<Human> associateStore(@RequestBody Map<String, String> input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.get("imgUrl"))) {

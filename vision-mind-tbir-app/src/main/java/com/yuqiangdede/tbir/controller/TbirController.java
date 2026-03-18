@@ -43,7 +43,7 @@ public class TbirController {
 
     private final TbirService tbirService;
 
-    @PostMapping(value = "/v1/tbir/saveImg", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/tbir/saveImg", "/v1/tbir/store"}, produces = "application/json", consumes = "application/json")
     public HttpResult<ImageSaveResult> saveImg(@RequestBody SaveImageRequest input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getImgUrl())) {
@@ -63,7 +63,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/deleteImg", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/tbir/deleteImg", "/v1/tbir/index/delete"}, produces = "application/json", consumes = "application/json")
     public HttpResult<Void> deleteImg(@RequestBody DeleteImageRequest input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getImgId())) {
@@ -79,7 +79,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/searchImg", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/tbir/searchImg", "/v1/tbir/search/by-id"}, produces = "application/json", consumes = "application/json")
     public HttpResult<SearchResult> searchImg(@RequestBody SearchImageRequest input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getImgId())) {
@@ -95,7 +95,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/searchImgI", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/tbir/searchImgI", "/v1/tbir/preview/by-id"}, produces = "application/json", consumes = "application/json")
     public Object searchImgI(@RequestBody SearchImageRequest input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getImgId())) {
@@ -121,7 +121,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/search", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/tbir/search", "/v1/tbir/search/text"}, produces = "application/json", consumes = "application/json")
     public HttpResult<SearchResult> search(@RequestBody SearchRequest input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getQuery())) {
@@ -140,7 +140,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/searchI", consumes = "application/json", produces = "image/jpeg")
+    @PostMapping(value = {"/v1/tbir/searchI", "/v1/tbir/preview/text"}, consumes = "application/json", produces = "image/jpeg")
     public Object searchI(@RequestBody SearchRequest input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getQuery())) {
@@ -167,7 +167,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/imgSearch", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = {"/v1/tbir/imgSearch", "/v1/tbir/search/image"}, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public HttpResult<SearchResult> imgSearch(@RequestParam("image") MultipartFile imageFile, @RequestParam("topN") Integer topN) {
         try (InputStream in = imageFile.getInputStream()) {
             BufferedImage bufferedImage = ImageIO.read(in);

@@ -1,13 +1,13 @@
 package com.yuqiangdede.asr.service;
 
+import com.yuqiangdede.asr.config.AsrRuntimeProperties;
+import com.yuqiangdede.platform.common.resource.ResourcePathResolver;
 import jakarta.annotation.PostConstruct;
 import lombok.Getter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,38 +20,8 @@ public class AsrPathResolver {
     private static final Pattern SHERPA_JAVA_JAR_VERSION = Pattern.compile("sherpa-onnx-v([0-9.]+)\\.jar");
     private static final Pattern SHERPA_JAVA_ANY_JAR = Pattern.compile("sherpa-onnx-v([0-9.]+)(?:-java(\\d+))?\\.jar");
 
-    @Value("${vision-mind.asr.model-dir}")
-    private String modelDirValue;
-
-    @Value("${vision-mind.asr.punctuation-model-dir}")
-    private String punctuationModelDirValue;
-
-    @Value("${vision-mind.asr.config-dir}")
-    private String configDirValue;
-
-    @Value("${vision-mind.asr.upload-dir}")
-    private String uploadDirValue;
-
-    @Value("${vision-mind.asr.hotwords-dir}")
-    private String hotwordsDirValue;
-
-    @Value("${vision-mind.asr.runtime-java-jar}")
-    private String runtimeJavaJarValue;
-
-    @Value("${vision-mind.asr.runtime-native-jar}")
-    private String runtimeNativeJarValue;
-
-    @Value("${vision-mind.asr.runtime-provider:cpu}")
-    private String provider;
-
-    @Value("${vision-mind.asr.num-threads:2}")
-    private int numThreads;
-
-    @Value("${vision-mind.asr.hotwords-score:1.5}")
-    private float hotwordsScore;
-
-    @Value("${vision-mind.asr.decoding-method:modified_beam_search}")
-    private String decodingMethod;
+    private final AsrRuntimeProperties properties;
+    private final ResourcePathResolver resourcePathResolver;
 
     private Path projectRoot;
     private Path modelDir;
@@ -62,49 +32,25 @@ public class AsrPathResolver {
     private Path runtimeJavaJar;
     private Path runtimeNativeJar;
 
+    public AsrPathResolver(AsrRuntimeProperties properties, ResourcePathResolver resourcePathResolver) {
+        this.properties = properties;
+        this.resourcePathResolver = resourcePathResolver;
+    }
+
     @PostConstruct
     public void init() {
-        String envRoot = System.getenv("VISION_MIND_PATH");
-        projectRoot = (envRoot != null && !envRoot.isBlank())
-                ? Paths.get(envRoot).normalize()
-                : Paths.get("").toAbsolutePath().normalize();
-        modelDir = resolve(modelDirValue);
-        punctuationModelDir = resolve(punctuationModelDirValue);
-        configDir = resolve(configDirValue);
-        uploadDir = resolve(uploadDirValue);
-        hotwordsDir = resolve(hotwordsDirValue);
+        projectRoot = resourcePathResolver.resourceRoot();
+        modelDir = resolve(properties.getModelDir());
+        punctuationModelDir = resolve(properties.getPunctuationModelDir());
+        configDir = resolve(properties.getConfigDir());
+        uploadDir = resolve(properties.getUploadDir());
+        hotwordsDir = resolve(properties.getHotwordsDir());
         runtimeJavaJar = resolveRuntimeJavaJar();
         runtimeNativeJar = resolveRuntimeNativeJar();
     }
 
     public Path resolve(String pathValue) {
-        Path path = Paths.get(pathValue);
-        if (path.isAbsolute()) {
-            return path.normalize();
-        }
-        String normalizedValue = pathValue.replace("\\", "/");
-        if (projectRoot.getFileName() != null
-                && "resource".equalsIgnoreCase(projectRoot.getFileName().toString())
-                && normalizedValue.startsWith("resource/")) {
-            return projectRoot.resolve(normalizedValue.substring("resource/".length())).normalize();
-        }
-
-        Path primary = projectRoot.resolve(path).normalize();
-        if (Files.exists(primary)) {
-            return primary;
-        }
-
-        if (normalizedValue.startsWith("resource/")) {
-            Path projectParent = projectRoot.getParent();
-            if (projectParent != null) {
-                Path fallback = projectParent.resolve(path).normalize();
-                if (Files.exists(fallback)) {
-                    return fallback;
-                }
-            }
-        }
-
-        return primary;
+        return resourcePathResolver.resolve(pathValue);
     }
 
     public Path hotwordsConfigFile() {
@@ -121,12 +67,27 @@ public class AsrPathResolver {
         createDirectory(hotwordsDir);
     }
 
+    public String getProvider() {
+        return properties.getRuntimeProvider();
+    }
+
+    public int getNumThreads() {
+        return properties.getNumThreads();
+    }
+
+    public float getHotwordsScore() {
+        return properties.getHotwordsScore();
+    }
+
+    public String getDecodingMethod() {
+        return properties.getDecodingMethod();
+    }
+
     private Path resolveRuntimeNativeJar() {
-        String configured = runtimeNativeJarValue == null ? "" : runtimeNativeJarValue.trim();
+        String configured = valueOrEmpty(properties.getRuntimeNativeJar());
         if (!configured.isEmpty() && !"auto".equalsIgnoreCase(configured)) {
             return resolve(configured);
         }
-
         String version = extractSherpaVersion(runtimeJavaJar.getFileName().toString());
         String platformTag = resolveSherpaPlatformTag();
         String nativeJarName = String.format("sherpa-onnx-native-lib-%s-v%s.jar", platformTag, version);
@@ -134,7 +95,7 @@ public class AsrPathResolver {
     }
 
     private Path resolveRuntimeJavaJar() {
-        String configured = runtimeJavaJarValue == null ? "" : runtimeJavaJarValue.trim();
+        String configured = valueOrEmpty(properties.getRuntimeJavaJar());
         if (!configured.isEmpty() && !"auto".equalsIgnoreCase(configured)) {
             return resolve(configured);
         }
@@ -157,21 +118,18 @@ public class AsrPathResolver {
                 if (!genericJar && jarFeature > currentJavaFeature) {
                     continue;
                 }
-
                 if (best == null) {
                     best = candidate;
                     bestFeature = jarFeature;
                     bestIsGeneric = genericJar;
                     continue;
                 }
-
                 if (bestIsGeneric && !genericJar) {
                     best = candidate;
                     bestFeature = jarFeature;
                     bestIsGeneric = false;
                     continue;
                 }
-
                 if (bestIsGeneric == genericJar && jarFeature > bestFeature) {
                     best = candidate;
                     bestFeature = jarFeature;
@@ -185,7 +143,6 @@ public class AsrPathResolver {
         if (best != null) {
             return best.normalize();
         }
-
         throw new IllegalStateException("未找到可用的 sherpa Java API jar。请放入 sherpa-onnx-v<版本>.jar 或 sherpa-onnx-v<版本>-java<版本>.jar");
     }
 
@@ -235,5 +192,9 @@ public class AsrPathResolver {
         } catch (Exception e) {
             throw new IllegalStateException("创建目录失败: " + path, e);
         }
+    }
+
+    private String valueOrEmpty(String value) {
+        return value == null ? "" : value.trim();
     }
 }

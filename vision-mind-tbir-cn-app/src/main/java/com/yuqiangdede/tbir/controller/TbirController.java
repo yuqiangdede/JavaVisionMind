@@ -48,7 +48,7 @@ public class TbirController {
 
     private final TbirService tbirService;
 
-    @PostMapping(value = "/v1/tbir/saveImg", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/tbir/saveImg", "/v1/tbir/store"}, produces = "application/json", consumes = "application/json")
     public HttpResult<?> saveImg(@RequestBody SaveImageRequest input) {
         long start_time = System.currentTimeMillis();
         boolean hasBatch = input != null && input.getImgUrls() != null && !input.getImgUrls().isEmpty();
@@ -75,7 +75,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/deleteImg", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/tbir/deleteImg", "/v1/tbir/index/delete"}, produces = "application/json", consumes = "application/json")
     public HttpResult<Void> deleteImg(@RequestBody DeleteImageRequest input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getImgId())) {
@@ -91,7 +91,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/searchImg", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/tbir/searchImg", "/v1/tbir/search/by-id"}, produces = "application/json", consumes = "application/json")
     public HttpResult<SearchResult> searchImg(@RequestBody SearchImageRequest input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getImgId())) {
@@ -107,7 +107,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/searchImgI", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/tbir/searchImgI", "/v1/tbir/preview/by-id"}, produces = "application/json", consumes = "application/json")
     public Object searchImgI(@RequestBody SearchImageRequest input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getImgId())) {
@@ -133,7 +133,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/search", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/tbir/search", "/v1/tbir/search/text"}, produces = "application/json", consumes = "application/json")
     public HttpResult<SearchResult> search(@RequestBody SearchRequest input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getQuery())) {
@@ -152,7 +152,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/searchI", consumes = "application/json", produces = {MediaType.IMAGE_JPEG_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    @PostMapping(value = {"/v1/tbir/searchI", "/v1/tbir/preview/text"}, consumes = "application/json", produces = {MediaType.IMAGE_JPEG_VALUE, MediaType.APPLICATION_JSON_VALUE})
     public Object searchI(@RequestBody SearchRequest input) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(input.getQuery())) {
@@ -183,7 +183,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/imgSearch", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = {"/v1/tbir/imgSearch", "/v1/tbir/search/image"}, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public HttpResult<SearchResult> imgSearch(@RequestParam("image") MultipartFile imageFile, @RequestParam("topN") Integer topN) {
         try (InputStream in = imageFile.getInputStream()) {
             BufferedImage bufferedImage = ImageIO.read(in);
@@ -198,7 +198,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/imgSearch", consumes = "application/json", produces = "application/json")
+    @PostMapping(value = {"/v1/tbir/imgSearch", "/v1/tbir/search/image-url"}, consumes = "application/json", produces = "application/json")
     public HttpResult<SearchResult> imgSearchByUrl(@RequestBody ImgSearchUrlRequest input) {
         if (input == null || ObjectUtils.isEmpty(input.getImgUrl())) {
             return new HttpResult<>(false, "imgUrl is null or empty");
@@ -217,7 +217,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/similarity/text-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = "application/json")
+    @PostMapping(value = {"/v1/tbir/similarity/text-image", "/v1/tbir/search/similarity/text-image"}, consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = "application/json")
     public HttpResult<SimilarityResult> similarityTextImage(@RequestParam("text") String text,
                                                            @RequestParam("image") MultipartFile imageFile) {
         try (InputStream in = imageFile.getInputStream()) {
@@ -233,7 +233,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/similarity/text-image", consumes = "application/json", produces = "application/json")
+    @PostMapping(value = {"/v1/tbir/similarity/text-image", "/v1/tbir/search/similarity/text-image-url"}, consumes = "application/json", produces = "application/json")
     public HttpResult<SimilarityResult> similarityTextImageByUrl(@RequestBody SimilarityTextImageRequest input) {
         if (input == null || ObjectUtils.isEmpty(input.getText())) {
             return new HttpResult<>(false, "text is null or empty");
@@ -254,7 +254,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/similarity/image-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = "application/json")
+    @PostMapping(value = {"/v1/tbir/similarity/image-image", "/v1/tbir/search/similarity/image-image"}, consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = "application/json")
     public HttpResult<SimilarityResult> similarityImageImage(@RequestParam("image1") MultipartFile imageFile1,
                                                             @RequestParam("image2") MultipartFile imageFile2) {
         try (InputStream in1 = imageFile1.getInputStream(); InputStream in2 = imageFile2.getInputStream()) {
@@ -271,7 +271,7 @@ public class TbirController {
         }
     }
 
-    @PostMapping(value = "/v1/tbir/similarity/image-image", consumes = "application/json", produces = "application/json")
+    @PostMapping(value = {"/v1/tbir/similarity/image-image", "/v1/tbir/search/similarity/image-image-url"}, consumes = "application/json", produces = "application/json")
     public HttpResult<SimilarityResult> similarityImageImageByUrl(@RequestBody SimilarityImageImageRequest input) {
         if (input == null || ObjectUtils.isEmpty(input.getImgUrl1()) || ObjectUtils.isEmpty(input.getImgUrl2())) {
             return new HttpResult<>(false, "imgUrl1/imgUrl2 is null or empty");

@@ -30,7 +30,7 @@ public class OcrController {
     /**
      * Executes the base OCR detection pipeline and returns structured text regions.
      */
-    @PostMapping(value = "/detect", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = {"/detect", "/infer", "/search/detect"}, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public HttpResult<List<OcrDetectionResult>> detect(@RequestBody OcrDetectionRequest request) {
         long start = System.currentTimeMillis();
         try {
@@ -49,7 +49,7 @@ public class OcrController {
     /**
      * Runs OCR detection and returns an annotated image overlay as a JPEG payload.
      */
-    @PostMapping(value = "/detectI", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.IMAGE_JPEG_VALUE)
+    @PostMapping(value = {"/detectI", "/preview", "/detect/preview"}, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.IMAGE_JPEG_VALUE)
     public Object detectImage(@RequestBody OcrDetectionRequest request) {
         long start = System.currentTimeMillis();
         try {
@@ -70,7 +70,7 @@ public class OcrController {
     /**
      * Performs OCR detection and applies semantic reconstruction for cleaner reading.
      */
-    @PostMapping(value = "/detectWithSR", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = {"/detectWithSR", "/infer/semantic"}, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public HttpResult<String> detectWithSR(@RequestBody OcrDetectionRequest request) {
         long start = System.currentTimeMillis();
         try {
@@ -89,7 +89,7 @@ public class OcrController {
     /**
      * Performs OCR detection then invokes the LLM prompt to refine the textual output.
      */
-    @PostMapping(value = "/detectWithLLM", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = {"/detectWithLLM", "/infer/llm"}, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public HttpResult<String> detectWithLLM(@RequestBody OcrDetectionRequest request) {
         long start = System.currentTimeMillis();
         try {
@@ -108,7 +108,7 @@ public class OcrController {
     /**
      * Applies LLM fine-tuning and responds with an annotated image showing refined text spans.
      */
-    @PostMapping(value = "/detectWithLLMI", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = {"/detectWithLLMI", "/preview/llm"}, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Object detectWithLLMI(@RequestBody OcrDetectionRequest request) {
         long start = System.currentTimeMillis();
         try {

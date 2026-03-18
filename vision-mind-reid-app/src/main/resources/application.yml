@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: reid
+
+server:
+  port: 17004
+  servlet:
+    context-path: /vision-mind-reid
+
+vision-mind:
+  resource:
+    root: ./resource
+    fallback-env: VISION_MIND_PATH
+    validate-on-startup: true
+    manifest: resource/manifest.json
+  native-load:
+    skip-open-cv: ${vision-mind.skip-opencv:false}
+  runtime:
+    profile: default
+  vector-store:
+    mode: ${vector.store.mode:memory}
+  reid:
+    model:
+      onnx-path: /reid/model/AGW_R50-ibn-bn.onnx
+      matrix-path: /reid/projectionMatrix.bin
+
+use:
+  gpu: false
+reid:
+  onnx:
+    path: ${vision-mind.reid.model.onnx-path}
+matrix:
+  path: ${vision-mind.reid.model.matrix-path}

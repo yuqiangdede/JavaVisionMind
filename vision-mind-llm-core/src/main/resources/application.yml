@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: llm
+
+server:
+  port: 17005
+  servlet:
+    context-path: /vision-mind-llm
+
+vision-mind:
+  resource:
+    root: ./resource
+    fallback-env: VISION_MIND_PATH
+    validate-on-startup: true
+    manifest: resource/manifest.json
+  native-load:
+    skip-open-cv: ${vision-mind.skip-opencv:false}
+  runtime:
+    profile: default
+  vector-store:
+    mode: memory

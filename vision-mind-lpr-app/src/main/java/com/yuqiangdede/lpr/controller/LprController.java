@@ -31,7 +31,7 @@ public class LprController {
 
     private final LprService lprService;
 
-    @PostMapping(value = "/v1/lpr", consumes = "application/json", produces = "application/json")
+    @PostMapping(value = {"/v1/lpr", "/v1/lpr/infer"}, consumes = "application/json", produces = "application/json")
     public HttpResult<List<PlateRecognitionResult>> recognize(@RequestBody DetectionRequestWithArea request) {
         long start = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(request.getImgUrl())) {
@@ -49,7 +49,7 @@ public class LprController {
         }
     }
 
-    @PostMapping(value = "/v1/lprI", consumes = "application/json", produces = "image/jpeg")
+    @PostMapping(value = {"/v1/lprI", "/v1/lpr/preview"}, consumes = "application/json", produces = "image/jpeg")
     public Object recognizeWithImage(@RequestBody DetectionRequestWithArea request) {
         long start = System.currentTimeMillis();
         try {
@@ -68,7 +68,7 @@ public class LprController {
         }
     }
 
-    @PostMapping(value = "/v1/lprOcr", consumes = "application/json", produces = "application/json")
+    @PostMapping(value = {"/v1/lprOcr", "/v1/lpr/infer/ocr"}, consumes = "application/json", produces = "application/json")
     public HttpResult<List<PlateRecognitionResult>> recognizeWithOcr(@RequestBody DetectionRequestWithArea request) {
         long start = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(request.getImgUrl())) {
@@ -86,7 +86,7 @@ public class LprController {
         }
     }
 
-    @PostMapping(value = "/v1/lprOcrI", consumes = "application/json", produces = "image/jpeg")
+    @PostMapping(value = {"/v1/lprOcrI", "/v1/lpr/preview/ocr"}, consumes = "application/json", produces = "image/jpeg")
     public Object recognizeWithOcrImage(@RequestBody DetectionRequestWithArea request) {
         long start = System.currentTimeMillis();
         try {

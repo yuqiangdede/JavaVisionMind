@@ -20,11 +20,13 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -44,7 +46,7 @@ public class ImgAnalysisController {
      * @param imgAreaInput 输入
      * @return 检测结果
      */
-    @PostMapping(value = "/v1/img/detect", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/img/detect", "/v1/vision/detect"}, produces = "application/json", consumes = "application/json")
 
     public HttpResult<List<Box>> predictorArea(@RequestBody DetectionRequestWithArea imgAreaInput) {
         long start_time = System.currentTimeMillis();
@@ -69,7 +71,7 @@ public class ImgAnalysisController {
      * @param imgAreaInput 输入
      * @return 图片
      */
-    @PostMapping(value = "/v1/img/detectI", consumes = "application/json", produces = "image/jpeg")
+    @PostMapping(value = {"/v1/img/detectI", "/v1/vision/detect/preview"}, consumes = "application/json", produces = "image/jpeg")
 
     public Object predictorAreaI(@RequestBody DetectionRequestWithArea imgAreaInput) {
         long start_time = System.currentTimeMillis();
@@ -98,7 +100,7 @@ public class ImgAnalysisController {
      * @param imgAreaInput 输入
      * @return 检测结果
      */
-    @PostMapping(value = "/v1/img/detectFace", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/img/detectFace", "/v1/vision/face/detect"}, produces = "application/json", consumes = "application/json")
 
     public HttpResult<List<Box>> predictorFace(@RequestBody DetectionRequestWithArea imgAreaInput) {
         long start_time = System.currentTimeMillis();
@@ -117,7 +119,7 @@ public class ImgAnalysisController {
         }
     }
 
-    @PostMapping(value = "/v1/img/detectFaceI", consumes = "application/json", produces = "image/jpeg")
+    @PostMapping(value = {"/v1/img/detectFaceI", "/v1/vision/face/detect/preview"}, consumes = "application/json", produces = "image/jpeg")
 
     public Object predictorFaceI(@RequestBody DetectionRequestWithArea imgAreaInput) {
         long start_time = System.currentTimeMillis();
@@ -140,7 +142,7 @@ public class ImgAnalysisController {
         }
     }
 
-    @PostMapping(value = "/v1/img/detectLP", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/img/detectLP", "/v1/vision/license-plate/detect"}, produces = "application/json", consumes = "application/json")
     public HttpResult<List<Box>> detectLicensePlate(@RequestBody DetectionRequestWithArea imgAreaInput) {
         long startTime = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(imgAreaInput.getImgUrl())) {
@@ -156,7 +158,7 @@ public class ImgAnalysisController {
         }
     }
 
-    @PostMapping(value = "/v1/img/detectLPI", consumes = "application/json", produces = "image/jpeg")
+    @PostMapping(value = {"/v1/img/detectLPI", "/v1/vision/license-plate/detect/preview"}, consumes = "application/json", produces = "image/jpeg")
     public Object detectLicensePlateI(@RequestBody DetectionRequestWithArea imgAreaInput) {
         long startTime = System.currentTimeMillis();
         BufferedImage image;
@@ -180,7 +182,7 @@ public class ImgAnalysisController {
      * @param imgAreaInput 输入
      * @return 检测结果
      */
-    @PostMapping(value = "/v1/img/pose", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/img/pose", "/v1/vision/pose"}, produces = "application/json", consumes = "application/json")
 
     public HttpResult<List<BoxWithKeypoints>> poseArea(@RequestBody DetectionRequestWithArea imgAreaInput) {
         long start_time = System.currentTimeMillis();
@@ -206,7 +208,7 @@ public class ImgAnalysisController {
      * @return 图片
      * @apiNote 对给定的图片进行指定矩形内的姿态检测，返回图片 imgUrl必填 conf可选 x1 y1 x2 y2 必填
      */
-    @PostMapping(value = "/v1/img/poseI", consumes = "application/json", produces = "image/jpeg")
+    @PostMapping(value = {"/v1/img/poseI", "/v1/vision/pose/preview"}, consumes = "application/json", produces = "image/jpeg")
 
     public Object poseAreaI(@RequestBody DetectionRequestWithArea imgAreaInput) {
         long start_time = System.currentTimeMillis();
@@ -230,7 +232,7 @@ public class ImgAnalysisController {
     }
 
 
-    @PostMapping(value = "/v1/img/sam", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/img/sam", "/v1/vision/sam"}, produces = "application/json", consumes = "application/json")
     public HttpResult<List<Box>> samArea(@RequestBody DetectionRequest imgAreaInput) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(imgAreaInput.getImgUrl())) {
@@ -249,7 +251,7 @@ public class ImgAnalysisController {
     }
 
 
-    @PostMapping(value = "/v1/img/samI", consumes = "application/json", produces = "image/jpeg")
+    @PostMapping(value = {"/v1/img/samI", "/v1/vision/sam/preview"}, consumes = "application/json", produces = "image/jpeg")
     public Object samI(@RequestBody DetectionRequest imgAreaInput) {
         long start_time = System.currentTimeMillis();
         BufferedImage image;
@@ -271,7 +273,7 @@ public class ImgAnalysisController {
         }
     }
 
-    @PostMapping(value = "/v1/img/obb", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/img/obb", "/v1/vision/obb"}, produces = "application/json", consumes = "application/json")
     public HttpResult<List<ObbDetection>> obbArea(@RequestBody DetectionRequestWithArea imgAreaInput) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(imgAreaInput.getImgUrl())) {
@@ -287,7 +289,7 @@ public class ImgAnalysisController {
         }
     }
 
-    @PostMapping(value = "/v1/img/obbI", consumes = "application/json", produces = "image/jpeg")
+    @PostMapping(value = {"/v1/img/obbI", "/v1/vision/obb/preview"}, consumes = "application/json", produces = "image/jpeg")
     public Object obbAreaI(@RequestBody DetectionRequestWithArea imgAreaInput) {
         long start_time = System.currentTimeMillis();
         BufferedImage image;
@@ -305,7 +307,7 @@ public class ImgAnalysisController {
         }
     }
  
-    @PostMapping(value = "/v1/img/segI", consumes = "application/json", produces = "image/jpeg")
+    @PostMapping(value = {"/v1/img/segI", "/v1/vision/seg/preview"}, consumes = "application/json", produces = "image/jpeg")
     public Object segAreaI(@RequestBody DetectionRequestWithArea imgAreaInput) {
 
         long start_time = System.currentTimeMillis();
@@ -328,7 +330,7 @@ public class ImgAnalysisController {
         }
     }
 
-    @PostMapping(value = "/v1/img/seg", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/img/seg", "/v1/vision/seg"}, produces = "application/json", consumes = "application/json")
     public HttpResult<List<SegDetection>> segArea(@RequestBody DetectionRequestWithArea imgAreaInput) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(imgAreaInput.getImgUrl())) {
@@ -341,7 +343,24 @@ public class ImgAnalysisController {
         } catch (IOException | OrtException | RuntimeException e) {
             log.error("segArea error", e);
             return new HttpResult<>(false, e.getMessage());
+    }
+
+    @PostMapping(value = "/v1/vision/detect/upload", consumes = "multipart/form-data", produces = "application/json")
+    public HttpResult<List<Box>> predictorUpload(@RequestParam("file") MultipartFile file,
+                                                 @RequestParam(value = "threshold", required = false) Float threshold,
+                                                 @RequestParam(value = "types", required = false) String types) {
+        try {
+            DetectionRequestWithArea request = new DetectionRequestWithArea();
+            String contentType = file.getContentType() == null ? "image/jpeg" : file.getContentType();
+            String encoded = Base64.getEncoder().encodeToString(file.getBytes());
+            request.setImgUrl("data:" + contentType + ";base64," + encoded);
+            request.setThreshold(threshold);
+            request.setTypes(types);
+            return predictorArea(request);
+        } catch (IOException ex) {
+            return new HttpResult<>(false, ex.getMessage());
         }
     }
+}
 
 }

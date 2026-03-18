@@ -4,6 +4,7 @@ import com.yuqiangdede.asr.dto.output.AsrHealthResponse;
 import com.yuqiangdede.asr.dto.output.AsrTranscribeResponse;
 import com.yuqiangdede.asr.dto.output.PhraseRuleItem;
 import com.yuqiangdede.asr.dto.output.PostProcessResult;
+import com.yuqiangdede.platform.common.util.InMemoryMultipartFile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -54,6 +55,11 @@ public class AsrService {
                 mergedHotwords,
                 enablePunctuation
         );
+    }
+
+    public AsrTranscribeResponse transcribe(byte[] bytes, String fileName, String contentType, boolean enablePunctuation) {
+        MultipartFile multipartFile = new InMemoryMultipartFile("file", fileName, contentType, bytes);
+        return transcribe(multipartFile, enablePunctuation);
     }
 
     private List<String> mergeHotwords(List<String> baseTerms) {

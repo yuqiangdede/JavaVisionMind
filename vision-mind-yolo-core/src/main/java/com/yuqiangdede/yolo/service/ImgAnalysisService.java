@@ -11,6 +11,8 @@ import com.yuqiangdede.common.dto.output.BoxWithKeypoints;
 import com.yuqiangdede.common.util.GeometryUtils;
 import com.yuqiangdede.common.util.ImageUtil;
 import com.yuqiangdede.common.util.RuntimeEnvironment;
+import com.yuqiangdede.platform.common.config.VisionMindProperties;
+import com.yuqiangdede.platform.common.runtime.NativeLibraryManager;
 
 
 import com.yuqiangdede.yolo.dto.output.ObbDetection;
@@ -52,18 +54,8 @@ public class ImgAnalysisService {
         if (skipLoad) {
             log.warn("Skipping OpenCV native library load because tests or configuration requested it");
         } else {
-            String osName = System.getProperty("os.name").toLowerCase();
-            try {
-                if (osName.contains("win")) {
-                    System.load(Constant.OPENCV_DLL_PATH);
-                } else if (osName.contains("nix") || osName.contains("nux") || osName.contains("aix")) {
-                    System.load(Constant.OPENCV_SO_PATH);
-                } else {
-                    throw new UnsupportedOperationException("Unsupported operating system: " + osName);
-                }
-            } catch (UnsatisfiedLinkError e) {
-                throw new IllegalStateException("Failed to load OpenCV native library", e);
-            }
+            NativeLibraryManager manager = new NativeLibraryManager(new VisionMindProperties());
+            manager.loadOpenCv(Constant.OPENCV_DLL_PATH, Constant.OPENCV_SO_PATH);
         }
     }
 

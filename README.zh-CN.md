@@ -1,576 +1,82 @@
 # JavaVisionMind
 
-> 一个模块化的 Spring Boot 工具集，整合了目标检测、图像检索、视频抽帧分析以及多模态 LLM 能力。
-
 [English README](README.md)
 
-## 目录
-- [项目简介](#项目简介)
-- [目录结构](#目录结构)
-- [环境准备](#环境准备)
-- [快速开始](#快速开始)
-- [测试](#测试)
-- [OCR 能力](#ocr-能力)
-- [接口概览](#接口概览)
-  - [vision-mind-yolo-app（图像分析）](#vision-mind-yolo-app图像分析)
-  - [vision-mind-ocr-app（光学字符识别）](#vision-mind-ocr-app光学字符识别)
-  - [vision-mind-ffe-app（人脸特征提取）](#vision-mind-ffe-app人脸特征提取)
-  - [vision-mind-reid-app（行人重识别）](#vision-mind-reid-app行人重识别)
-  - [vision-mind-lpr-app 车牌识别](#vision-mind-lpr-app-车牌识别)
-  - [vision-mind-asr-app（语音识别）](#vision-mind-asr-app语音识别)
-  - [vision-mind-tbir-app（文本图像检索）](#vision-mind-tbir-app文本图像检索)
-  - [vision-mind-llm-core（语言服务）](#vision-mind-llm-core语言服务)
-- [资源下载](#资源下载)
-- [接口流程参考](#接口流程参考)
-- [路线图](#路线图)
+## 项目定位
 
-## 项目简介
+JavaVisionMind 是一个基于 Java + Spring Boot + ONNX Runtime + OpenCV 的多模态推理服务工具箱。  
+仓库保持多模块 Maven 结构，通过“旧接口兼容 + 新接口并行 + 平台层托底”方式演进。
 
-JavaVisionMind 是一组相互独立的 Spring Boot 服务，覆盖目标检测、姿态估计、人脸识别、行人重识别、文本图像检索、视频抽帧分析以及大语言模型交互。每个能力都以独立模块提供，可按需部署所需的功能。
+## 核心能力
 
-## 目录结构
+- 视觉推理：目标检测、OCR、人脸特征、ReID、车牌识别
+- 音频推理：ASR、TTS
+- 检索与多模态：TBIR、TBIR-CN、LLM 接入
+- 平台基础：统一 `HttpResult<T>`、错误码、traceId、请求日志、全局异常、OpenAPI、启动资源校验
 
-| 模块 | 说明 |
-| --- | --- |
-| `vision-mind-yolo-core` | 提供 YOLOv11、FAST-SAM、姿态估计与分割模型的核心推理工具。 |
-| `vision-mind-yolo-app` | 基于 `vision-mind-yolo-core` 的 REST API 外壳，用于图像分析。 |
-| `vision-mind-ocr-core` | PaddleOCR 检测/识别/分类流水线，供 OCR 服务复用。 |
-| `vision-mind-ocr-app` | OCR REST 包装层，可输出结构化文本或标注图像。 |
-| `vision-mind-ffe-app` | 包含检测、对齐、特征提取、相似度检索与索引维护的人脸服务。 |
-| `vision-mind-reid-app` | 行人重识别流程，支持 Lucene、内存与 Elasticsearch 向量检索。 |
-| `vision-mind-lpr-app` | 车牌检测+识别服务，基于 YOLO 车牌框和 ONNX LPRNet 解码，可选 OCR 文本兜底。 |
-| `vision-mind-asr-app` | 基于 sherpa-onnx 的音频语音识别服务，支持热词管理、近音词规则纠正和可选标点恢复。 |
-| `vision-mind-tbir-app` | 基于 CLIP 向量的图像检索服务，兼容 Lucene、内存与 Elasticsearch 存储。 |
-| `vision-mind-tbir-cn-app` | 中文文本图像检索服务（中文分词 + CLIP 向量），支持 Lucene / 内存 / Elasticsearch 向量存储。 |
-| `vision-mind-llm-core` | 封装 OpenAI/Ollama 等语言模型接口，提供统一调用。 |
-| `vision-mind-common` | 公用的 DTO、数学工具、图像/向量辅助方法。 |
-| `vision-mind-test-sth` | 用于集成实验与手工校验的临时沙箱。 |
+## 模块矩阵
 
-## 环境准备
-
-1. 安装 **JDK 21** 和 **Maven 3.8+**。
-2. 将 `JAVA_HOME` 设置为 JDK 根目录，不要指到 `bin` 目录。
-3. 下载所需的模型文件以及 OpenCV 原生运行库。设置环境变量 `VISION_MIND_PATH`，让所有模块都能定位到权重和 `.dll/.so` 文件：
-4. 模型文件放在了阿里云盘上 https://www.alipan.com/s/ChvZFAKXUDp 提取码: 7i5y
-
-   
-   ```powershell
-   # Windows PowerShell
-   setx VISION_MIND_PATH "F:\TestSth\JavaVisionMind\resource"
-   ```
-
-   ```bash
-   # Linux / macOS
-   export VISION_MIND_PATH=/opt/JavaVisionMind/resource
-   ```
-
-   目录结构示例：
-
-   ```text
-   ${VISION_MIND_PATH}
-   └── lib
-       └── opencv
-           ├── opencv_java490.dll   # Windows
-           └── libopencv_java490.so # Linux
-   ```
-
-5. 确认 JVM 能够根据操作系统加载 `opencv_java490`（服务会自动选择 `.dll` 或 `.so`）。
-6. 从项目的发布页面下载 `resource.7z`，解压到仓库根目录，使模型文件与各模块同级（例如 `resource/yolo/model/yolo.onnx`）。
-
-> **提示**：若仅需调试非图像模块，可在 JVM 参数中加入 `-Dvision-mind.skip-opencv=true` 暂时跳过 OpenCV 加载。
+| 模块 | 类型 | 状态 |
+| --- | --- | --- |
+| `vision-mind-yolo-app` | Application | `stable` |
+| `vision-mind-asr-app` | Application | `stable` |
+| `vision-mind-ocr-app` | Application | `beta` |
+| `vision-mind-ffe-app` | Application | `beta` |
+| `vision-mind-reid-app` | Application | `beta` |
+| `vision-mind-lpr-app` | Application | `beta` |
+| `vision-mind-tbir-app` | Application | `beta` |
+| `vision-mind-tbir-cn-app` | Application | `beta` |
+| `vision-mind-tts-app` | Application | `beta` |
+| `vision-mind-llm-core` | Application | `beta` |
+| `vision-mind-yolo-core` | Core | `beta` |
+| `vision-mind-ocr-core` | Core | `beta` |
+| `vision-mind-common` | Shared | `beta` |
+| `vision-mind-platform-common` | Platform | `beta` |
+| `vision-mind-starter-web` | Platform | `beta` |
+| `vision-mind-test-sth` | Experiment | `experimental` |
 
 ## 快速开始
 
-### 构建
+```bash
+# 1) 环境检查
+bash scripts/verify-env.sh
+
+# 2) 构建
+mvn -DskipTests clean package
+
+# 3) 启动重点模块
+mvn -pl vision-mind-yolo-app spring-boot:run
+mvn -pl vision-mind-asr-app spring-boot:run
+```
+
+PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\verify-env.ps1
+```
+
+## 最小 Demo
+
+- YOLO 示例：`examples/yolo-demo`
+- ASR 示例：`examples/asr-demo`
+- TTS 测试页面：`http://127.0.0.1:17010/vision-mind-tts/`
 
 ```bash
-mvn clean install -DskipTests
+bash examples/yolo-demo/curl.sh
+bash examples/asr-demo/curl.sh
 ```
 
-### 测试
-
-```bash
-mvn test -Dvision-mind.skip-opencv=true
-```
-
-如果在 PowerShell 中执行，推荐使用 `mvn --% test -Dvision-mind.skip-opencv=true`，避免 JVM 参数被错误拆分。
-
-如果你是在 IDE 或自定义测试启动器里直接跑测试，而不是走 Maven Surefire，建议补上 `-Dvision-mind.test-mode=true` 或 `-Dvision-mind.skip-opencv=true`，避免测试时误加载 OpenCV 原生库。
-
-### 启动服务
-
-- YOLO 图像分析：`mvn -pl vision-mind-yolo-app spring-boot:run`
-- OCR 服务：`mvn -pl vision-mind-ocr-app spring-boot:run`
-- 人脸特征提取：`mvn -pl vision-mind-ffe-app spring-boot:run`
-- 行人再识别：`mvn -pl vision-mind-reid-app spring-boot:run`
-- 车牌识别：`mvn -pl vision-mind-lpr-app spring-boot:run`
-- ASR 语音识别：`mvn -pl vision-mind-asr-app spring-boot:run`
-- 文本图像检索：`mvn -pl vision-mind-tbir-app spring-boot:run`
-- 中文文本图像检索：`mvn -pl vision-mind-tbir-cn-app spring-boot:run`
-- LLM 对话服务：`mvn -pl vision-mind-llm-core spring-boot:run`
-
-控制器统一挂在 `/api` 下，但每个可运行模块还带有自己的 `server.servlet.context-path`。默认基础地址如下：
-
-| 模块 | 基础地址 |
-| --- | --- |
-| `vision-mind-yolo-app` | `http://localhost:17001/vision-mind-yolo` |
-| `vision-mind-ffe-app` | `http://localhost:17002/vision-mind-ffe` |
-| `vision-mind-tbir-app` | `http://localhost:17003/vision-mind-tbir` |
-| `vision-mind-reid-app` | `http://localhost:17004/vision-mind-reid` |
-| `vision-mind-llm-core` | `http://localhost:17005/vision-mind-llm` |
-| `vision-mind-ocr-app` | `http://localhost:17006/vision-mind-ocr` |
-| `vision-mind-lpr-app` | `http://localhost:17007/vision-mind-lpr` |
-| `vision-mind-asr-app` | `http://localhost:17008/vision-mind-asr` |
-| `vision-mind-tbir-cn-app` | `http://localhost:17009/vision-mind-tbir-cn` |
-
-### 向量存储开关
-
-- `vision-mind-ffe-app`、`vision-mind-reid-app`、`vision-mind-tbir-app` 与 `vision-mind-tbir-cn-app` 暴露 `vector.store.mode` 配置。
-- 取值 `lucene`（默认）时将向量持久化到磁盘，`memory` 使用内置 chroma 向量库运行于内存，`elasticsearch` 可接入外部 ES 集群。
-- 选择 Elasticsearch 模式时会直接写入全维度向量；仅有 Lucene 后端会应用 ReID 投影矩阵。
-
-## OCR 能力
-
-OCR 方案由 `vision-mind-ocr-core`（推理流水线）与 `vision-mind-ocr-app`（REST 封装）构成，基于 PaddleOCR 的 ONNX Runtime 推断并提供后处理增强能力。
-
-- 通过 `detectionLevel` 参数在轻量 (`lite`) 与高精 (`ex`) 模型之间切换，默认使用轻量配置。
-- 直接调用 `/detectWithSR`、`/detectWithLLM` 获取语义/LLM 的文本优化结果。
-- 访问 `/detectI` 与 `/detectWithLLMI` 可获得带多边形标注的 JPEG 叠加图，便于人工校对。
-- 请将 `VISION_MIND_PATH` 指向 OCR ONNX 模型与词典目录，确保轻量与高精引擎均能正确初始化。
-
-```bash
-curl -X POST http://localhost:17006/vision-mind-ocr/api/v1/ocr/detect -H "Content-Type: application/json" -d '{ "imgUrl": "https://example.com/receipt.jpg", "detectionLevel": "lite" }'
-```
-
-返回结构为 `HttpResult<List<OcrDetectionResult>>`，每条记录包含多边形坐标、识别文本与置信度。
-
-## 接口概览
-
-### vision-mind-yolo-app（图像分析）
-
-| 方法 | 路径 | 说明 | 请求体 | 响应 |
-| --- | --- | --- | --- | --- |
-| POST | `/api/v1/img/detect` | 执行目标检测，可配置包含/排除多边形区域。 | `DetectionRequestWithArea` JSON（字段：`imgUrl`, `threshold?`, `types?`, `detectionFrames?`, `blockingFrames?`） | `HttpResult<List<Box>>` |
-| POST | `/api/v1/img/detectI` | 与上一接口相同，但返回标注后的图像。 | `DetectionRequestWithArea` | `image/jpeg` 字节流 |
-| POST | `/api/v1/img/detectFace` | 检测指定区域内的人脸。 | `DetectionRequestWithArea` | `HttpResult<List<Box>>` |
-| POST | `/api/v1/img/detectFaceI` | 人脸检测并返回可视化图像。 | `DetectionRequestWithArea` | `image/jpeg` 字节流 |
-| POST | `/api/v1/img/pose` | 人体姿态估计。 | `DetectionRequestWithArea` | `HttpResult<List<BoxWithKeypoints>>` |
-| POST | `/api/v1/img/poseI` | 姿态估计并叠加骨架预览。 | `DetectionRequestWithArea` | `image/jpeg` 字节流 |
-| POST | `/api/v1/img/sam` | FAST-SAM 分割，输出边界框。 | `DetectionRequest`（字段：`imgUrl`, `threshold?`, `types?`） | `HttpResult<List<Box>>` |
-| POST | `/api/v1/img/samI` | FAST-SAM 分割的图像可视化。 | `DetectionRequest` | `image/jpeg` 字节流 |
-| POST | `/api/v1/img/seg` | YOLO 分割输出掩码信息。 | `DetectionRequestWithArea` | `HttpResult<List<SegDetection>>` |
-| POST | `/api/v1/img/segI` | 分割结果的图像可视化。 | `DetectionRequestWithArea` | `image/jpeg` 字节流 |
-| POST | `/api/v1/video/detect` | 对 RTSP/HTTP/本地视频按固定帧数和采样间隔做检测，仅返回被分析帧的结果。 | `VideoInput`（`rtspUrl`, `frameNum?`, `frameInterval?`, `conf?`, `types?`, `detectionFrames?`, `blockingFrames?`） | `HttpResult<List<VideoFrameDetectionResult>>` |
-| POST | `/api/v1/yoloe/detectText` | YOLOE 固定类型检测（`yoloe-26s-seg.onnx`）。 | `TextPromptRequestWithArea`（字段：`imgUrl`, `threshold?`, `detectionFrames?`, `blockingFrames?`） | `HttpResult<List<Box>>` |
-| POST | `/api/v1/yoloe/detectTextI` | YOLOE 固定类型检测可视化。 | `TextPromptRequestWithArea` | `image/jpeg` 字节流 |
-| POST | `/api/v1/yoloe/detectFree` | YOLOE prompt-free 分割（`yoloe-26s-seg-pf.onnx`）。 | `DetectionRequest`（字段：`imgUrl`, `threshold?`） | `HttpResult<List<SegDetection>>` |
-| POST | `/api/v1/yoloe/detectFreeI` | YOLOE prompt-free 分割可视化。 | `DetectionRequest` | `image/jpeg` 字节流 |
-
-> **说明**：`detectText/detectTextI` 的类型无法在请求中动态扩展，必须在导出 ONNX 时固定类别。若需新增类型，请重新导出模型。
->
-> `video/detect` 未显式传入 `frameInterval` 时，会回退到 `yolo-core.properties` 中的 `frame.interval=5`。
-
-```python
-from ultralytics import YOLOE
-
-pt = YOLOE("yoloe-26s-seg.pt")
-names = ["person", "hoops"]
-pt.set_classes(names, pt.get_text_pe(names))
-
-onnx_path = pt.export(format="onnx")
-print("exported:", onnx_path)
-```
-
-### vision-mind-ocr-app（光学字符识别）
-
-| 方法 | 路径 | 说明 | 请求体 | 响应 |
-| --- | --- | --- | --- | --- |
-| POST | `/api/v1/ocr/detect` | 使用 PaddleOCR 执行检测与识别，可通过 `detectionLevel` 选择 lite（默认）或 ex 模型。 | `OcrDetectionRequest`（`detectionLevel?`, `imgUrl`） | `HttpResult<List<OcrDetectionResult>>` |
-| POST | `/api/v1/ocr/detectI` | 与基础检测一致，但返回带标注的 JPEG 图像。 | `OcrDetectionRequest`（`detectionLevel?`, `imgUrl`） | `image/jpeg` |
-| POST | `/api/v1/ocr/detectWithSR` | 启用语义重建流程输出整理后的文本。 | `OcrDetectionRequest`（`detectionLevel?`, `imgUrl`） | `HttpResult<String>` |
-| POST | `/api/v1/ocr/detectWithLLM` | 将识别结果交给 LLM 做推理式润色。 | `OcrDetectionRequest`（`detectionLevel?`, `imgUrl`） | `HttpResult<String>` |
-| POST | `/api/v1/ocr/detectWithLLMI` | 返回 LLM 润色后的多边形叠加图。 | `OcrDetectionRequest`（`detectionLevel?`, `imgUrl`） | `image/jpeg` |
-
-### vision-mind-ffe-app（人脸特征提取）
-
-| 方法 | 路径 | 说明 | 请求体 | 响应 |
-| --- | --- | --- | --- | --- |
-| POST | `/api/v1/face/computeFaceVector` | 检测人脸并返回特征，不做持久化。 | `InputWithUrl`（字段：`imgUrl`, `groupId?`, `faceScoreThreshold?`） | `HttpResult<FaceImage>` |
-| POST | `/api/v1/face/saveFaceVector` | 保存外部计算好的人脸向量。 | `Input4Save`（字段：`imgUrl`, `groupId`, `id`, `embeds`） | `HttpResult<Void>` |
-| POST | `/api/v1/face/computeAndSaveFaceVector` | 检测人脸、筛选高质量向量并保存，同时返回新增项。 | `InputWithUrl` | `HttpResult<List<FaceInfo4Add>>` |
-| POST | `/api/v1/face/deleteFace` | 按文档 ID 删除已存向量。 | `Input4Del`（字段：`id`） | `HttpResult<Void>` |
-| POST | `/api/v1/face/findMostSimilarFace` | 使用探测图像检索索引。 | `Input4Search`（字段：`imgUrl`, `groupId?`, `faceScoreThreshold?`, `confidenceThreshold?`） | `HttpResult<List<FaceInfo4Search>>` |
-| POST | `/api/v1/face/findMostSimilarFaceI` | 返回最佳匹配的人脸预览图。 | `Input4Search` | `image/jpeg` 字节流 |
-| POST | `/api/v1/face/calculateSimilarity` | 计算两张图片的余弦相似度。 | `Input4Compare`（字段：`imgUrl`, `imgUrl2`） | `HttpResult<Double>` |
-| POST | `/api/v1/face/findSave` | 先检索，无命中则写入索引。 | `Input4Search` | `HttpResult<FaceInfo4SearchAdd>` |
-
-### vision-mind-reid-app（行人重识别）
-
-| 方法 | 路径 | 说明 | 请求体 | 响应 |
-| --- | --- | --- | --- | --- |
-| POST | `/api/v1/reid/feature/single` | 提取单个人体的向量。 | JSON `{ "imgUrl": "..." }` | `HttpResult<Feature>` |
-| POST | `/api/v1/reid/feature/calculateSimilarity` | 比较两个人体区域的相似度。 | JSON `{ "imgUrl1": "...", "imgUrl2": "..." }` | `HttpResult<Float>` |
-| POST | `/api/v1/reid/feature/multi` | 检测多个人体并返回每个向量。 | JSON `{ "imgUrl": "..." }` | `HttpResult<List<Feature>>` |
-| POST | `/api/v1/reid/store/single` | 提取并持久化向量，同时保存元数据。 | JSON `{ "imgUrl": "...", "cameraId?": "...", "humanId?": "..." }` | `HttpResult<Feature>` |
-| POST | `/api/v1/reid/search` | 通过图像检索图库。 | JSON `{ "imgUrl": "...", "cameraId?": "...", "topN": ..., "threshold": ... }` | `HttpResult<List<Human>>` |
-| POST | `/api/v1/reid/searchOrStore` | 先检索；未命中则插入。 | JSON `{ "imgUrl": "...", "threshold": ... }` | `HttpResult<Human>` |
-| POST | `/api/v1/reid/associateStore` | 总是存储探测图像，并关联命中的对象。 | JSON `{ "imgUrl": "...", "threshold": ... }` | `HttpResult<Human>` |
-
-
-### vision-mind-lpr-app 车牌识别
-
-默认基础路径：`http://localhost:17007/vision-mind-lpr`。`PlateRecognitionResult` 返回车牌框 `Box` 和解码出的 `plate` 文本。通过 `lpr.model.path` 指向 `lprnet.onnx`，若为相对路径则基于 `VISION_MIND_PATH` 解析。
-
-| 方法 | 路径 | 说明 | 请求体 | 响应 |
-| --- | --- | --- | --- | --- |
-| POST | `/api/v1/lpr` | YOLO 车牌检测 + LPRNet 解码车牌字符串。 | `DetectionRequestWithArea`（`imgUrl`, `threshold?`, `types?`, `detectionFrames?`, `blockingFrames?`） | `HttpResult<List<PlateRecognitionResult>>` |
-| POST | `/api/v1/lprI` | 同上，返回标注后的 JPEG。 | `DetectionRequestWithArea` | `image/jpeg` 字节流 |
-| POST | `/api/v1/lprOcr` | 在检测框内用 PaddleOCR 识别文本，替代 LPRNet 解码。 | `DetectionRequestWithArea` | `HttpResult<List<PlateRecognitionResult>>` |
-| POST | `/api/v1/lprOcrI` | OCR 流程并返回标注图。 | `DetectionRequestWithArea` | `image/jpeg` 字节流 |
-
-### vision-mind-asr-app（语音识别）
-
-默认基础路径：`http://localhost:17008/vision-mind-asr`。该模块接收上传音频，统一解码为 `16kHz/单声道/float32`，调用 sherpa-onnx 做识别，再执行本地近音词规则纠正；勾选开关时，再追加一层 sherpa-onnx 标点恢复。
-
-当前默认模型：
-
-- ASR：`resource/asr/model/sherpa-onnx-streaming-zipformer-zh-fp16-2025-06-30`
-- 标点恢复：`resource/asr/model/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8`
-- sherpa Java 运行时：`resource/lib/sherpa-onnx/` 下需要放 `sherpa-onnx-v*.jar` 和当前平台对应的 `sherpa-onnx-native-lib-*.jar`
-
-配置与页面说明：
-
-- 页面地址：`http://localhost:17008/vision-mind-asr/`
-- 健康检查：`http://localhost:17008/vision-mind-asr/api/v1/asr/health`
-- 可编辑配置目录：`resource/asr/config`
-- `hotwords.yaml`、`phrase-rules.yaml` 支持懒生成；目录里初始没有这两个文件也能启动，第一次保存热词或规则时才会自动创建
-- 当前页面展示两个结果框：
-  - `原始识别结果（不带标点）`
-  - `纠正后结果（可带标点）`
-
-接口列表：
-
-| 方法 | 路径 | 说明 | 请求参数 / 请求体 | 响应 |
-| --- | --- | --- | --- | --- |
-| GET | `/api/v1/asr/health` | 查看 ASR 模型、标点模型、热词配置是否已就绪。 | 无 | `HttpResult<AsrHealthResponse>` |
-| GET | `/api/v1/asr/hotwords` | 读取全局热词配置。若配置文件不存在，返回空列表。 | 无 | `HttpResult<HotwordConfigResponse>` |
-| POST | `/api/v1/asr/hotwords` | 保存全局热词配置，并覆盖写回 `hotwords.yaml`。 | JSON：`{ "baseTerms": ["监控", "会见楼"] }` | `HttpResult<HotwordConfigResponse>` |
-| GET | `/api/v1/asr/phrase-rules` | 读取近音词规则。若配置文件不存在，返回空规则集。 | 无 | `HttpResult<PhraseRuleConfigResponse>` |
-| POST | `/api/v1/asr/phrase-rules` | 保存近音词规则，并覆盖写回 `phrase-rules.yaml`。 | JSON：`{ "lines": ["误词1, 误词2 => 正确词"] }` | `HttpResult<PhraseRuleConfigResponse>` |
-| POST | `/api/v1/asr/transcribe` | 上传音频并执行识别。 | `multipart/form-data`：`file` 必填，`enablePunctuation` 可选，默认 `false` | `HttpResult<AsrTranscribeResponse>` |
-
-`/api/v1/asr/transcribe` 参数详细说明：
-
-- `file`
-  - 类型：`MultipartFile`
-  - 必填：是
-  - 含义：待识别的音频文件
-  - 支持格式：常见音频容器均可，当前实现通过 JavaCV/FFmpeg 解码，实际已覆盖 `wav`、`mp3`、`m4a`、`ogg`、`aac`、`mp4`、`webm` 等常见格式
-- `enablePunctuation`
-  - 类型：`boolean`
-  - 必填：否
-  - 默认值：`false`
-  - 含义：是否在“规则纠正后”的文本上继续执行 sherpa-onnx 标点恢复
-
-`AsrTranscribeResponse` 返回字段说明：
-
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `rawText` | `String` | ASR 原始识别结果，不加标点。 |
-| `textAfterPhrase` | `String` | 近音词规则纠正后的结果；若 `enablePunctuation=true`，这里会继续带上标点恢复后的文本。 |
-| `appliedRules` | `List<AsrAppliedRule>` | 本次命中的规则列表，便于排查替换情况。 |
-| `audioInfo` | `AsrAudioInfo` | 解码后的音频信息，如采样率、声道数、时长、样本数。 |
-| `hotwords` | `List<String>` | 本次识别实际生效的全局热词列表。 |
-| `punctuationEnabled` | `boolean` | 本次请求是否启用了标点恢复。 |
-
-请求示例：
-
-```bash
-curl -X POST "http://localhost:17008/vision-mind-asr/api/v1/asr/transcribe" \
-  -F "file=@sample.mp3" \
-  -F "enablePunctuation=true"
-```
-
-热词配置示例：
-
-```json
-{
-  "baseTerms": [
-    "监控点",
-    "会见楼",
-    "狱内管控中心"
-  ]
-}
-```
-
-近音词规则示例：
-
-```json
-{
-  "lines": [
-    "间区, 监去, 见区 => 监区",
-    "赶紧, 干净 => 干警",
-    "监空, 建控 => 监控"
-  ]
-}
-```
-
-### vision-mind-tbir-app（文本图像检索）
-
-| 方法 | 路径 | 说明 | 请求体 | 响应 |
-| --- | --- | --- | --- | --- |
-| POST | `/api/v1/tbir/saveImg` | 图像入库：检测、增强、向量化并索引。 | `SaveImageRequest`（字段：`imgUrl`, `imgId?`, `cameraId?`, `groupId?`, `meta?`, `threshold?`, `types?`） | `HttpResult<ImageSaveResult>` |
-| POST | `/api/v1/tbir/deleteImg` | 从索引中删除图像及其衍生内容。 | `DeleteImageRequest`（字段：`imgId`） | `HttpResult<Void>` |
-| POST | `/api/v1/tbir/searchImg` | 按存储的图像 ID 查询元数据。 | `SearchImageRequest`（字段：`imgId`） | `HttpResult<SearchResult>` |
-| POST | `/api/v1/tbir/searchImgI` | 基于图像 ID 绘制目标框并返回预览。 | `SearchImageRequest` | `image/jpeg` 字节流 |
-| POST | `/api/v1/tbir/search` | 文本检索图像。 | `SearchRequest`（字段：`query`, `cameraId?`, `groupId?`, `topN?`） | `HttpResult<SearchResult>` |
-| POST | `/api/v1/tbir/searchI` | 文本检索并返回图像预览。 | `SearchRequest` | `image/jpeg` 字节流 |
-| POST | `/api/v1/tbir/imgSearch` | 上传图像进行以图搜图。 | `multipart/form-data`（`image`, `topN`） | `HttpResult<SearchResult>` |
-
-> **DTO 快速参考**
->
-> - `SaveImageRequest` 继承 `DetectionRequestWithArea`，新增可选字段 `imgId`、`cameraId`、`groupId` 与自定义 `meta`。
-> - `SearchResult` 聚合 `HitImage` 列表（包含图片 URL、标注框和分数）。
-> - `HitImage` 在可视化接口中保留匹配框信息，便于前端绘制。
-
-### vision-mind-llm-core（语言服务）
-
-| 方法 | 路径 | 说明 | 请求体 | 响应 |
-| --- | --- | --- | --- | --- |
-| POST | `/api/translate` | 将文本从中文翻译成英文。 | `Message`（字段：`message`, `img?`） | 纯文本 |
-| POST | `/api/chat` | 通用对话接口。 | `Message`（字段：`message`） | 纯文本 |
-| POST | `/api/chatWithImg` | 图文多模态对话。 | `Message`（字段：`message`, `img`） | 纯文本 |
-
-## 资源下载
-
-- 仓库根目录提供 Postman 集合：`JavaVisionMind.postman_collection.json`。
-- 各模块的默认配置位于 `src/main/resources/application.properties`。
-
-## 接口流程参考
-
-### vision-mind-yolo-app
-
-#### /api/v1/img/detect
-1. 控制器校验 `imgUrl` 并记录调用日志后再下发请求（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:45）。
-2. `ImgAnalysisService.detectArea` 将图像下载为 OpenCV Mat（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:70）。
-3. `analysis` 执行 YOLOv11 推理，将原始输出映射为 `Box` 并按请求类别过滤（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:121）。
-4. 结果根据包含/排除多边形及比例要求进行过滤（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:82）。
-5. 剩余的框由控制器封装成 `HttpResult` 返回（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:60）。
-
-#### /api/v1/img/detectI
-1. 控制器重复参数校验并记录耗时（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:70）。
-2. `detectAreaI` 将图像渲染为 `BufferedImage`，内部复用 `detectArea`（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:110）。
-3. 服务在返回前绘制包含/阻断区域及检测框，控制器以 JPEG 字节流输出（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:80）。
-
-#### /api/v1/img/detectFace
-1. 控制器校验载荷（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:99）。
-2. `ImgAnalysisService.detectFace` 调用人脸专用的 YOLO 模型（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:213）。
-3. 与通用检测相同，按照包含/排除多边形过滤人脸框（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:220）。
-4. 过滤后的框回传给控制器包装响应（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:112）。
-
-#### /api/v1/img/detectFaceI
-1. 控制器执行与 JSON 接口相同的校验（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:118）。
-2. `detectFaceI` 绘制人脸框与包含/排除区域，生成标注图（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:253）。
-3. 控制器输出 JPEG 字节流（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:128）。
-
-#### /api/v1/img/pose
-1. 控制器校验载荷并记录日志（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:147）。
-2. `poseArea` 调用 YOLOv11 姿态模型并应用多边形过滤（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:148）。
-3. 筛选后的 `BoxWithKeypoints` 返回给控制器（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:160）。
-
-#### /api/v1/img/poseI
-1. 控制器完成参数校验（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:173）。
-2. `poseAreaI` 复用 `poseArea`，绘制骨架连线并返回 `BufferedImage`（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:187）。
-3. 控制器将结果转换为 JPEG（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:183）。
-
-#### /api/v1/img/sam
-1. 控制器校验参数并直接转发（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:197）。
-2. `sam` 执行 FastSAM 分割并返回边界框列表（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:279）。
-
-#### /api/v1/img/samI
-1. 控制器校验请求（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:216）。
-2. `samI` 在原图上绘制 FastSAM 的框并返回标注图像（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:284）。
-
-#### /api/v1/img/seg
-1. 控制器校验载荷后调用服务（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:260）。
-2. `segArea` 执行分割并按类别生成多边形（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:294）。
-
-#### /api/v1/img/segI
-1. 控制器将请求转发给服务（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/ImgAnalysisController.java:238）。
-2. `segAreaI` 在原图上绘制分割多边形并返回图像（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java:299）。
-
-#### /api/v1/video/detect
-1. 控制器校验 `rtspUrl`，并将同步检测结果封装成 `HttpResult` 返回（vision-mind-yolo-app/src/main/java/com/yuqiangdede/yolo/controller/VideoAnalysisController.java）。
-2. `VideoAnalysisService.detect` 解析 `frameNum` 和 `frameInterval`，打开视频源并在上限帧数内逐帧读取（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/VideoAnalysisService.java）。
-3. 只有命中采样间隔的帧才会执行检测，且复用 `ImgAnalysisService.detectMat`，因此包含/屏蔽区域过滤与图像检测保持一致（vision-mind-yolo-core/src/main/java/com/yuqiangdede/yolo/service/ImgAnalysisService.java）。
-4. 每个被分析的帧都会返回 `frameIndex`、`timestampMs`、`costMs` 和过滤后的检测框列表。
-
-### vision-mind-ocr-app
-
-#### /api/v1/ocr/detect
-1. 控制器校验请求并记录耗时（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:30）。
-2. `OcrService.detect` 调用共享推理流程获取识别结果（vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:93）。
-3. `runInference` 下载图片、选择轻量/高精引擎、执行 PaddleOCR 并转换为 DTO（vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:115）。
-4. 过滤后的识别项封装进 `HttpResult` 返回（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:36）。
-
-#### /api/v1/ocr/detectI
-1. 控制器复用检测逻辑并初始化响应头（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:47）。
-2. `OcrService.detectI` 生成带多边形标注的图像并编码为 JPEG（vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:107）。
-3. 控制器以 `ResponseEntity` 返回字节流（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:54）。
-
-#### /api/v1/ocr/detectWithSR
-1. 控制器校验请求后委托服务层（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:64）。
-2. `OcrService.detectWithSR` 复用基础推理并调用 `ocrPrompt.semanticReconstruction`（vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:103）。
-3. 语义重建的文本直接返回（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:71）。
-
-#### /api/v1/ocr/detectWithLLM
-1. 控制器记录请求并交给服务层处理（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:78）。
-2. `OcrService.detectWithLLM` 在基础识别后调用 `ocrPrompt.fineTuning`（vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:99）。
-3. LLM 润色文本封装成 `HttpResult` 返回（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:85）。
-
-#### /api/v1/ocr/detectWithLLMI
-1. 控制器构建响应头并调用服务层（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:92）。
-2. `OcrService.detectWithLLMI` 将 LLM 调整结果叠加到原图并输出 JPEG 字节（vision-mind-ocr-core/src/main/java/com/yuqiangdede/ocr/service/OcrService.java:358）。
-3. 控制器返回图像流给客户端（vision-mind-ocr-app/src/main/java/com/yuqiangdede/ocr/controller/OcrController.java:99）。
-
-### vision-mind-ffe-app
-
-#### /api/v1/face/computeFaceVector
-1. 控制器校验 `imgUrl` 并记录日志（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:60）。
-2. `FaceService.computeFaceVector` 提取人脸与对应特征（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/service/FaceService.java:142）。
-3. `getFaceInfos` 在返回前剥离 Base64 数据（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/service/FaceService.java:154）。
-
-#### /api/v1/face/saveFaceVector
-1. 控制器确认向量信息齐全（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:78）。
-2. `saveFaceVector` 通过 `FfeVectorStoreUtil.add` 持久化向量（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/service/FaceService.java:95）。
-
-#### /api/v1/face/computeAndSaveFaceVector
-1. 控制器校验载荷（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:96）。
-2. `computeAndSaveFaceVector` 按阈值过滤人脸、保存合格向量并返回精简列表（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/service/FaceService.java:77）。
-
-#### /api/v1/face/deleteFace
-1. 控制器检查文档 ID（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:118）。
-2. `delete` 删除对应 Lucene 记录（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/service/FaceService.java:105）。
-
-#### /api/v1/face/findMostSimilarFace
-1. 控制器校验阈值设置（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:135）。
-2. `findMostSimilarFace` 执行特征提取、质量过滤并在 Lucene 中检索 Top-1（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/service/FaceService.java:116）。
-
-#### /api/v1/face/findMostSimilarFaceI
-1. 控制器重复载荷校验（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:153）。
-2. 控制器将服务返回的最佳匹配图像直接流式输出（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:163）。
-
-#### /api/v1/face/calculateSimilarity
-1. 控制器确认提供了两条 URL（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:186）。
-2. `calculateSimilarity` 提取两张图的特征、归一化后计算余弦相似度（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/service/FaceService.java:177）。
-
-#### /api/v1/face/findSave
-1. 控制器校验请求（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/controller/FaceController.java:212）。
-2. `findSave` 对每个人脸先检索，再对未命中项执行入库并返回新增与命中结果（vision-mind-ffe-app/src/main/java/com/yuqiangdede/ffe/service/FaceService.java:197）。
-
-### vision-mind-reid-app
-
-#### /api/v1/reid/feature/single
-1. 控制器校验请求体（vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/controller/ReidController.java:23）。
-2. `featureSingle` 计算探测图的向量并附加 UUID（vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/service/ReidService.java:75）。
-
-#### /api/v1/reid/feature/calculateSimilarity
-1. 控制器检查两条 URL（vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/controller/ReidController.java:39）。
-2. `calculateSimilarity` 生成两条向量并计算余弦相似度（vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/service/ReidService.java:82）。
-
-#### /api/v1/reid/feature/multi
-1. 控制器校验载荷（vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/controller/ReidController.java:56）。
-2. `featureMulti` 通过 `ImgAnalysisService.detectArea` 执行检测、裁剪行人、提取向量并返回集合（vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/service/ReidService.java:89）。
-
-#### /api/v1/reid/store/single
-1. 控制器要求必要的 ID 字段（vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/controller/ReidController.java:72）。
-2. `storeSingle` 提取向量、生成 UUID，并调用 `ReidVectorStoreUtil.add` 持久化（vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/service/ReidService.java:109）。
-
-#### /api/v1/reid/search
-1. 控制器校验 `imgUrl`、`topN` 与 `threshold`（vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/controller/ReidController.java:106）。
-2. `search` 计算探测向量，并在 Lucene 中按可选摄像头限制检索匹配（vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/service/ReidService.java:117）。
-
-#### /api/v1/reid/searchOrStore
-1. 控制器校验请求体（vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/controller/ReidController.java:125）。
-2. `searchOrStore` 优先返回最优匹配，若未命中则持久化新向量（vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/service/ReidService.java:123）。
-
-#### /api/v1/reid/associateStore
-1. 控制器校验请求（vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/controller/ReidController.java:142）。
-2. `associateStore` 先检索匹配，再无条件保存新向量，并与命中对象建立关联（vision-mind-reid-app/src/main/java/com/yuqiangdede/reid/service/ReidService.java:138）。
-
-
-### vision-mind-lpr-app
-
-#### /api/v1/lpr
-1. 控制器校验 `imgUrl` 后转到服务层（vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/controller/LprController.java:34）。
-2. `LprService.analyze` 下载图片，调用 `ImgAnalysisService.detectLP` 返回车牌框并按模型输入尺寸做归一化裁剪（vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:40）。
-3. 每个车牌裁剪交给 `LprOnnxRecognizer.recognize` 解码文本（vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:54；vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprOnnxRecognizer.java:69）。
-4. `overlay` 为 `/v1/lprI` 绘制框和文本（vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:84）。
-
-#### /api/v1/lprOcr
-1. 控制器校验请求并转发到 `analyzeWithOcr`（vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/controller/LprController.java:71）。
-2. `analyzeWithOcr` 运行车牌检测，调用 `OcrService.detect`，按 IoU/中心点选择最佳 OCR 文本（vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:62；vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:160）。
-3. `overlay` 复用同一渲染逻辑给 `/v1/lprOcrI`（vision-mind-lpr-app/src/main/java/com/yuqiangdede/lpr/service/LprService.java:84）。
-
-### vision-mind-tbir-app
-
-#### /api/v1/tbir/saveImg
-1. 控制器校验载荷（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:46）。
-2. `saveImg` 生成或复用 `imgId`，可选执行 YOLO/FastSAM 检测、裁剪增强子图，使用 CLIP 向量化主图与子图，并携带元数据入库（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:61）。
-
-#### /api/v1/tbir/deleteImg
-1. 控制器检查 `imgId`（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:66）。
-2. `deleteImg` 会校验标识、调用向量存储删除并记录执行耗时（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:167）。
-
-#### /api/v1/tbir/searchImg
-1. 控制器校验请求（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:82）。
-2. `searchImg` 按存储的 ID 聚合 Lucene 命中结果并转换为 `HitImage` DTO（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:321）。
-
-#### /api/v1/tbir/searchImgI
-1. 控制器校验载荷（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:98）。
-2. `searchImgI` 复用 `searchImg`，下载匹配图片、绘制框并返回缓冲图像（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:331）。
-
-#### /api/v1/tbir/search
-1. 控制器校验文本查询（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:124）。
-2. `searchByText` 通过 LLM 扩展提示，使用 CLIP 编码，查询 Lucene，借助 `getFinalList` 融合结果并返回排序后的 `HitImage`（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:182）。
-
-#### /api/v1/tbir/searchI
-1. 控制器校验并转发请求（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:143）。
-2. `searchByTextI` 在每张结果图上绘制匹配框用于流式预览（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:285）。
-
-#### /api/v1/tbir/imgSearch
-1. 控制器接收 multipart 上传（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/controller/TbirController.java:170）。
-2. `imgSearch` 对探测图进行向量化，查询 Lucene 并返回排序结果（vision-mind-tbir-app/src/main/java/com/yuqiangdede/tbir/service/TbirService.java:302）。
-
-### vision-mind-llm-core
-
-#### /api/translate
-1. 控制器封装翻译提示后调用服务（vision-mind-llm-core/src/main/java/com/yuqiangdede/llm/controller/ChatController.java:23）。
-2. `LLMService.chat` 校验输入并路由到 OpenAI 或 Ollama，若两者均未配置则抛出异常（vision-mind-llm-core/src/main/java/com/yuqiangdede/llm/service/LLMService.java:22）。
-
-#### /api/chat
-1. 控制器转发自由形式的提示（vision-mind-llm-core/src/main/java/com/yuqiangdede/llm/controller/ChatController.java:39）。
-2. `LLMService.chat` 与上相同，负责选择具体提供方（vision-mind-llm-core/src/main/java/com/yuqiangdede/llm/service/LLMService.java:22）。
-
-#### /api/chatWithImg
-1. 控制器校验文本与可选图像参数（vision-mind-llm-core/src/main/java/com/yuqiangdede/llm/controller/ChatController.java:50）。
-2. `chatWithImg` 补充默认系统提示（若缺失），并调用配置好的 OpenAI 视觉端点（vision-mind-llm-core/src/main/java/com/yuqiangdede/llm/service/LLMService.java:49）。
-
-## 路线图
-
-- 支持 LLaMA 等离线大模型的流式响应。
-- 为 Elasticsearch 向量后端补充更完善的索引维护与监控工具。
-- 在现有同步视频抽帧能力基础上，继续扩展异步流式处理、跟踪和批量结构化流水线。
-
-欢迎通过 Issue 或 PR 参与贡献。
-
-## 可扩展功能灵感
-
-以下是基于现有模块可以进一步演进的方向，方便团队在规划后续迭代时参考：
-
-- **多目标跟踪（MOT）**：在 `vision-mind-yolo-core` 内引入 DeepSORT、ByteTrack 等跟踪器，与检测结果结合以输出跨帧的目标轨迹，可用于安防巡检或行人路径分析。
-- **细粒度属性识别**：为行人、人脸或车辆等对象增加属性分类（如性别、服饰颜色、车牌区域），以丰富向量索引中的检索条件。
-- **视频结构化处理流水线**：构建批量视频解析服务，对关键帧执行检测、分割、重识别并归档结果，满足大规模视频入库或案件回溯需求。
-- **跨摄像头轨迹关联**：基于现有重识别能力叠加时空约束，实现跨机位的目标身份关联与告警规则。
-- **更丰富的多模态交互**：在 `vision-mind-llm-core` 中加入图像字幕生成、视觉问答（VQA）或提示模板管理，提升图文问答的可用性。
-- **模型管理与监控**：提供统一的模型版本管理、在线热更新与推理性能监控面板，便于在生产环境中运维多种模型。
+## 文档入口
+
+- 架构文档：`docs/architecture/`
+- 部署文档：`docs/deployment/`
+- 模块文档：`docs/modules/`
+- 故障排查：`docs/troubleshooting/`
+- 资源清单：`resource/manifest.json`
+
+## Roadmap
+
+- 继续将模型加载迁移到 `ModelRegistry` 与 `OnnxSessionFactory`
+- 完善所有图像/音频域统一输入适配（upload / URL / base64）
+- 新旧接口并行至少一个版本周期后再评估收敛
+- 增补模块级兼容测试与 CI 覆盖

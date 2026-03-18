@@ -57,7 +57,7 @@ public class FaceController {
 //        }
 //    }
 
-    @PostMapping(value = "/v1/face/computeFaceVector", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/face/computeFaceVector", "/v1/face/infer"}, produces = "application/json", consumes = "application/json")
     @SuppressWarnings("UseSpecificCatch")
     public HttpResult<FaceImage> computeFaceVector(@RequestBody InputWithUrl input) {
         long start_time = System.currentTimeMillis();
@@ -75,7 +75,7 @@ public class FaceController {
         }
     }
 
-    @PostMapping(value = "/v1/face/saveFaceVector", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/face/saveFaceVector", "/v1/face/store"}, produces = "application/json", consumes = "application/json")
     @SuppressWarnings("UseSpecificCatch")
     public HttpResult<Object> saveFaceVector(@RequestBody Input4Save input) {
         long start_time = System.currentTimeMillis();
@@ -93,7 +93,7 @@ public class FaceController {
         }
     }
 
-    @PostMapping(value = "/v1/face/computeAndSaveFaceVector", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/face/computeAndSaveFaceVector", "/v1/face/store/compute"}, produces = "application/json", consumes = "application/json")
     @SuppressWarnings("UseSpecificCatch")
     public HttpResult<List<FaceInfo4Add>> computeAndSaveFaceVector(@RequestBody InputWithUrl input) {
         long start_time = System.currentTimeMillis();
@@ -115,7 +115,7 @@ public class FaceController {
         }
     }
 
-    @PostMapping(value = "/v1/face/deleteFace", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/face/deleteFace", "/v1/face/index/delete"}, produces = "application/json", consumes = "application/json")
     @SuppressWarnings("UseSpecificCatch")
     public HttpResult<Object> deleteFace(@RequestBody Input4Del input) {
         long start_time = System.currentTimeMillis();
@@ -132,7 +132,7 @@ public class FaceController {
         }
     }
 
-    @PostMapping(value = "/v1/face/findMostSimilarFace", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/face/findMostSimilarFace", "/v1/face/search"}, produces = "application/json", consumes = "application/json")
     @SuppressWarnings("UseSpecificCatch")
     public HttpResult<List<FaceInfo4Search>> findMostSimilarFace(@RequestBody Input4Search input) {
         long start_time = System.currentTimeMillis();
@@ -150,7 +150,7 @@ public class FaceController {
         }
     }
 
-    @PostMapping(value = "/v1/face/findMostSimilarFaceI", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/face/findMostSimilarFaceI", "/v1/face/preview"}, produces = "application/json", consumes = "application/json")
     @SuppressWarnings("UseSpecificCatch")
     public Object findMostSimilarFaceI(@RequestBody Input4Search input) {
         long start_time = System.currentTimeMillis();
@@ -183,7 +183,7 @@ public class FaceController {
      * @param input 包含两张图片URL的请求体
      * @return HttpResult对象，包含操作结果和相似度信息(注意这个相似度和搜索中的相似度不可比较，这个是代码算的，搜索的那个是用Lucene底层算的)
      */
-    @PostMapping(value = "/v1/face/calculateSimilarity", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/face/calculateSimilarity", "/v1/face/search/similarity"}, produces = "application/json", consumes = "application/json")
     @SuppressWarnings("UseSpecificCatch")
     public HttpResult<Object> calculateSimilarity(@RequestBody Input4Compare input) {
         long start_time = System.currentTimeMillis();
@@ -209,7 +209,7 @@ public class FaceController {
      * @param input 包含要添加的人脸信息的对象，若是找到了相似的人脸就返回，若是没有找到相似的就添加
      * @return 包含操作结果的HttpResult对象
      */
-    @PostMapping(value = "/v1/face/findSave", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/face/findSave", "/v1/face/search-or-store"}, produces = "application/json", consumes = "application/json")
     @SuppressWarnings("UseSpecificCatch")
     public HttpResult<FaceInfo4SearchAdd> findSave(@RequestBody Input4Search input) {
         long start_time = System.currentTimeMillis();

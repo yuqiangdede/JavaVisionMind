@@ -20,6 +20,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <spring.version>7.0.0-RC1</spring.version>
+        <springdoc.version>2.8.9</springdoc.version>
+        <checkstyle.version>10.26.1</checkstyle.version>
+        <maven.checkstyle.plugin.version>3.6.0</maven.checkstyle.plugin.version>
         <lombok.version>1.18.42</lombok.version>
         <lucene.version>9.12.0</lucene.version>
         <jts.version>1.19.0</jts.version>
@@ -35,7 +38,10 @@
     <modules>
         <module>vision-mind-test-sth</module>
         <module>vision-mind-common</module>
+        <module>vision-mind-platform-common</module>
+        <module>vision-mind-starter-web</module>
         <module>vision-mind-asr-app</module> <!-- 17008-->
+        <module>vision-mind-tts-app</module> <!-- 17010-->
         <module>vision-mind-yolo-app</module> <!-- 17001-->
         <module>vision-mind-yolo-core</module>
         <module>vision-mind-ffe-app</module> <!-- 17002-->
@@ -58,6 +64,11 @@
                 <groupId>org.springframework</groupId>
                 <artifactId>spring-web</artifactId>
                 <version>${spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -138,6 +149,18 @@
                     <systemPropertyVariables>
                         <vision-mind.test-mode>true</vision-mind.test-mode>
                     </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${maven.checkstyle.plugin.version}</version>
+                <configuration>
+                    <configLocation>checkstyle.xml</configLocation>
+                    <consoleOutput>true</consoleOutput>
+                    <failsOnError>true</failsOnError>
+                    <includeTestSourceDirectory>false</includeTestSourceDirectory>
+                    <linkXRef>false</linkXRef>
                 </configuration>
             </plugin>
         </plugins>

@@ -43,7 +43,7 @@ public class YoloTextController {
      * @param imgAreaInput 输入
      * @return 检测结果
      */
-    @PostMapping(value = "/v1/yoloe/detectText", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/yoloe/detectText", "/v1/vision/text/detect"}, produces = "application/json", consumes = "application/json")
     public HttpResult<List<Box>> detectText(@RequestBody TextPromptRequestWithArea imgAreaInput) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(imgAreaInput.getImgUrl())) {
@@ -66,7 +66,7 @@ public class YoloTextController {
      * @param imgAreaInput 输入
      * @return 图片
      */
-    @PostMapping(value = "/v1/yoloe/detectTextI", consumes = "application/json",
+    @PostMapping(value = {"/v1/yoloe/detectTextI", "/v1/vision/text/detect/preview"}, consumes = "application/json",
             produces = {"image/jpeg", "application/json"})
     public Object detectTextI(@RequestBody TextPromptRequestWithArea imgAreaInput) {
         long start_time = System.currentTimeMillis();
@@ -96,7 +96,7 @@ public class YoloTextController {
      * @param imgInput 输入
      * @return 检测结果
      */
-    @PostMapping(value = "/v1/yoloe/detectFree", produces = "application/json", consumes = "application/json")
+    @PostMapping(value = {"/v1/yoloe/detectFree", "/v1/vision/free-seg/detect"}, produces = "application/json", consumes = "application/json")
     public HttpResult<List<SegDetection>> detectFree(@RequestBody DetectionRequest imgInput) {
         long start_time = System.currentTimeMillis();
         if (ObjectUtils.isEmpty(imgInput.getImgUrl())) {
@@ -119,7 +119,7 @@ public class YoloTextController {
      * @param imgInput 输入
      * @return 图片
      */
-    @PostMapping(value = "/v1/yoloe/detectFreeI", consumes = "application/json",
+    @PostMapping(value = {"/v1/yoloe/detectFreeI", "/v1/vision/free-seg/detect/preview"}, consumes = "application/json",
             produces = {"image/jpeg", "application/json"})
     public Object detectFreeI(@RequestBody DetectionRequest imgInput) {
         long start_time = System.currentTimeMillis();

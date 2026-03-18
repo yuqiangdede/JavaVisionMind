@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: ocr
+
+server:
+  port: 17006
+  servlet:
+    context-path: /vision-mind-ocr
+
+vision-mind:
+  resource:
+    root: ./resource
+    fallback-env: VISION_MIND_PATH
+    validate-on-startup: true
+    manifest: resource/manifest.json
+  native-load:
+    skip-open-cv: ${vision-mind.skip-opencv:false}
+  runtime:
+    profile: default
+  vector-store:
+    mode: memory
