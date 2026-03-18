@@ -61,6 +61,14 @@ powershell -ExecutionPolicy Bypass -File scripts\verify-env.ps1
 - ASR demo: `examples/asr-demo`
 - TTS web page: `http://127.0.0.1:17010/vision-mind-tts/`
 
+## TTS Resource Path Convention
+
+- `vision-mind-tts-app` does not rely on environment variables for model loading.
+- On startup it auto-locates the repository root and reads resources from relative path: `./resource`.
+- Default paths:
+- `./resource/tts/model/sherpa-onnx-vits-zh-ll`
+- `./resource/lib/sherpa-onnx`
+
 ```bash
 bash examples/yolo-demo/curl.sh
 bash examples/asr-demo/curl.sh

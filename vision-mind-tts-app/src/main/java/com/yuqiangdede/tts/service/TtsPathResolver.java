@@ -75,7 +75,7 @@ public class TtsPathResolver {
 
     @PostConstruct
     public void init() {
-        projectRoot = Paths.get("").toAbsolutePath().normalize();
+        projectRoot = locateProjectRoot(Paths.get("").toAbsolutePath().normalize());
         extractionRoot = resolveExtractionRoot();
         modelRoot = resolveReadOnly(modelRootValue);
     }
@@ -292,6 +292,19 @@ public class TtsPathResolver {
         } catch (Exception ignored) {
         }
         return projectRoot.resolve("tts-java-bundle").normalize();
+    }
+
+    private Path locateProjectRoot(Path start) {
+        Path current = start;
+        while (current != null) {
+            boolean hasResource = Files.isDirectory(current.resolve("resource"));
+            boolean hasPom = Files.isRegularFile(current.resolve("pom.xml"));
+            if (hasResource && hasPom) {
+                return current.normalize();
+            }
+            current = current.getParent();
+        }
+        return start;
     }
 
     private String normalizeResourcePath(String pathValue) {

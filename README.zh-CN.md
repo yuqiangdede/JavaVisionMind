@@ -61,6 +61,14 @@ powershell -ExecutionPolicy Bypass -File scripts\verify-env.ps1
 - ASR 示例：`examples/asr-demo`
 - TTS 测试页面：`http://127.0.0.1:17010/vision-mind-tts/`
 
+## TTS 资源路径约定
+
+- `vision-mind-tts-app` 不依赖环境变量读取模型。
+- 启动时会自动定位仓库根目录，并按相对路径读取资源：`./resource`。
+- 默认读取路径：
+- `./resource/tts/model/sherpa-onnx-vits-zh-ll`
+- `./resource/lib/sherpa-onnx`
+
 ```bash
 bash examples/yolo-demo/curl.sh
 bash examples/asr-demo/curl.sh
