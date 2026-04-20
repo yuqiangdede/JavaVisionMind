@@ -92,6 +92,19 @@ class OcrControllerTest {
                 .andExpect(content().contentType(MediaType.IMAGE_JPEG));
     }
 
+    @Test
+    void detect_returnsFailureWhenServiceRejectsInput() throws Exception {
+        when(ocrService.detect(any(OcrDetectionRequest.class)))
+                .thenThrow(new IllegalArgumentException("imgurl is null or empty"));
+
+        mockMvc.perform(post("/api/v1/ocr/detect")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(writeJson(request())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("-1"))
+                .andExpect(jsonPath("$.msg").value("imgurl is null or empty"));
+    }
+
     private OcrDetectionRequest request() {
         OcrDetectionRequest request = new OcrDetectionRequest();
         request.setImgUrl("http://example.com/ocr.jpg");
