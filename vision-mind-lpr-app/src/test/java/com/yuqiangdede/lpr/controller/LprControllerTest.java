@@ -85,6 +85,31 @@ class LprControllerTest {
                 .andExpect(content().contentType(MediaType.IMAGE_JPEG));
     }
 
+    @Test
+    void recognize_missingImgUrl_returnsFailure() throws Exception {
+        DetectionRequestWithArea request = new DetectionRequestWithArea();
+
+        mockMvc.perform(post("/api/v1/lpr")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(writeJson(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("-1"))
+                .andExpect(jsonPath("$.msg").value("imgurl is null or empty"));
+    }
+
+    @Test
+    void recognize_returnsFailureWhenServiceThrows() throws Exception {
+        when(lprService.analyze(any(DetectionRequestWithArea.class)))
+                .thenThrow(new RuntimeException("analyze failed"));
+
+        mockMvc.perform(post("/api/v1/lpr")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(writeJson(request())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("-1"))
+                .andExpect(jsonPath("$.msg").value("analyze failed"));
+    }
+
     private DetectionRequestWithArea request() {
         DetectionRequestWithArea request = new DetectionRequestWithArea();
         request.setImgUrl("http://example.com/lpr.jpg");
