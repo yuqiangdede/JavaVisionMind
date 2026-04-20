@@ -209,6 +209,31 @@ class ImgAnalysisControllerTest {
                 .andExpect(jsonPath("$.code").value("0"));
     }
 
+    @Test
+    void predictorArea_missingImgUrl_returnsFailure() throws Exception {
+        DetectionRequestWithArea request = new DetectionRequestWithArea();
+
+        mockMvc.perform(post("/api/v1/img/detect")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(writeJson(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("-1"))
+                .andExpect(jsonPath("$.msg").value("imgurl is null or empty"));
+    }
+
+    @Test
+    void predictorArea_returnsFailureWhenServiceThrows() throws Exception {
+        when(imgAnalysisService.detectArea(any(DetectionRequestWithArea.class)))
+                .thenThrow(new RuntimeException("detect failed"));
+
+        mockMvc.perform(post("/api/v1/img/detect")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(writeJson(areaRequest())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("-1"))
+                .andExpect(jsonPath("$.msg").value("detect failed"));
+    }
+
     private DetectionRequestWithArea areaRequest() {
         DetectionRequestWithArea request = new DetectionRequestWithArea();
         request.setImgUrl("http://example.com/test.jpg");
