@@ -343,6 +343,7 @@ public class ImgAnalysisController {
         } catch (IOException | OrtException | RuntimeException e) {
             log.error("segArea error", e);
             return new HttpResult<>(false, e.getMessage());
+        }
     }
 
     @PostMapping(value = "/v1/vision/detect/upload", consumes = "multipart/form-data", produces = "application/json")
@@ -361,6 +362,4 @@ public class ImgAnalysisController {
             return new HttpResult<>(false, ex.getMessage());
         }
     }
-}
-
 }
