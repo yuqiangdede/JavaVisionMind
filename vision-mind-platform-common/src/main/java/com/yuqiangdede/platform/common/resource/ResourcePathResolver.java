@@ -33,6 +33,9 @@ public class ResourcePathResolver {
         String normalized = path.replace('\\', '/');
         if (normalized.equals("resource") || normalized.startsWith("resource/")) {
             normalized = normalized.substring("resource".length());
+            while (normalized.startsWith("/")) {
+                normalized = normalized.substring(1);
+            }
         }
         return resourceRoot().resolve(normalized).normalize();
     }

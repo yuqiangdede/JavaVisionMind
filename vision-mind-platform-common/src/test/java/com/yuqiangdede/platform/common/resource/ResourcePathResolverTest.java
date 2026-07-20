@@ -17,7 +17,7 @@ class ResourcePathResolverTest {
         properties.getResource().setRoot(resourceRoot().toString());
         ResourcePathResolver resolver = new ResourcePathResolver(properties);
         Path resolved = resolver.resolve("resource/yolo/model/yolo26s.onnx");
-        assertTrue(resolved.toString().replace("\\", "/").contains("/resource/yolo/model/yolo26s.onnx"));
+        assertTrue(Files.isRegularFile(resolved), () -> "resolved path does not exist: " + resolved);
     }
 
     private Path resourceRoot() {

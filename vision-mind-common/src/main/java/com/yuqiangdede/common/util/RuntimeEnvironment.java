@@ -4,6 +4,7 @@ public final class RuntimeEnvironment {
 
     private static final String SKIP_OPENCV_PROPERTY = "vision-mind.skip-opencv";
     private static final String TEST_MODE_PROPERTY = "vision-mind.test-mode";
+    private static final String INTEGRATION_TEST_PROPERTY = "vision-mind.integration-test";
     private static final String SUREFIRE_TEST_CLASSPATH = "surefire.test.class.path";
     private static final String GRADLE_TEST_WORKER = "org.gradle.test.worker";
     private static final String IDEA_TEST_BUFFER = "idea.test.cyclic.buffer.size";
@@ -17,6 +18,9 @@ public final class RuntimeEnvironment {
     }
 
     public static boolean isTestEnvironment() {
+        if (Boolean.getBoolean(INTEGRATION_TEST_PROPERTY)) {
+            return false;
+        }
         return Boolean.getBoolean(TEST_MODE_PROPERTY)
                 || System.getProperty(SUREFIRE_TEST_CLASSPATH) != null
                 || System.getProperty(GRADLE_TEST_WORKER) != null

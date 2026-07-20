@@ -146,6 +146,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <argLine>-XX:+EnableDynamicAgentLoading</argLine>
+                    <!-- Native OpenCV/Sherpa state is process-global; isolate model-backed test classes. -->
+                    <reuseForks>false</reuseForks>
                     <systemPropertyVariables>
                         <vision-mind.test-mode>true</vision-mind.test-mode>
                     </systemPropertyVariables>
