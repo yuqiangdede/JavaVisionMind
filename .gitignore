@@ -1,4 +1,6 @@
 resource/
+!vision-mind-platform-common/src/main/java/com/yuqiangdede/platform/common/resource/
+!vision-mind-platform-common/src/main/java/com/yuqiangdede/platform/common/resource/**
 target/
 .vscode/settings.json
 .idea
