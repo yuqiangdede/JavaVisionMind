@@ -1,0 +1,8 @@
+vision-mind:
+  native:
+    dll-path: /lib/opencv/opencv_java490.dll
+    so-path: /lib/opencv/libopencv_java4100.so
+    use-gpu: false
+  yolo:
+    default-types: [0, 1, 2]
+    obb-default-types: [0, 1]

@@ -1,0 +1,11 @@
+vision-mind:
+  native:
+    use-gpu: false
+  yolo:
+    default-types: [0, 2]
+    depth:
+      max-pixels: 42
+      allow-local-files: true
+      local-roots:
+        - D:/images
+        - D:/snapshots

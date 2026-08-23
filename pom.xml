@@ -44,6 +44,8 @@
         <module>vision-mind-tts-app</module> <!-- 17010-->
         <module>vision-mind-yolo-app</module> <!-- 17001-->
         <module>vision-mind-yolo-core</module>
+        <module>vision-mind-rfdetr-app</module> <!-- 17011 -->
+        <module>vision-mind-rfdetr-core</module>
         <module>vision-mind-ffe-app</module> <!-- 17002-->
         <module>vision-mind-tbir-app</module> <!-- 17003-->
         <module>vision-mind-reid-app</module> <!-- 17004-->

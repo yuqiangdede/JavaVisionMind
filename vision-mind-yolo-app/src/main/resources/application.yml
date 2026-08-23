@@ -13,6 +13,59 @@ vision-mind:
     fallback-env: VISION_MIND_PATH
     validate-on-startup: true
     manifest: resource/manifest.json
+  native:
+    dll-path: /lib/opencv/opencv_java490.dll
+    so-path: /lib/opencv/libopencv_java4100.so
+    use-gpu: false
+  yolo:
+    confidence-threshold: 0.3
+    pose-confidence-threshold: 0.3
+    detection-ratio: 0.5
+    blocking-ratio: 0.5
+    nms-threshold: 0.3
+    sam-confidence-threshold: 0.5
+    default-types: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    obb-default-types: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    models:
+      detect: /yolo/model/yolo26s.onnx
+      face: /yolo/model/yolo-face.onnx
+      pose: /yolo/model/yolo26s-pose.onnx
+      lp: /yolo/model/yolo-lp-s.onnx
+      segmentation: /yolo/model/yolo26s-seg.onnx
+      obb: /yolo/model/yolo26s-obb.onnx
+      text: /yolo/model/yoloe-26s-seg.onnx
+      text-free: /yolo/model/yoloe-26s-seg-pf.onnx
+      text-encoder: /yolo/model/mobileclip2_b.onnx
+      text-tokenizer: /tbir/clip-tokenizer
+      sam: /yolo/model/FastSAM-s.onnx
+      prompt-scale: 2.726257
+    nms:
+      detect: false
+      face: true
+      lp: true
+      pose: false
+      segmentation: false
+      obb: false
+      text: true
+      sam: true
+    video:
+      frame-interval: 5
+    depth:
+      model: yolo/model/yolo26n-depth.onnx
+      max-pixels: 2100000
+      max-download-bytes: 26214400
+      max-request-bytes: 36700160
+      max-active-requests: 2
+      connect-timeout-ms: 5000
+      http-total-timeout-ms: 15000
+      max-redirects: 3
+      allow-local-files: ${VISION_MIND_YOLO_DEPTH_ALLOW_LOCAL_FILES:false}
+      local-roots: ${VISION_MIND_YOLO_DEPTH_LOCAL_ROOTS:}
+      allow-data-uri: true
+      allowed-remote-hosts: ${VISION_MIND_YOLO_DEPTH_ALLOWED_REMOTE_HOSTS:}
+      max-concurrent: 1
+      queue-timeout-ms: 5000
+      max-json-pixels: 500000
   native-load:
     skip-open-cv: ${vision-mind.skip-opencv:false}
   runtime:

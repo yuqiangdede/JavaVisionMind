@@ -1,4 +1,12 @@
-resource/
+resource/*
+!resource/manifest.json
+!resource/rfdetr/
+resource/rfdetr/*
+!resource/rfdetr/model/
+resource/rfdetr/model/*
+!resource/rfdetr/model/rfdetr-small.metadata.json
+.runtime/
+.codex/
 !vision-mind-platform-common/src/main/java/com/yuqiangdede/platform/common/resource/
 !vision-mind-platform-common/src/main/java/com/yuqiangdede/platform/common/resource/**
 target/

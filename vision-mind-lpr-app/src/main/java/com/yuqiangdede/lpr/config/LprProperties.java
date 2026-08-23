@@ -3,7 +3,7 @@ package com.yuqiangdede.lpr.config;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 @Data
-@ConfigurationProperties(prefix = "lpr")
+@ConfigurationProperties(prefix = "vision-mind.lpr")
 public class LprProperties {
 
     /**

@@ -26,43 +26,43 @@ public class TtsPathResolver {
     private static final Pattern SHERPA_JAVA_ANY_JAR = Pattern.compile("sherpa-onnx-v([0-9.]+)(?:-java(\\d+))?\\.jar");
     private static final String RESOURCE_PREFIX = "resource/";
 
-    @Value("${tts.model-root:resource/tts/model}")
+    @Value("${vision-mind.tts.model-root:resource/tts/model}")
     private String modelRootValue;
 
-    @Value("${tts.runtime-java-jar:auto}")
+    @Value("${vision-mind.tts.runtime-java-jar:auto}")
     private String runtimeJavaJarValue;
 
-    @Value("${tts.runtime-native-jar:auto}")
+    @Value("${vision-mind.tts.runtime-native-jar:auto}")
     private String runtimeNativeJarValue;
 
-    @Value("${tts.runtime-provider:cpu}")
+    @Value("${vision-mind.tts.runtime-provider:cpu}")
     private String provider;
 
-    @Value("${tts.num-threads:2}")
+    @Value("${vision-mind.tts.num-threads:2}")
     private int numThreads;
 
-    @Value("${tts.default-speaker-id:0}")
+    @Value("${vision-mind.tts.default-speaker-id:0}")
     private int defaultSpeakerId;
 
-    @Value("${tts.default-model:sherpa-onnx-vits-zh-ll}")
+    @Value("${vision-mind.tts.default-model:sherpa-onnx-vits-zh-ll}")
     private String defaultModel;
 
-    @Value("${tts.max-input-length:300}")
+    @Value("${vision-mind.tts.max-input-length:300}")
     private int maxInputLength;
 
-    @Value("${tts.default-speed:1.0}")
+    @Value("${vision-mind.tts.default-speed:1.0}")
     private float defaultSpeed;
 
-    @Value("${tts.silence-scale:0.2}")
+    @Value("${vision-mind.tts.silence-scale:0.2}")
     private float silenceScale;
 
-    @Value("${tts.vits-length-scale:1.0}")
+    @Value("${vision-mind.tts.vits-length-scale:1.0}")
     private float lengthScale;
 
-    @Value("${tts.vits-noise-scale:0.667}")
+    @Value("${vision-mind.tts.vits-noise-scale:0.667}")
     private float noiseScale;
 
-    @Value("${tts.vits-noise-scale-w:0.8}")
+    @Value("${vision-mind.tts.vits-noise-scale-w:0.8}")
     private float noiseScaleW;
 
     private Path projectRoot;

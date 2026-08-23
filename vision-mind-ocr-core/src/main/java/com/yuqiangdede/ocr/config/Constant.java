@@ -1,13 +1,7 @@
 package com.yuqiangdede.ocr.config;
 
-import com.yuqiangdede.common.util.RuntimeEnvironment;
-import lombok.extern.slf4j.Slf4j;
+import com.yuqiangdede.common.config.YamlConfig;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
-
-@Slf4j
 public final class Constant {
 
     public static final String OPENCV_DLL_PATH;
@@ -23,49 +17,38 @@ public final class Constant {
     public static final boolean USE_GPU;
 
     static {
-        Properties properties = new Properties();
-        try {
-            loadProperties(properties, "native-defaults.properties", false);
-            loadProperties(properties, "ocr-core.properties", true);
+        YamlConfig config = YamlConfig.load(Constant.class);
+        String envPath = resourceRoot();
 
-            String envPath = System.getenv("VISION_MIND_PATH");
-            boolean skipNativeConfig = RuntimeEnvironment.shouldSkipNativeLoad();
-            if (envPath == null || envPath.isBlank()) {
-                if (!skipNativeConfig) {
-                    log.warn("VISION_MIND_PATH is not defined. Native resources will be resolved relative to the current directory.");
-                }
-                envPath = "";
-            }
+        OPENCV_DLL_PATH = resolvePath(envPath,
+                config.get("vision-mind.native.dll-path", "/lib/opencv/opencv_java490.dll"));
+        OPENCV_SO_PATH = resolvePath(envPath,
+                config.get("vision-mind.native.so-path", "/lib/opencv/libopencv_java4100.so"));
 
-            OPENCV_DLL_PATH = envPath + properties.getProperty("opencv.dll.path");
-            OPENCV_SO_PATH = envPath + properties.getProperty("opencv.so.path");
-
-            ORC_DET_ONNX_PATH = envPath + properties.getProperty("orc.det.onnx.path");
-            ORC_DET2_ONNX_PATH = envPath + properties.getProperty("orc.det2.onnx.path");
-            ORC_REC_ONNX_PATH = envPath + properties.getProperty("orc.rec.onnx.path");
-            ORC_REC2_ONNX_PATH = envPath + properties.getProperty("orc.rec2.onnx.path");
-            ORC_CLS_ONNX_PATH = envPath + properties.getProperty("orc.cls.onnx.path");
-            OCR_DICT_PATH = envPath + properties.getProperty("ocr.dict.path");
-
-            USE_GPU = Boolean.parseBoolean(properties.getProperty("use.gpu", "false"));
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to load OCR configuration", e);
-        }
+        ORC_DET_ONNX_PATH = resolvePath(envPath,
+                config.get("vision-mind.ocr.models.det", "/ocr/model/det.onnx"));
+        ORC_DET2_ONNX_PATH = resolvePath(envPath,
+                config.get("vision-mind.ocr.models.det2", "/ocr/model/det2.onnx"));
+        ORC_REC_ONNX_PATH = resolvePath(envPath,
+                config.get("vision-mind.ocr.models.rec", "/ocr/model/rec.onnx"));
+        ORC_REC2_ONNX_PATH = resolvePath(envPath,
+                config.get("vision-mind.ocr.models.rec2", "/ocr/model/rec2.onnx"));
+        ORC_CLS_ONNX_PATH = resolvePath(envPath,
+                config.get("vision-mind.ocr.models.cls", "/ocr/model/cls.onnx"));
+        OCR_DICT_PATH = resolvePath(envPath,
+                config.get("vision-mind.ocr.dict-path", "/ocr/dict.txt"));
+        USE_GPU = config.getBoolean("vision-mind.native.use-gpu", false);
     }
 
     private Constant() {
     }
 
-    private static void loadProperties(Properties target, String resourceName, boolean required) throws IOException {
-        try (InputStream stream = Constant.class.getClassLoader().getResourceAsStream(resourceName)) {
-            if (stream == null) {
-                if (required) {
-                    throw new IOException(resourceName + " not found");
-                }
-                return;
-            }
-            target.load(stream);
-        }
+    private static String resourceRoot() {
+        String envPath = System.getenv("VISION_MIND_PATH");
+        return envPath == null ? "" : envPath;
     }
 
+    private static String resolvePath(String resourceRoot, String configuredPath) {
+        return resourceRoot + configuredPath;
+    }
 }

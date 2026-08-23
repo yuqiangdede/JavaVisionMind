@@ -5,6 +5,7 @@ import com.yuqiangdede.platform.common.config.VisionMindProperties;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 public class ResourcePathResolver {
     private final VisionMindProperties properties;
@@ -22,7 +23,19 @@ public class ResourcePathResolver {
         if (fallback != null && !fallback.isBlank()) {
             return Paths.get(fallback).toAbsolutePath().normalize();
         }
-        return configured;
+        return findProjectResourceRoot(configured.getParent()).orElse(configured);
+    }
+
+    private Optional<Path> findProjectResourceRoot(Path start) {
+        Path current = start;
+        while (current != null) {
+            Path candidate = current.resolve("resource").toAbsolutePath().normalize();
+            if (Files.isDirectory(candidate)) {
+                return Optional.of(candidate);
+            }
+            current = current.getParent();
+        }
+        return Optional.empty();
     }
 
     public Path resolve(String path) {

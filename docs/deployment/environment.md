@@ -16,4 +16,4 @@
 - `vision-mind.resource.validate-on-startup`
 - `vision-mind.native-load.skip-open-cv`
 - `vision-mind.runtime.profile`
-- `vision-mind.vector-store.mode`
+- `vision-mind.<module>.vector-store.mode`

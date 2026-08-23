@@ -19,3 +19,12 @@ vision-mind:
     profile: default
   vector-store:
     mode: memory
+  llm:
+    ollama:
+      base-url: ''
+      model: ''
+    openai:
+      base-url: https://ark.cn-beijing.volces.com/api/v3/chat/completions
+      api-key: ''
+      model: ep-20250327212217-f57wv
+    http-timeout-ms: 1000000

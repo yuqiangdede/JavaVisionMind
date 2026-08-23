@@ -19,30 +19,38 @@ vision-mind:
     fallback-env: VISION_MIND_PATH
     validate-on-startup: true
     manifest: resource/manifest.json
+  native:
+    dll-path: /lib/opencv/opencv_java490.dll
+    so-path: /lib/opencv/libopencv_java4100.so
+    use-gpu: false
   native-load:
     skip-open-cv: ${vision-mind.skip-opencv:false}
   runtime:
     profile: default
-  vector-store:
-    mode: ${vector.store.mode:memory}
-
-component:
-  path: ..
-img:
-  onnx: /tbir/model/clip-vit-b32-img.onnx
-text:
-  onnx: /tbir/model/clip-vit-b32-text.onnx
-clip:
-  tokenizer: /tbir/clip-tokenizer
-open:
-  detect: true
-detect:
-  types: yolo,sam
-filter:
-  box:
-    size: 50,300
-augment:
-  types: original,flipH,rotate15,rotate-15,blur,bright,contrast
-key:
-  expand:
-    num: 5
+  tbir:
+    component-path: ..
+    models:
+      image: /tbir/model/clip-vit-b32-img.onnx
+      text: /tbir/model/clip-vit-b32-text.onnx
+      tokenizer: /tbir/clip-tokenizer
+    detection:
+      enabled: true
+      types: [yolo, sam]
+    filter:
+      min-size: 50
+      max-size: 300
+    augment-types: [original, flipH, rotate15, rotate-15, blur, bright, contrast]
+    key:
+      expand-num: 5
+    vector-store:
+      mode: memory
+      lucene-path: /data/tbirIndex
+      elasticsearch:
+        uris: http://127.0.0.1:9200
+        username: ''
+        password: ''
+        api-key: ''
+        index: vision_mind_tbir
+  yolo:
+    default-types: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    obb-default-types: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]

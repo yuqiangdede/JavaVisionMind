@@ -1,0 +1,11 @@
+{
+  "modelSha256": "GENERATED_BY_scripts/init-rfdetr.ps1",
+  "source": "https://github.com/roboflow/rf-detr/releases/tag/1.9.2",
+  "license": "Apache-2.0",
+  "input": { "name": "input", "type": "float32", "shape": [1, 3, 512, 512] },
+  "outputs": {
+    "dets": { "name": "dets", "type": "float32", "shape": [1, 300, 4] },
+    "labels": { "name": "labels", "type": "float32", "shape": [1, 300, 91] }
+  },
+  "classNames": "Generated as the canonical sparse COCO ID mapping by scripts/init-rfdetr.ps1"
+}

@@ -13,6 +13,10 @@ vision-mind:
     fallback-env: VISION_MIND_PATH
     validate-on-startup: true
     manifest: resource/manifest.json
+  native:
+    dll-path: /lib/opencv/opencv_java490.dll
+    so-path: /lib/opencv/libopencv_java4100.so
+    use-gpu: false
   native-load:
     skip-open-cv: ${vision-mind.skip-opencv:false}
   runtime:
@@ -24,9 +28,14 @@ vision-mind:
       path: /lpr/model/lprnet.onnx
       input-width: 94
       input-height: 24
-
-lpr:
-  model:
-    path: ${vision-mind.lpr.model.path}
-    input-width: ${vision-mind.lpr.model.input-width}
-    input-height: ${vision-mind.lpr.model.input-height}
+  ocr:
+    models:
+      det: /ocr/model/det.onnx
+      det2: /ocr/model/det2.onnx
+      rec: /ocr/model/rec.onnx
+      rec2: /ocr/model/rec2.onnx
+      cls: /ocr/model/cls.onnx
+    dict-path: /ocr/dict.txt
+  yolo:
+    default-types: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    obb-default-types: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]

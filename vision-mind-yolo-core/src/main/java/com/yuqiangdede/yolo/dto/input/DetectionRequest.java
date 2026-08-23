@@ -14,7 +14,7 @@ public class DetectionRequest {
      */
     private String imgUrl;
     /**
-     * 置信度阈值，可选，不填就使用配置文件yolo.conf.Threshold 或者 yolo.pose.conf.Threshold 的值
+     * 置信度阈值，可选，不填就使用 application.yml 中对应的 YOLO 阈值。
      */
     private Float threshold;
     /**

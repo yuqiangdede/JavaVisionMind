@@ -55,6 +55,75 @@ PowerShell:
 powershell -ExecutionPolicy Bypass -File scripts\verify-env.ps1
 ```
 
+## 资源路径与 `VISION_MIND_PATH`
+
+YOLO 以及其他需要加载 OpenCV 原生库的模块，可以通过
+`VISION_MIND_PATH` 显式指定资源根目录。如果没有设置，启动时会从当前项目路径
+及其父目录查找 `resource`。资源目录应包含 `lib/opencv/` 和所需的模型资源。
+如需显式设置，请在仓库根目录的 PowerShell 中执行：
+
+```powershell
+$env:VISION_MIND_PATH = (Resolve-Path -LiteralPath '.\resource').Path
+mvn -pl vision-mind-yolo-app -am spring-boot:run
+```
+
+运行已经构建好的 JAR：
+
+```powershell
+$env:VISION_MIND_PATH = (Resolve-Path -LiteralPath '.\resource').Path
+java -jar '.\vision-mind-yolo-app\target\vision-mind-yolo.jar'
+```
+
+上面的 `$env:VISION_MIND_PATH = ...` 只对当前终端有效。如果需要保存为当前
+Windows 用户的环境变量，可以执行一次下面的命令，然后重新打开终端：
+
+```powershell
+[Environment]::SetEnvironmentVariable(
+    'VISION_MIND_PATH',
+    (Resolve-Path -LiteralPath '.\resource').Path,
+    'User'
+)
+```
+
+如果使用 IntelliJ IDEA 启动，请在 Run/Debug Configuration 中添加环境变量，
+并将 Working directory 设置为仓库根目录：
+
+```text
+VISION_MIND_PATH=<项目根目录>\resource
+```
+
+`vision-mind.resource.root: ./resource` 是 YAML 资源配置。旧版 OpenCV 加载链
+会优先使用 `VISION_MIND_PATH`，未设置时自动回退到项目路径下的 `resource`。
+
+## 配置约定
+
+每个可启动模块只有一个配置入口：`src/main/resources/application.yml`。
+业务配置统一使用 YAML；保留 core/app 的 Maven 模块拆分，但 core JAR 不再携带
+运行时 `.properties` 配置。配置键统一使用 `vision-mind` 命名空间和小写
+kebab-case，例如：
+
+```yaml
+vision-mind:
+  resource:
+    root: ./resource
+    fallback-env: VISION_MIND_PATH
+  native:
+    use-gpu: false
+  yolo:
+    confidence-threshold: 0.3
+    models:
+      detect: /yolo/model/yolo26s.onnx
+    depth:
+      model: /yolo/model/yolo26n-depth.onnx
+      max-pixels: 2100000
+```
+
+各服务使用对应的 `vision-mind.asr`、`vision-mind.ffe`、`vision-mind.lpr`、
+`vision-mind.ocr`、`vision-mind.reid`、`vision-mind.tbir`、
+`vision-mind.tbir-cn`、`vision-mind.tts` 和 `vision-mind.llm` 配置段。
+`VISION_MIND_PATH` 以及 `VISION_MIND_YOLO_DEPTH_*` 环境变量仍作为运行环境变量
+使用。旧的 `.properties` 文件和旧配置键不再读取。
+
 ## 最小 Demo
 
 - YOLO 示例：`examples/yolo-demo`
@@ -81,6 +150,18 @@ bash examples/asr-demo/curl.sh
 - 模块文档：`docs/modules/`
 - 故障排查：`docs/troubleshooting/`
 - 资源清单：`resource/manifest.json`
+
+## RF-DETR Small 目标检测
+
+`vision-mind-rfdetr-app` 提供 CPU ONNX Runtime 的 RF-DETR Small 目标检测服务，默认地址为
+`http://localhost:17011/vision-mind-rfdetr`。模型资源位于
+`resource/rfdetr/model/`；首次使用运行 `./scripts/init-rfdetr.ps1`，随后运行
+`./scripts/start-rfdetr.ps1`。
+
+图片检测统一接口为 `POST /api/v1/vision/detect`，并保留 YOLO 兼容别名
+`/api/v1/img/detect`；还提供标注预览、文件上传和视频抽帧检测。类别编号遵循官方
+COCO 稀疏编号（例如 person=1、car=3、toothbrush=90）。详细说明见
+[RF-DETR 模块文档](docs/modules/rfdetr.md)。
 
 ## Roadmap
 

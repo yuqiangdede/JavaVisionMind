@@ -13,21 +13,29 @@ vision-mind:
     fallback-env: VISION_MIND_PATH
     validate-on-startup: true
     manifest: resource/manifest.json
+  native:
+    dll-path: /lib/opencv/opencv_java490.dll
+    so-path: /lib/opencv/libopencv_java4100.so
+    use-gpu: false
   native-load:
     skip-open-cv: ${vision-mind.skip-opencv:false}
   runtime:
     profile: default
-  vector-store:
-    mode: ${vector.store.mode:memory}
   reid:
     model:
-      onnx-path: /reid/model/AGW_R50-ibn-bn.onnx
-      matrix-path: /reid/projectionMatrix.bin
-
-use:
-  gpu: false
-reid:
-  onnx:
-    path: ${vision-mind.reid.model.onnx-path}
-matrix:
-  path: ${vision-mind.reid.model.matrix-path}
+      onnx: /reid/model/AGW_R50-ibn-bn.onnx
+    matrix-path: /reid/projectionMatrix.bin
+    vector-store:
+      mode: memory
+      lucene-path: /data/reidIndex
+      elasticsearch:
+        uris: http://127.0.0.1:9200
+        username: ''
+        password: ''
+        api-key: ''
+        index: vision_mind_reid
+  common:
+    matrix-path: /reid/projectionMatrix.bin
+  yolo:
+    default-types: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    obb-default-types: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]

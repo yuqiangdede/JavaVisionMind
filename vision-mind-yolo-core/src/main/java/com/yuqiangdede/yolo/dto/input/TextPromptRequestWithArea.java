@@ -17,7 +17,7 @@ public class TextPromptRequestWithArea {
      */
     private String imgUrl;
     /**
-     * 置信度阈值，可选，不填就使用配置文件yolo.conf.Threshold的值
+     * 置信度阈值，可选，不填就使用 application.yml 中的 YOLO 置信度阈值。
      */
     private Float threshold;
     /**

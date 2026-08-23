@@ -2,6 +2,7 @@
 
 | Module | Status | Notes |
 | --- | --- | --- |
+| vision-mind-rfdetr-app | beta | RF-DETR Small CPU ONNX：图片、上传、预览、视频抽帧、区域过滤；端口 17011 |
 | vision-mind-yolo-app | stable | 重点打磨模块，已接入统一平台层与新接口别名 |
 | vision-mind-asr-app | stable | 重点打磨模块，已接入统一平台层与资源校验 |
 | vision-mind-ocr-app | beta | 兼容旧接口并新增统一路由别名 |

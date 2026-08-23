@@ -19,3 +19,10 @@
 
 - 该模块主要是上层调用封装，不绑定单一推理算法
 - 通过统一 `HttpResult<T>`、错误码、traceId 与全局异常机制对外输出
+
+## 配置
+
+LLM 模块只读取 `vision-mind-llm-core/src/main/resources/application.yml`。
+Ollama 使用 `vision-mind.llm.ollama.*`，OpenAI 使用
+`vision-mind.llm.openai.*`，通用 HTTP 超时使用 `vision-mind.llm.http-timeout-ms`。
+旧的 `llm-defaults.properties`、`@PropertySource` 和旧配置键不再支持。

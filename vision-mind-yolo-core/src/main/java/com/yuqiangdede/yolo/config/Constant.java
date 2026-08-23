@@ -1,13 +1,14 @@
 package com.yuqiangdede.yolo.config;
 
+import com.yuqiangdede.common.config.YamlConfig;
 import com.yuqiangdede.common.util.RuntimeEnvironment;
+import com.yuqiangdede.platform.common.config.VisionMindProperties;
+import com.yuqiangdede.platform.common.resource.ResourcePathResolver;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 @Slf4j
 public class Constant {
@@ -57,100 +58,73 @@ public class Constant {
 
 
     static {
-        Properties properties = new Properties();
-        try {
-            loadProperties(properties, "native-defaults.properties", false);
-            loadProperties(properties, "yolo-core.properties", true);
-            String envPath = System.getenv("VISION_MIND_PATH");
-            boolean skipNativeConfig = RuntimeEnvironment.shouldSkipNativeLoad();
-            if (envPath == null) {
-                if (!skipNativeConfig) {
-                    log.warn("VISION_MIND_PATH is not defined. Native resources will be resolved relative to the current directory.");
-                }
-                envPath = "";
+        YamlConfig config = YamlConfig.load(Constant.class);
+        String envPath = System.getenv("VISION_MIND_PATH");
+        boolean skipNativeConfig = RuntimeEnvironment.shouldSkipNativeLoad();
+        Path resourceRoot;
+        if (envPath == null || envPath.isBlank()) {
+            if (!skipNativeConfig) {
+                log.warn("VISION_MIND_PATH is not defined. Trying to locate resource directory from the project path.");
             }
-
-            OPENCV_DLL_PATH = envPath + properties.getProperty("opencv.dll.path");
-            OPENCV_SO_PATH = envPath + properties.getProperty("opencv.so.path");
-
-            YOLO_ONNX_PATH = envPath + properties.getProperty("yolo.onnx.path");
-            YOLO_FACE_ONNX_PATH = envPath + properties.getProperty("yolo.face.onnx.path");
-            YOLO_POSE_ONNX_PATH = envPath + properties.getProperty("yolo.pose.onnx.path");
-            YOLO_LP_ONNX_PATH = envPath + properties.getProperty("yolo.lp.onnx.path");
-            FAST_SAM_ONNX = envPath + properties.getProperty("yolo.sam.onnx.path");
-            YOLO_SEG_ONNX_PATH = envPath + properties.getProperty("yolo.seg.onnx.path");
-            YOLO_OBB_ONNX_PATH = envPath + properties.getProperty("yolo.obb.onnx.path");
-            YOLO_TEXT_ONNX_PATH = envPath + properties.getProperty("yolo.text.onnx.path");
-            YOLO_TEXT_FREE_ONNX_PATH = envPath + properties.getProperty("yolo.text.free.onnx.path");
-            YOLO_TEXT_ENCODER_ONNX_PATH = envPath + properties.getProperty("yolo.text.encoder.onnx.path");
-            YOLO_TEXT_TOKENIZER_PATH = envPath + properties.getProperty("yolo.text.tokenizer.path");
-            YOLO_TEXT_PROMPT_SCALE = Float.parseFloat(properties.getProperty("yolo.text.prompt.scale"));
-
-            String yoloSamModelName = properties.getProperty("yolo.sam.onnx.path");
-
-
-            FRAME_INTERVAL = Integer.parseInt(properties.getProperty("frame.interval"));
-
-            CONF_THRESHOLD = Float.parseFloat(properties.getProperty("yolo.conf.Threshold"));
-            POSE_CONF_THRESHOLD = Float.parseFloat(properties.getProperty("yolo.pose.conf.Threshold"));
-            NMS_THRESHOLD = Float.parseFloat(properties.getProperty("yolo.nms.Threshold"));
-            YOLO_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.onnx.nms.enabled"));
-            YOLO_FACE_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.face.onnx.nms.enabled"));
-            YOLO_LP_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.lp.onnx.nms.enabled"));
-            YOLO_POSE_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.pose.onnx.nms.enabled"));
-            YOLO_SEG_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.seg.onnx.nms.enabled"));
-            YOLO_OBB_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.obb.onnx.nms.enabled"));
-            YOLO_TEXT_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.text.onnx.nms.enabled"));
-            YOLO_SAM_NMS_ENABLED = Boolean.parseBoolean(properties.getProperty("yolo.sam.onnx.nms.enabled"));
-            SAM_CONF = Float.parseFloat(properties.getProperty("sam.nms.Threshold"));
-            DETECT_RATIO = Float.parseFloat(properties.getProperty("detect.ratio"));
-            BLOCK_RATIO = Float.parseFloat(properties.getProperty("block.ratio"));
-            USE_GPU = Boolean.valueOf(properties.getProperty("use.gpu"));
-
-            log.info("NMS enable flags: yolo={}, face={}, lp={}, pose={}, seg={}, obb={}, text={}, sam={}",
-                    YOLO_NMS_ENABLED, YOLO_FACE_NMS_ENABLED, YOLO_LP_NMS_ENABLED, YOLO_POSE_NMS_ENABLED,
-                    YOLO_SEG_NMS_ENABLED, YOLO_OBB_NMS_ENABLED, YOLO_TEXT_NMS_ENABLED, YOLO_SAM_NMS_ENABLED);
-            log.info("YOLO model names: detect={}, pose={}, seg={}, obb={}, text={}, face={}, lp={}, sam={}",
-                    properties.getProperty("yolo.onnx.path"),
-                    properties.getProperty("yolo.pose.onnx.path"),
-                    properties.getProperty("yolo.seg.onnx.path"),
-                    properties.getProperty("yolo.obb.onnx.path"),
-                    properties.getProperty("yolo.text.onnx.path"),
-                    properties.getProperty("yolo.face.onnx.path"),
-                    properties.getProperty("yolo.lp.onnx.path"),
-                    yoloSamModelName);
- 
-            String types = properties.getProperty("yolo.types");
-
-            if (types != null) {
-                for (String type : types.split(",")) {
-                    YOLO_TYPES.add(Integer.parseInt(type.trim()));
-                }
-            }
-
-            String obbTypes = properties.getProperty("yolo.obb.types");
-            if (obbTypes != null) {
-                for (String type : obbTypes.split(",")) {
-                    YOLO_OBB_TYPES.add(Integer.parseInt(type.trim()));
-                }
-            }
-
-
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read configuration file", e);
+            resourceRoot = new ResourcePathResolver(new VisionMindProperties()).resourceRoot();
+        } else {
+            resourceRoot = Path.of(envPath).toAbsolutePath().normalize();
         }
+
+        OPENCV_DLL_PATH = resolveResourcePath(resourceRoot,
+                config.get("vision-mind.native.dll-path", "/lib/opencv/opencv_java490.dll"));
+        OPENCV_SO_PATH = resolveResourcePath(resourceRoot,
+                config.get("vision-mind.native.so-path", "/lib/opencv/libopencv_java4100.so"));
+
+        YOLO_ONNX_PATH = modelPath(config, resourceRoot, "detect", "/yolo/model/yolo26s.onnx");
+        YOLO_FACE_ONNX_PATH = modelPath(config, resourceRoot, "face", "/yolo/model/yolo-face.onnx");
+        YOLO_POSE_ONNX_PATH = modelPath(config, resourceRoot, "pose", "/yolo/model/yolo26s-pose.onnx");
+        YOLO_LP_ONNX_PATH = modelPath(config, resourceRoot, "lp", "/yolo/model/yolo-lp-s.onnx");
+        FAST_SAM_ONNX = modelPath(config, resourceRoot, "sam", "/yolo/model/FastSAM-s.onnx");
+        YOLO_SEG_ONNX_PATH = modelPath(config, resourceRoot, "segmentation", "/yolo/model/yolo26s-seg.onnx");
+        YOLO_OBB_ONNX_PATH = modelPath(config, resourceRoot, "obb", "/yolo/model/yolo26s-obb.onnx");
+        YOLO_TEXT_ONNX_PATH = modelPath(config, resourceRoot, "text", "/yolo/model/yoloe-26s-seg.onnx");
+        YOLO_TEXT_FREE_ONNX_PATH = modelPath(config, resourceRoot, "text-free", "/yolo/model/yoloe-26s-seg-pf.onnx");
+        YOLO_TEXT_ENCODER_ONNX_PATH = modelPath(config, resourceRoot, "text-encoder", "/yolo/model/mobileclip2_b.onnx");
+        YOLO_TEXT_TOKENIZER_PATH = modelPath(config, resourceRoot, "text-tokenizer", "/tbir/clip-tokenizer");
+        YOLO_TEXT_PROMPT_SCALE = config.getFloat("vision-mind.yolo.models.prompt-scale", 2.726257f);
+
+        FRAME_INTERVAL = config.getInt("vision-mind.yolo.video.frame-interval", 5);
+        CONF_THRESHOLD = config.getFloat("vision-mind.yolo.confidence-threshold", 0.3f);
+        POSE_CONF_THRESHOLD = config.getFloat("vision-mind.yolo.pose-confidence-threshold", 0.3f);
+        NMS_THRESHOLD = config.getFloat("vision-mind.yolo.nms-threshold", 0.3f);
+        YOLO_NMS_ENABLED = config.getBoolean("vision-mind.yolo.nms.detect", false);
+        YOLO_FACE_NMS_ENABLED = config.getBoolean("vision-mind.yolo.nms.face", true);
+        YOLO_LP_NMS_ENABLED = config.getBoolean("vision-mind.yolo.nms.lp", true);
+        YOLO_POSE_NMS_ENABLED = config.getBoolean("vision-mind.yolo.nms.pose", false);
+        YOLO_SEG_NMS_ENABLED = config.getBoolean("vision-mind.yolo.nms.segmentation", false);
+        YOLO_OBB_NMS_ENABLED = config.getBoolean("vision-mind.yolo.nms.obb", false);
+        YOLO_TEXT_NMS_ENABLED = config.getBoolean("vision-mind.yolo.nms.text", true);
+        YOLO_SAM_NMS_ENABLED = config.getBoolean("vision-mind.yolo.nms.sam", true);
+        SAM_CONF = config.getFloat("vision-mind.yolo.sam-confidence-threshold", 0.5f);
+        DETECT_RATIO = config.getFloat("vision-mind.yolo.detection-ratio", 0.5f);
+        BLOCK_RATIO = config.getFloat("vision-mind.yolo.blocking-ratio", 0.5f);
+        USE_GPU = config.getBoolean("vision-mind.native.use-gpu", false);
+
+        YOLO_TYPES.addAll(config.getIntegerList("vision-mind.yolo.default-types"));
+        YOLO_OBB_TYPES.addAll(config.getIntegerList("vision-mind.yolo.obb-default-types"));
+
+        log.info("NMS enable flags: yolo={}, face={}, lp={}, pose={}, seg={}, obb={}, text={}, sam={}",
+                YOLO_NMS_ENABLED, YOLO_FACE_NMS_ENABLED, YOLO_LP_NMS_ENABLED, YOLO_POSE_NMS_ENABLED,
+                YOLO_SEG_NMS_ENABLED, YOLO_OBB_NMS_ENABLED, YOLO_TEXT_NMS_ENABLED, YOLO_SAM_NMS_ENABLED);
     }
 
-    private static void loadProperties(Properties target, String resourceName, boolean required) throws IOException {
-        try (InputStream stream = Constant.class.getClassLoader().getResourceAsStream(resourceName)) {
-            if (stream == null) {
-                if (required) {
-                    throw new IOException(resourceName + " not found");
-                }
-                return;
-            }
-            target.load(stream);
+    private static String modelPath(YamlConfig config, Path resourceRoot, String model,
+                                    String defaultPath) {
+        return resolveResourcePath(resourceRoot, config.get("vision-mind.yolo.models." + model, defaultPath));
+    }
+
+    private static String resolveResourcePath(Path resourceRoot, String configuredPath) {
+        String relativePath = configuredPath.replace('\\', '/');
+        while (relativePath.startsWith("/")) {
+            relativePath = relativePath.substring(1);
         }
+        return resourceRoot.resolve(relativePath).normalize().toString();
     }
 
 }

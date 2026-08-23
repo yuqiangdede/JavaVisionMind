@@ -1,0 +1,113 @@
+{
+  "modules": [
+    {
+      "name": "yolo",
+      "required": [
+        { "path": "yolo/model/yolo26s.onnx", "desc": "YOLO detection model" },
+        { "path": "yolo/model/yolo26s-pose.onnx", "desc": "YOLO pose model" },
+        { "path": "yolo/model/yolo26s-seg.onnx", "desc": "YOLO segmentation model" },
+        { "path": "yolo/model/yolo26s-obb.onnx", "desc": "YOLO oriented bounding box model" },
+        { "path": "yolo/model/yolo26n-depth.onnx", "desc": "YOLO26 monocular depth estimation model" },
+        { "path": "yolo/model/yolo-face.onnx", "desc": "Face detection model" },
+        { "path": "yolo/model/yolo-lp-s.onnx", "desc": "License plate detection model" },
+        { "path": "lib/opencv/opencv_java490.dll", "desc": "OpenCV native library for Windows" }
+      ],
+      "optional": [
+        { "path": "lib/opencv/libopencv_java4100.so", "desc": "OpenCV native library for Linux" },
+        { "path": "yolo/model/FastSAM-s.onnx", "desc": "FAST-SAM model" }
+      ]
+    },
+    {
+      "name": "rfdetr",
+      "required": [
+        { "path": "rfdetr/model/rfdetr-small.onnx", "desc": "RF-DETR Small ONNX model" },
+        { "path": "rfdetr/model/rfdetr-small.metadata.json", "desc": "RF-DETR Small model metadata and SHA-256" }
+      ],
+      "optional": [
+        { "path": "lib/opencv/opencv_java490.dll", "desc": "OpenCV native library required only by video detection on Windows" },
+        { "path": "lib/opencv/libopencv_java4100.so", "desc": "OpenCV native library required only by video detection on Linux" }
+      ]
+    },
+    {
+      "name": "asr",
+      "required": [
+        { "path": "asr/model/sherpa-onnx-streaming-zipformer-zh-fp16-2025-06-30/encoder.fp16.onnx", "desc": "ASR encoder model" },
+        { "path": "asr/model/sherpa-onnx-streaming-zipformer-zh-fp16-2025-06-30/decoder.fp16.onnx", "desc": "ASR decoder model" },
+        { "path": "asr/model/sherpa-onnx-streaming-zipformer-zh-fp16-2025-06-30/joiner.fp16.onnx", "desc": "ASR joiner model" },
+        { "path": "asr/model/sherpa-onnx-streaming-zipformer-zh-fp16-2025-06-30/tokens.txt", "desc": "ASR tokens" },
+        { "path": "lib/sherpa-onnx/sherpa-onnx-v1.12.29.jar", "desc": "Sherpa Java runtime" }
+      ],
+      "optional": [
+        { "path": "asr/model/sherpa-onnx-punct-ct-transformer-zh-en-vocab272727-2024-04-12-int8/model.int8.onnx", "desc": "Punctuation model" }
+      ]
+    },
+    {
+      "name": "ocr",
+      "required": [
+        { "path": "ocr/model/det.onnx", "desc": "OCR detection model" },
+        { "path": "ocr/model/rec.onnx", "desc": "OCR recognition model" },
+        { "path": "ocr/model/cls.onnx", "desc": "OCR text direction classifier" },
+        { "path": "ocr/dict.txt", "desc": "OCR dictionary" }
+      ]
+    },
+    {
+      "name": "ffe",
+      "required": [
+        { "path": "ffe/model/detection_face_scrfd/scrfd_500m_bnkps.onnx", "desc": "Face detector model" },
+        { "path": "ffe/model/keypoint_coordinate/coordinate_106_mobilenet_05.onnx", "desc": "Face keypoint model" },
+        { "path": "ffe/model/recognition_face_arc/glint360k_cosface_r18_fp16_0.1.onnx", "desc": "Face embedding model" }
+      ]
+    },
+    {
+      "name": "reid",
+      "required": [
+        { "path": "reid/model/AGW_R50-ibn-bn.onnx", "desc": "ReID model" },
+        { "path": "reid/projectionMatrix.bin", "desc": "Projection matrix" }
+      ]
+    },
+    {
+      "name": "lpr",
+      "required": [
+        { "path": "lpr/model/lprnet.onnx", "desc": "LPR model" }
+      ]
+    },
+    {
+      "name": "tbir",
+      "required": [
+        { "path": "tbir/model/clip-vit-b32-img.onnx", "desc": "TBIR image model" },
+        { "path": "tbir/model/clip-vit-b32-text.onnx", "desc": "TBIR text model" },
+        { "path": "tbir/clip-tokenizer/tokenizer.json", "desc": "TBIR tokenizer" },
+        { "path": "tbir/clip-tokenizer/vocab.json", "desc": "TBIR tokenizer vocabulary" },
+        { "path": "tbir/clip-tokenizer/merges.txt", "desc": "TBIR tokenizer merges" }
+      ]
+    },
+    {
+      "name": "tbir-cn",
+      "required": [
+        { "path": "tbir/model-cn/metaclip2-mt5-m16-img-512.onnx", "desc": "TBIR-CN image model" },
+        { "path": "tbir/model-cn/metaclip2-mt5-m16-text-512.onnx", "desc": "TBIR-CN text model" },
+        { "path": "tbir/model-cn/metaclip2-mt5-m16-img-512.onnx.data", "desc": "TBIR-CN image external tensor data" },
+        { "path": "tbir/model-cn/metaclip2-mt5-m16-text-512.onnx.data", "desc": "TBIR-CN text external tensor data" },
+        { "path": "tbir/clip-tokenizer-cn/tokenizer.json", "desc": "TBIR-CN tokenizer" },
+        { "path": "tbir/clip-tokenizer-cn/spiece.model", "desc": "TBIR-CN SentencePiece model" }
+      ]
+    },
+    {
+      "name": "tts",
+      "required": [
+        { "path": "lib/sherpa-onnx/sherpa-onnx-v1.12.29.jar", "desc": "Sherpa Java runtime" },
+        { "path": "tts/model/sherpa-onnx-vits-zh-ll/model.onnx", "desc": "TTS model" },
+        { "path": "tts/model/sherpa-onnx-vits-zh-ll/tokens.txt", "desc": "TTS tokens" },
+        { "path": "tts/model/sherpa-onnx-vits-zh-ll/lexicon.txt", "desc": "TTS lexicon" },
+        { "path": "tts/model/sherpa-onnx-vits-zh-ll/phone.fst", "desc": "TTS phone FST" },
+        { "path": "tts/model/sherpa-onnx-vits-zh-ll/date.fst", "desc": "TTS date FST" },
+        { "path": "tts/model/sherpa-onnx-vits-zh-ll/number.fst", "desc": "TTS number FST" },
+        { "path": "tts/model/sherpa-onnx-vits-zh-ll/new_heteronym.fst", "desc": "TTS heteronym FST" }
+      ]
+    },
+    {
+      "name": "llm",
+      "required": []
+    }
+  ]
+}

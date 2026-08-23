@@ -13,9 +13,30 @@ vision-mind:
     fallback-env: VISION_MIND_PATH
     validate-on-startup: true
     manifest: resource/manifest.json
+  native:
+    dll-path: /lib/opencv/opencv_java490.dll
+    so-path: /lib/opencv/libopencv_java4100.so
+    use-gpu: false
   native-load:
     skip-open-cv: ${vision-mind.skip-opencv:false}
   runtime:
     profile: default
   vector-store:
     mode: memory
+  ocr:
+    models:
+      det: /ocr/model/det.onnx
+      det2: /ocr/model/det2.onnx
+      rec: /ocr/model/rec.onnx
+      rec2: /ocr/model/rec2.onnx
+      cls: /ocr/model/cls.onnx
+    dict-path: /ocr/dict.txt
+  llm:
+    ollama:
+      base-url: ''
+      model: ''
+    openai:
+      base-url: https://ark.cn-beijing.volces.com/api/v3/chat/completions
+      api-key: ''
+      model: ep-20250327212217-f57wv
+    http-timeout-ms: 1000000

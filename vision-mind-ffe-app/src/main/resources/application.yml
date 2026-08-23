@@ -13,25 +13,26 @@ vision-mind:
     fallback-env: VISION_MIND_PATH
     validate-on-startup: true
     manifest: resource/manifest.json
+  native:
+    dll-path: /lib/opencv/opencv_java490.dll
+    so-path: /lib/opencv/libopencv_java4100.so
+    use-gpu: false
   native-load:
     skip-open-cv: ${vision-mind.skip-opencv:false}
   runtime:
     profile: default
-  vector-store:
-    mode: ${vector.store.mode:memory}
   ffe:
-    model:
-      scrfd-path: /ffe/model/detection_face_scrfd/scrfd_500m_bnkps.onnx
-      coord-path: /ffe/model/keypoint_coordinate/coordinate_106_mobilenet_05.onnx
-      arc-path: /ffe/model/recognition_face_arc/glint360k_cosface_r18_fp16_0.1.onnx
-      arr-path: /ffe/model/attribute_gender_age/insight_gender_age.onnx
-
-model:
-  scrfd:
-    path: ${vision-mind.ffe.model.scrfd-path}
-  coord:
-    path: ${vision-mind.ffe.model.coord-path}
-  arc:
-    path: ${vision-mind.ffe.model.arc-path}
-  arr:
-    path: ${vision-mind.ffe.model.arr-path}
+    models:
+      scrfd: /ffe/model/detection_face_scrfd/scrfd_500m_bnkps.onnx
+      coord: /ffe/model/keypoint_coordinate/coordinate_106_mobilenet_05.onnx
+      arc: /ffe/model/recognition_face_arc/glint360k_cosface_r18_fp16_0.1.onnx
+      arr: /ffe/model/attribute_gender_age/insight_gender_age.onnx
+    vector-store:
+      mode: ${vector.store.mode:memory}
+      lucene-path: /data/faceIndex
+      elasticsearch:
+        uris: http://127.0.0.1:9200
+        username: ''
+        password: ''
+        api-key: ''
+        index: vision_mind_face

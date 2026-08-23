@@ -27,3 +27,10 @@
 
 - 参考 [`resource/manifest.json`](../../resource/manifest.json) 的 `tbir-cn` 节点
 - 启动时由资源校验器按模块检查 `required` 项
+
+## 配置
+
+TBIR-CN app 只读取 `vision-mind-tbir-cn-app/src/main/resources/application.yml`。
+模型使用 `vision-mind.tbir-cn.models.*`，视觉输入使用
+`vision-mind.tbir-cn.vision.*`，向量库使用 `vision-mind.tbir-cn.vector-store.*`。
+旧的 `application.properties` 配置不再读取。
